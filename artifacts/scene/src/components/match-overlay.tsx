@@ -1,16 +1,17 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { personById } from "@/lib/people";
-import { useCommon } from "@/lib/store";
+import { useCommon, useStore } from "@/lib/store";
+import { PersonPhoto } from "./person-photo";
 import { Button } from "@/components/ui/button";
 
 export function MatchOverlay({ pid, onClose }: { pid: string | null; onClose: () => void }) {
+  const { personById } = useStore();
   const p = pid ? personById(pid) : undefined;
   return <AnimatePresence>{p && <Inner key={p.id} pid={p.id} onClose={onClose} />}</AnimatePresence>;
 }
 
 function Inner({ pid, onClose }: { pid: string; onClose: () => void }) {
-  const p = personById(pid)!;
+  const p = useStore().personById(pid)!;
   const common = useCommon(p.favorites);
   const [, go] = useLocation();
   return (
@@ -26,7 +27,9 @@ function Inner({ pid, onClose }: { pid: string; onClose: () => void }) {
           <motion.div className="absolute left-4 h-36 w-28 -rotate-6 overflow-hidden rounded-md bg-gradient-to-br from-primary to-[hsl(357_60%_20%)] ring-2 ring-white/10" initial={{ x: -80, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3, type: "spring" }}>
             <div className="grid h-full place-items-center font-display text-4xl font-black">SEN</div>
           </motion.div>
-          <motion.img src={p.photo} alt={p.name} className="absolute right-4 h-36 w-28 rotate-6 rounded-md object-cover ring-2 ring-white/10" initial={{ x: 80, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3, type: "spring" }} />
+          <motion.div className="absolute right-4 h-36 w-28 rotate-6 overflow-hidden rounded-md ring-2 ring-white/10" initial={{ x: 80, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3, type: "spring" }}>
+            <PersonPhoto id={p.id} name={p.name} className="h-full w-full" textClassName="text-4xl" />
+          </motion.div>
         </div>
         <p className="mt-8 text-foreground/80">{p.name} ile <span className="font-semibold text-primary">{common.length} ortak</span> film ve dizi. Konuşmayı sen başlat.</p>
         <div className="mt-6 flex justify-center gap-3">

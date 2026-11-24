@@ -1,132 +1,272 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { personById } from "./people";
+import { requireSupabase, turkishError } from "./supabase";
+import { useAuth } from "./auth";
+import { toast } from "@/hooks/use-toast";
 
-export interface Msg { id: string; from: "me" | "them"; text: string; at: number; demo?: boolean }
-export interface Me { name: string; city: string; bio: string; favorites: string[]; custom: boolean }
-interface State {
-  me: Me;
+export interface Person {
+  id: string;
+  name: string;
+  city: string;
+  bio: string;
+  scene: string;
+  onboarded: boolean;
+  favorites: string[];
+}
+export interface Msg { id: string; from: "me" | "them"; text: string; at: number }
+export interface MatchInfo { id: string; at: number }
+export interface ProfilePatch { name?: string; city?: string; bio?: string; scene?: string }
+
+interface Data {
+  me: Person | null;
+  people: Person[];
   liked: string[];
   passed: string[];
-  matches: Record<string, number>;
+  matches: Record<string, MatchInfo>;
   messages: Record<string, Msg[]>;
 }
 
-const KEY = "scene-demo-v1";
-const now = Date.now();
-const H = 3600_000;
+const EMPTY: Data = { me: null, people: [], liked: [], passed: [], matches: {}, messages: {} };
 
-const seed = (): State => ({
-  me: { name: "Misafir", city: "İstanbul", bio: "Demo izleyici. Profilini düzenleyerek kendi sahneni kur.", favorites: ["inception", "interstellar", "parasite", "breakingbad", "dark", "lalaland", "godfather"], custom: false },
-  liked: ["kaan", "deniz"],
-  passed: [],
-  matches: { kaan: now - 26 * H, deniz: now - 3 * H },
-  messages: {
-    kaan: [
-      { id: "s1", from: "them", text: "Breaking Bad ortak noktamız. Ozymandias bölümünden sonra iki gün kimseyle konuşmadım.", at: now - 25 * H, demo: true },
-      { id: "s2", from: "me", text: "O bölüm televizyonun zirvesi. Ben de Godfather'daki vaftiz sahnesini hiç unutamam.", at: now - 24 * H },
-      { id: "s3", from: "them", text: "Paralel kurgu ustalığı. Coppola işini biliyor.", at: now - 24 * H + 600_000, demo: true },
-    ],
-    deniz: [
-      { id: "s4", from: "them", text: "Parazit'teki yağmur sahnesi seni de mi çarptı?", at: now - 2 * H, demo: true },
-    ],
-  },
-});
+interface ProfileRow { id: string; name: string; city: string; bio: string; scene: string; onboarded: boolean }
+interface MatchRow { id: string; user_a: string; user_b: string; created_at: string }
+interface MessageRow { id: number; match_id: string; sender_id: string; body: string; created_at: string }
 
-function load(): State {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) return { ...seed(), ...JSON.parse(raw) };
-  } catch { /* ignore */ }
-  return seed();
-}
-
-interface Ctx extends State {
-  typing: Record<string, boolean>;
+interface Ctx extends Data {
+  ready: boolean;
+  loadError: string | null;
+  refresh: () => Promise<void>;
+  personById: (id: string) => Person | undefined;
   isFav: (id: string) => boolean;
   toggleFavorite: (id: string) => boolean;
-  like: (pid: string) => boolean;
-  unlike: (pid: string) => void;
-  pass: (pid: string) => void;
-  unmatch: (pid: string) => void;
-  send: (pid: string, text: string) => void;
-  updateMe: (patch: Partial<Me>) => void;
-  createProfile: (me: Omit<Me, "custom">) => void;
-  reset: () => void;
-  resetDeck: () => void;
+  /** true = new match, false = liked, null = failed (error already shown). */
+  like: (pid: string) => Promise<boolean | null>;
+  unlike: (pid: string) => Promise<boolean>;
+  pass: (pid: string) => Promise<void>;
+  unmatch: (pid: string) => Promise<boolean>;
+  send: (pid: string, text: string) => Promise<void>;
+  updateMe: (patch: ProfilePatch) => Promise<void>;
+  completeOnboarding: (p: { name: string; city: string; bio: string; favorites: string[] }) => Promise<void>;
+  resetDeck: () => Promise<void>;
 }
 
 const StoreCtx = createContext<Ctx | null>(null);
-const uid = () => Math.random().toString(36).slice(2, 10);
+
+const fail = (e: unknown, title = "İşlem tamamlanamadı") =>
+  toast({ title, description: turkishError(e), variant: "destructive" });
+
+function toMsg(row: MessageRow, me: string): Msg {
+  return { id: String(row.id), from: row.sender_id === me ? "me" : "them", text: row.body, at: new Date(row.created_at).getTime() };
+}
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>(load);
-  const [typing, setTyping] = useState<Record<string, boolean>>({});
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const { userId } = useAuth();
+  const [data, setData] = useState<Data>(EMPTY);
+  const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
-  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(state)); }, [state]);
+  const refresh = useCallback(async () => {
+    if (!userId) return;
+    const sb = requireSupabase();
+    try {
+      const [profiles, favorites, likes, passes, matches, messages] = await Promise.all([
+        sb.from("profiles").select("id,name,city,bio,scene,onboarded"),
+        sb.from("favorites").select("user_id,title_id,created_at").order("created_at"),
+        sb.from("likes").select("liked_id"),
+        sb.from("passes").select("passed_id"),
+        sb.from("matches").select("id,user_a,user_b,created_at"),
+        sb.from("messages").select("id,match_id,sender_id,body,created_at").order("created_at"),
+      ]);
+      for (const r of [profiles, favorites, likes, passes, matches, messages]) if (r.error) throw r.error;
+
+      const favs: Record<string, string[]> = {};
+      for (const f of favorites.data as { user_id: string; title_id: string }[]) (favs[f.user_id] ??= []).push(f.title_id);
+      const toPerson = (p: ProfileRow): Person => ({ ...p, favorites: favs[p.id] ?? [] });
+      const rows = profiles.data as ProfileRow[];
+      const meRow = rows.find((p) => p.id === userId);
+
+      const matchMap: Record<string, MatchInfo> = {};
+      const byMatch: Record<string, string> = {};
+      for (const m of matches.data as MatchRow[]) {
+        const other = m.user_a === userId ? m.user_b : m.user_a;
+        matchMap[other] = { id: m.id, at: new Date(m.created_at).getTime() };
+        byMatch[m.id] = other;
+      }
+      const msgs: Record<string, Msg[]> = {};
+      for (const row of messages.data as MessageRow[]) {
+        const other = byMatch[row.match_id];
+        if (other) (msgs[other] ??= []).push(toMsg(row, userId));
+      }
+
+      setData({
+        me: meRow ? toPerson(meRow) : null,
+        people: rows.filter((p) => p.id !== userId && (p.onboarded || matchMap[p.id])).map(toPerson),
+        liked: (likes.data as { liked_id: string }[]).map((l) => l.liked_id),
+        passed: (passes.data as { passed_id: string }[]).map((p) => p.passed_id),
+        matches: matchMap,
+        messages: msgs,
+      });
+      setLoadError(null);
+    } catch (e) {
+      setLoadError(turkishError(e));
+    } finally {
+      setReady(true);
+    }
+  }, [userId]);
+
+  // Load when the signed-in user changes; clear everything on logout.
+  useEffect(() => {
+    setData(EMPTY);
+    setReady(false);
+    setLoadError(null);
+    if (userId) void refresh();
+  }, [userId, refresh]);
+
+  // Live updates for new messages and matches, plus a periodic refresh for new people.
+  useEffect(() => {
+    if (!userId) return;
+    const sb = requireSupabase();
+    const channel = sb
+      .channel(`scene-${userId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const row = payload.new as MessageRow;
+        const entry = Object.entries(dataRef.current.matches).find(([, m]) => m.id === row.match_id);
+        if (!entry) { void refresh(); return; }
+        const [pid] = entry;
+        setData((d) => {
+          const list = d.messages[pid] ?? [];
+          if (list.some((m) => m.id === String(row.id))) return d;
+          return { ...d, messages: { ...d.messages, [pid]: [...list, toMsg(row, userId)] } };
+        });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => { void refresh(); })
+      .subscribe((status) => { if (status === "SUBSCRIBED") void refresh(); });
+    const onFocus = () => { if (document.visibilityState === "visible") void refresh(); };
+    document.addEventListener("visibilitychange", onFocus);
+    const timer = window.setInterval(() => void refresh(), 30_000);
+    return () => {
+      document.removeEventListener("visibilitychange", onFocus);
+      window.clearInterval(timer);
+      void sb.removeChannel(channel);
+    };
+  }, [userId, refresh]);
 
   const toggleFavorite = useCallback((id: string) => {
-    const has = stateRef.current.me.favorites.includes(id);
-    setState((s) => ({ ...s, me: { ...s.me, favorites: has ? s.me.favorites.filter((f) => f !== id) : [...s.me.favorites, id] } }));
+    const me = dataRef.current.me;
+    if (!me || !userId) return false;
+    const has = me.favorites.includes(id);
+    const apply = (add: boolean) => setData((d) => d.me ? { ...d, me: { ...d.me, favorites: add ? [...d.me.favorites.filter((f) => f !== id), id] : d.me.favorites.filter((f) => f !== id) } } : d);
+    apply(!has);
+    const sb = requireSupabase();
+    const req = has
+      ? sb.from("favorites").delete().eq("user_id", userId).eq("title_id", id)
+      : sb.from("favorites").insert({ user_id: userId, title_id: id });
+    void req.then(({ error }) => { if (error) { apply(has); fail(error, "Favori kaydedilemedi"); } });
     return !has;
-  }, []);
+  }, [userId]);
 
-  const like = useCallback((pid: string) => {
-    const p = personById(pid);
-    const mutual = !!p?.likesMe;
-    setState((s) => ({
-      ...s,
-      liked: s.liked.includes(pid) ? s.liked : [...s.liked, pid],
-      passed: s.passed.filter((x) => x !== pid),
-      matches: mutual ? { ...s.matches, [pid]: Date.now() } : s.matches,
-    }));
-    return mutual;
-  }, []);
+  const like = useCallback(async (pid: string) => {
+    const sb = requireSupabase();
+    try {
+      const { error } = await sb.from("likes").insert({ liker_id: userId, liked_id: pid });
+      if (error && error.code !== "23505") throw error;
+      const [a, b] = [userId!, pid].sort();
+      const { data: m, error: mErr } = await sb.from("matches").select("id,created_at").eq("user_a", a).eq("user_b", b).maybeSingle();
+      if (mErr) throw mErr;
+      setData((d) => ({
+        ...d,
+        liked: d.liked.includes(pid) ? d.liked : [...d.liked, pid],
+        passed: d.passed.filter((x) => x !== pid),
+        matches: m ? { ...d.matches, [pid]: { id: m.id, at: new Date(m.created_at).getTime() } } : d.matches,
+      }));
+      return !!m;
+    } catch (e) { fail(e, "Beğeni kaydedilemedi"); return null; }
+  }, [userId]);
 
-  const unlike = useCallback((pid: string) => {
-    setState((s) => ({ ...s, liked: s.liked.filter((x) => x !== pid) }));
-  }, []);
-
-  const pass = useCallback((pid: string) => {
-    setState((s) => ({ ...s, passed: s.passed.includes(pid) ? s.passed : [...s.passed, pid] }));
-  }, []);
-
-  const unmatch = useCallback((pid: string) => {
-    setState((s) => {
-      const matches = { ...s.matches }; delete matches[pid];
-      const messages = { ...s.messages }; delete messages[pid];
-      return { ...s, matches, messages, liked: s.liked.filter((x) => x !== pid), passed: [...s.passed, pid] };
+  const unlike = useCallback(async (pid: string) => {
+    const { error } = await requireSupabase().from("likes").delete().eq("liker_id", userId!).eq("liked_id", pid);
+    if (error) { fail(error); return false; }
+    setData((d) => {
+      const matches = { ...d.matches }; delete matches[pid];
+      const messages = { ...d.messages }; delete messages[pid];
+      return { ...d, liked: d.liked.filter((x) => x !== pid), matches, messages };
     });
-  }, []);
+    return true;
+  }, [userId]);
 
-  const send = useCallback((pid: string, text: string) => {
-    const msg: Msg = { id: uid(), from: "me", text, at: Date.now() };
-    setState((s) => ({ ...s, messages: { ...s.messages, [pid]: [...(s.messages[pid] ?? []), msg] } }));
-    const p = personById(pid);
-    if (!p) return;
-    setTimeout(() => setTyping((t) => ({ ...t, [pid]: true })), 600);
-    setTimeout(() => {
-      setTyping((t) => ({ ...t, [pid]: false }));
-      setState((s) => {
-        if (!s.matches[pid]) return s;
-        const count = (s.messages[pid] ?? []).filter((m) => m.from === "them").length;
-        const reply: Msg = { id: uid(), from: "them", text: p.replies[count % p.replies.length], at: Date.now(), demo: true };
-        return { ...s, messages: { ...s.messages, [pid]: [...(s.messages[pid] ?? []), reply] } };
-      });
-    }, 2200);
-  }, []);
+  const pass = useCallback(async (pid: string) => {
+    setData((d) => ({ ...d, passed: d.passed.includes(pid) ? d.passed : [...d.passed, pid] }));
+    const { error } = await requireSupabase().from("passes").upsert({ user_id: userId, passed_id: pid });
+    if (error) { setData((d) => ({ ...d, passed: d.passed.filter((x) => x !== pid) })); fail(error); }
+  }, [userId]);
 
-  const updateMe = useCallback((patch: Partial<Me>) => setState((s) => ({ ...s, me: { ...s.me, ...patch } })), []);
-  const createProfile = useCallback((me: Omit<Me, "custom">) => setState((s) => ({ ...s, me: { ...me, custom: true } })), []);
-  const reset = useCallback(() => setState(seed()), []);
-  const resetDeck = useCallback(() => setState((s) => ({ ...s, passed: [] })), []);
+  const unmatch = useCallback(async (pid: string) => {
+    const sb = requireSupabase();
+    const m = dataRef.current.matches[pid];
+    // Removing your like removes the match; deleting the match removes the private chat for both people.
+    const del = await sb.from("likes").delete().eq("liker_id", userId!).eq("liked_id", pid);
+    if (del.error) { fail(del.error); return false; }
+    if (m) {
+      const r = await sb.from("matches").delete().eq("id", m.id);
+      if (r.error) { fail(r.error); return false; }
+    }
+    await sb.from("passes").upsert({ user_id: userId, passed_id: pid });
+    setData((d) => {
+      const matches = { ...d.matches }; delete matches[pid];
+      const messages = { ...d.messages }; delete messages[pid];
+      return { ...d, matches, messages, liked: d.liked.filter((x) => x !== pid), passed: [...d.passed, pid] };
+    });
+    return true;
+  }, [userId]);
+
+  const send = useCallback(async (pid: string, text: string) => {
+    const m = dataRef.current.matches[pid];
+    if (!m) { toast({ title: "Yalnızca eşleştiğin kişilere mesaj gönderebilirsin", variant: "destructive" }); return; }
+    const { data: row, error } = await requireSupabase()
+      .from("messages").insert({ match_id: m.id, sender_id: userId, body: text })
+      .select("id,match_id,sender_id,body,created_at").single();
+    if (error) { fail(error, "Mesaj gönderilemedi"); throw error; }
+    setData((d) => {
+      const list = d.messages[pid] ?? [];
+      if (list.some((x) => x.id === String(row.id))) return d;
+      return { ...d, messages: { ...d.messages, [pid]: [...list, toMsg(row as MessageRow, userId!)] } };
+    });
+  }, [userId]);
+
+  const updateMe = useCallback(async (patch: ProfilePatch) => {
+    const { error } = await requireSupabase().from("profiles").update(patch).eq("id", userId!);
+    if (error) { fail(error, "Profil kaydedilemedi"); throw error; }
+    setData((d) => d.me ? { ...d, me: { ...d.me, ...patch } } : d);
+  }, [userId]);
+
+  const completeOnboarding = useCallback(async (p: { name: string; city: string; bio: string; favorites: string[] }) => {
+    const sb = requireSupabase();
+    try {
+      const up = await sb.from("profiles").update({ name: p.name, city: p.city, bio: p.bio, onboarded: true }).eq("id", userId!);
+      if (up.error) throw up.error;
+      const del = await sb.from("favorites").delete().eq("user_id", userId!);
+      if (del.error) throw del.error;
+      if (p.favorites.length) {
+        const ins = await sb.from("favorites").insert(p.favorites.map((title_id) => ({ user_id: userId, title_id })));
+        if (ins.error) throw ins.error;
+      }
+      await refresh();
+    } catch (e) { fail(e, "Profil oluşturulamadı"); throw e; }
+  }, [userId, refresh]);
+
+  const resetDeck = useCallback(async () => {
+    const { error } = await requireSupabase().from("passes").delete().eq("user_id", userId!);
+    if (error) { fail(error); return; }
+    setData((d) => ({ ...d, passed: [] }));
+  }, [userId]);
 
   const value = useMemo<Ctx>(() => ({
-    ...state, typing,
-    isFav: (id) => state.me.favorites.includes(id),
-    toggleFavorite, like, unlike, pass, unmatch, send, updateMe, createProfile, reset, resetDeck,
-  }), [state, typing, toggleFavorite, like, unlike, pass, unmatch, send, updateMe, createProfile, reset, resetDeck]);
+    ...data, ready, loadError, refresh,
+    personById: (id) => data.people.find((p) => p.id === id),
+    isFav: (id) => !!data.me?.favorites.includes(id),
+    toggleFavorite, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck,
+  }), [data, ready, loadError, refresh, toggleFavorite, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck]);
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
@@ -139,5 +279,6 @@ export function useStore() {
 
 export function useCommon(favorites: string[]) {
   const { me } = useStore();
-  return useMemo(() => favorites.filter((f) => me.favorites.includes(f)), [favorites, me.favorites]);
+  const mine = me?.favorites;
+  return useMemo(() => (mine ? favorites.filter((f) => mine.includes(f)) : []), [favorites, mine]);
 }

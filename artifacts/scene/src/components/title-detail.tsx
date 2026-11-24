@@ -1,16 +1,16 @@
 import { Link } from "wouter";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { byId } from "@/lib/catalog";
-import { PEOPLE } from "@/lib/people";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { HeartButton } from "./heart-button";
+import { PersonPhoto } from "./person-photo";
 
 export function TitleDetail({ id, onClose }: { id: string | null; onClose: () => void }) {
   const t = id ? byId(id) : undefined;
-  const { isFav, toggleFavorite } = useStore();
+  const { isFav, toggleFavorite, people } = useStore();
   const { toast } = useToast();
-  const fans = t ? PEOPLE.filter((p) => p.favorites.includes(t.id)) : [];
+  const fans = t ? people.filter((p) => p.onboarded && p.favorites.includes(t.id)) : [];
   return (
     <Dialog open={!!t} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl overflow-hidden border-white/10 bg-card p-0">
@@ -39,7 +39,7 @@ export function TitleDetail({ id, onClose }: { id: string | null; onClose: () =>
                   <div className="flex flex-wrap gap-2">
                     {fans.map((p) => (
                       <Link key={p.id} href={`/kullanici/${p.id}`} onClick={onClose} data-testid={`link-fan-${p.id}`} className="flex items-center gap-2 rounded-full bg-white/5 py-1 pl-1 pr-3 text-xs hover:bg-white/10">
-                        <img src={p.photo} alt="" className="h-6 w-6 rounded-full object-cover" />{p.name}
+                        <PersonPhoto id={p.id} name={p.name} className="h-6 w-6 rounded-full" textClassName="text-[10px]" />{p.name}
                       </Link>
                     ))}
                   </div>

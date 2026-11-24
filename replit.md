@@ -22,26 +22,33 @@ SCENE is a Turkish-language, mobile-first social networking prototype that conne
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/scene` — the SCENE web app (React + Vite). Talks directly to Supabase from the browser.
+- `supabase/migrations/0001_scene_schema.sql` — source of truth for SCENE's database tables and Row Level Security policies (profiles, favorites, likes, passes, matches, messages).
+- `artifacts/scene/src/lib/catalog.ts` — fixed list of 30 films/series; favorites store these string ids.
 
 ## Architecture decisions
 
-- The initial version is a browser-local demo using sample people and titles, not a live multi-user service.
-- Keep the first version simple: no external catalog integration or account setup is required.
+- Real multi-user app on the user's own Supabase project (email/password auth, email confirmation ON). Do not migrate to the Replit database.
+- Only the publishable/anon key is used in the browser; privacy is enforced by RLS. Never use a service_role key in frontend code.
+- Emails stay in Supabase `auth.users`; other users only see `profiles` fields. Matches are created by a database trigger on mutual likes, never by the client.
+- Passwords are never stored by the app; Supabase keeps only session tokens in the browser so logins persist.
+- No sample people, fake replies or demo badges. Empty states must be honest.
 
 ## Product
 
-Discover people, compare shared favorites, like profiles, match on mutual likes, and try demo conversations. Navigation uses Keşfet, Eşleşmeler, Mesajlar, and Profil.
+Sign up / log in, discover real users, compare shared favorites, like profiles, match on mutual likes, and chat privately with matches (live updates). Navigation uses Keşfet, Eşleşmeler, Mesajlar, and Profil.
 
 ## User preferences
 
 - All app content is in Turkish.
 - Modern cinematic appearance: black backgrounds, white text, and red accents.
-- Mobile-first, with functional screens and sample users and movies; do not overcomplicate the first version.
+- Mobile-first. The user works from an iPhone and needs simple, step-by-step instructions.
+- Never pretend the app is connected or authenticated when it isn't.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Schema changes must be applied to Supabase (SQL Editor or `psql "$SUPABASE_DB_URL" -f ...`); there is no Drizzle push for SCENE tables.
+- Supabase Auth Site URL / Redirect URLs must include the dev domain and, later, the published URL, or email confirmation links break.
 
 ## Pointers
 

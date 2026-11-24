@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { Clapperboard, Flame, MessageCircle, Search, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
-import { DemoBadge } from "./demo-badge";
 
 const NAV = [
   { href: "/", label: "Keşfet", icon: Flame },
@@ -49,14 +48,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="mt-auto"><DemoBadge full /></div>
       </aside>
 
       <div className="min-w-0">
         <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/5 bg-background/80 px-4 py-3 backdrop-blur-xl lg:hidden">
           <Logo />
           <div className="flex items-center gap-2">
-            <DemoBadge />
             <Link href="/arama" aria-label="Ara" data-testid="link-search-mobile" className="grid h-9 w-9 place-items-center rounded-full bg-white/5 hover:bg-white/10"><Search size={17} /></Link>
           </div>
         </header>

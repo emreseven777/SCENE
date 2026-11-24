@@ -1,0 +1,1 @@
+- [Supabase DB connection](supabase-db-connection.md) — pooler password failures: brackets/wrong password; reset password or use SQL Editor.
