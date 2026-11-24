@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "P_uWQ4SYkVUi4pUwGfz7P"
+uri = "file://generated-artifacts/SCENE-project-source.zip"
+type = "unspecified"
+title = "SCENE project source ZIP"
+description = "Workspace source, SCENE app, shared packages, lockfile, Supabase migration, and local setup notes. No credentials or installed dependencies included."
+logical_id = "0187c348-87bd-429c-a351-aefaf3ae38b2"
+content_hash = "sha256:6ac7cd53186acdb90fb6e9c08b6118385f65b1b7afd1fee2ac8f6c209f8aa604"
+size = 275855
+mtime_ms = 1795564362514
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:41293ae0-0063-45ea-b105-71a30523960b/0187c348-87bd-429c-a351-aefaf3ae38b2/d61974e5-3395-4cb1-a561-8fbc3bd02710"
+storage_version_token = "1795564384101597"
+content_type = "application/octet-stream"
