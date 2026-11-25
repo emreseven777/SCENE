@@ -16,10 +16,10 @@ function Inner({ pid, onClose }: { pid: string; onClose: () => void }) {
   const [, go] = useLocation();
   return (
     <motion.div className="fixed inset-0 z-[90] grid place-items-center bg-[#201d29]/80 p-6 backdrop-blur" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} data-testid="overlay-match">
-      <div className="scene-panel w-full max-w-md p-5 text-center sm:p-10">
-        <motion.div className="text-sm font-semibold text-brand-ink" initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>Karşılıklı beğeni</motion.div>
+      <div className="scene-panel ivory-match w-full max-w-md p-5 text-center sm:p-10">
+        <motion.div className="text-sm font-semibold text-brand-ink" initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>Aynı sahnedesiniz</motion.div>
         <motion.h2 className="scene-title mt-3" initial={{ scale: 1.6, opacity: 0, letterSpacing: "0.3em" }} animate={{ scale: 1, opacity: 1, letterSpacing: "0em" }} transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}>
-          Aynı <span className="text-brand-ink">sahnedesiniz.</span>
+          Eşleştiniz! ♡
         </motion.h2>
         <div className="relative mx-auto mt-8 flex h-36 w-full max-w-64 justify-center">
           <motion.div className="absolute left-4 h-36 w-28 -rotate-6 overflow-hidden scene-gradient rounded-2xl ring-2 ring-card" initial={{ x: -80, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3, type: "spring" }}>
@@ -31,7 +31,7 @@ function Inner({ pid, onClose }: { pid: string; onClose: () => void }) {
         </div>
         <p className="mt-8 text-foreground/80">{p.name} ile <span className="font-semibold text-brand-ink">{common.length} ortak</span> film ve dizi. Konuşmayı sen başlat.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <Button variant="secondary" onClick={onClose} data-testid="button-match-close">Keşfe dön</Button>
+          <Button variant="secondary" onClick={onClose} data-testid="button-match-close">Keşfetmeye devam et</Button>
           <Button onClick={() => { onClose(); go(`/mesajlar/${p.id}`); }} data-testid="button-match-message">Mesaj gönder</Button>
         </div>
       </div>
