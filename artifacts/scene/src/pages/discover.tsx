@@ -49,7 +49,10 @@ export default function Discover() {
     [cast, store.liked, store.passed, store.matches, mine, fits],
   );
   const current = deck[0];
-  const daily = movieMatch ? [] : deck.filter((item) => (item.score ?? 0) > 0).slice(0, 3);
+  const calendarDay = new Intl.DateTimeFormat("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric" }).format();
+  const eligible = movieMatch ? [] : deck.filter((item) => (item.score ?? 0) > 0).slice(0, 9);
+  const daily = Array.from({ length: Math.min(3, eligible.length) },
+    (_, index) => eligible[(Number(calendarDay) * 3 + index) % eligible.length]);
   const [busy, setBusy] = useState(false);
 
   const swipe = async (p: Person, direction: SwipeDirection) => {

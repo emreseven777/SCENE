@@ -1,5 +1,5 @@
 import { CinemaMessage, SharedCinema } from "@/components/shared-cinema";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AttachmentControls, AttachmentPreview, ChatAttachment, type PendingMedia } from "@/components/chat-experience";
 import { FilmDate } from "@/components/film-date";
 import { ReportProfile } from "@/components/report-profile";
@@ -13,7 +13,7 @@ import { Link, useParams } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Lock, Send } from "lucide-react";
 import { format } from "date-fns";
-import { useCommon, useStore } from "@/lib/store";
+import { fetchChatMessages, type Msg, useCommon, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { PersonPhoto } from "@/components/person-photo";
 
@@ -74,6 +74,7 @@ export function Chat() {
   const [report, setReport] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [clock, setClock] = useState(Date.now());
   const lastTyping = useRef(0);
   const client = useQueryClient();
@@ -82,18 +83,41 @@ export function Chat() {
   const chat = id ? store.matches[id]?.id : undefined;
   const preferences = useScenePreferences(user);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const msgs = p ? store.messages[p.id] ?? [] : [];
-  const filteredMessages = search.trim()
-    ? msgs.filter((message) => !message.deleted && message.text.toLocaleLowerCase("tr").includes(search.trim().toLocaleLowerCase("tr")))
-    : msgs;
+  const liveMessages = p ? store.messages[p.id] ?? [] : [];
+  const term = search.trim();
+  useEffect(() => {
+    if (!term) { setSearchTerm(""); return; }
+    const timer = window.setTimeout(() => setSearchTerm(term), 300);
+    return () => window.clearTimeout(timer);
+  }, [term]);
+  const history = useInfiniteQuery({
+    queryKey: ["scene-chat-history", user, chat, searchTerm],
+    enabled: !!user && !!chat && term === searchTerm,
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam, signal }) => fetchChatMessages(chat!, user!, pageParam, searchTerm, signal),
+    getNextPageParam: (page) => page.length === 50 ? page.at(-1)?.id : undefined,
+    gcTime: 0,
+    refetchInterval: 30_000,
+  });
+  const allMessages = new Map<string, Msg>();
+  if (term === searchTerm) {
+    for (const page of history.data?.pages ?? []) for (const message of page) allMessages.set(message.id, message);
+  }
+  if (!term) {
+    const oldest = term === searchTerm ? history.data?.pages.at(-1)?.at(-1)?.id : undefined;
+    const current = oldest ? liveMessages.filter((message) => Number(message.id) >= Number(oldest)) : liveMessages.slice(-50);
+    for (const message of current) allMessages.set(message.id, message);
+  }
+  const msgs = [...allMessages.values()].sort((a, b) => Number(a.id) - Number(b.id));
   const common = useCommon(p?.favorites ?? []);
+  const newest = !term ? msgs.at(-1)?.id : undefined;
 
   useEffect(() => {
     const list = scrollRef.current;
-    if (list) list.scrollTop = list.scrollHeight;
-  }, [msgs.length]);
+    if (list && newest) list.scrollTop = list.scrollHeight;
+  }, [newest]);
 
-  const latest = msgs.filter((m) => m.from === "them" && !m.deleted).at(-1);
+  const latest = liveMessages.filter((m) => m.from === "them" && !m.deleted).at(-1);
   const { acknowledge } = store;
   const read = id ? store.readThrough[id] ?? 0 : 0;
   useEffect(() => {
@@ -218,9 +242,16 @@ export function Chat() {
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5">
           <div className="mx-auto max-w-xs text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Eşleştiniz. Bu sohbeti yalnızca ikiniz görebilirsiniz.</div>
           {!msgs.length && common.length > 0 && <button type="button" className="mx-auto block rounded-xl border bg-muted p-2 text-xs" onClick={() => setText(`${store.titleById(common[0])?.title ?? "Ortak favorimiz"} için en sevdiğin sahne hangisi?`)}>Ortak bir favoriyle sohbet başlat</button>}
-          {search.trim() && !filteredMessages.length && <p role="status" className="text-sm text-muted-foreground">Aramana uyan mesaj bulunamadı.</p>}
+          {term && (term !== searchTerm || history.isPending) && <p role="status" className="text-sm">Mesajlar aranıyor…</p>}
+          {history.isError && <p role="alert" className="text-sm">{turkishError(history.error)}</p>}
+          {term && term === searchTerm && history.isSuccess && !msgs.length &&
+            <p role="status" className="text-sm text-muted-foreground">Aramana uyan mesaj bulunamadı.</p>}
+          {term === searchTerm && history.hasNextPage && <Button size="sm" variant="secondary"
+            disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>
+            {history.isFetchingNextPage ? "Yükleniyor…" : "Daha eski mesajları göster"}
+          </Button>}
           <AnimatePresence initial={false}>
-            {filteredMessages.map((m) => (
+            {msgs.map((m) => (
               <motion.div key={m.id} layout initial={{ opacity: 0, y: 10, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={cn("flex flex-col", m.from === "me" ? "items-end" : "items-start")} data-testid={`msg-${m.id}`}>
                 <div className={cn("max-w-[82%] break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed", m.from === "me" ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm bg-muted")}>
                   {m.replyTo && !m.deleted && <blockquote className="mb-2 line-clamp-2 border-l-2 border-current pl-2 text-xs">{msgs.find((item) => item.id === m.replyTo)?.text ?? "Yanıtlanan mesaj"}</blockquote>}
@@ -244,7 +275,7 @@ export function Chat() {
         {report && <ReportProfile person={p.id} message={report} onClose={() => setReport(null)} />}
         {deleteId && <div className="flex flex-wrap items-center gap-2 border-t p-2 text-sm">
           <span>Mesaj silinsin mi?</span><Button size="sm" variant="secondary" onClick={() => setDeleteId(null)}>Vazgeç</Button>
-          <Button size="sm" variant="destructive" onClick={() => { void store.removeMessage(deleteId); setDeleteId(null); }}>Mesajı sil</Button>
+          <Button size="sm" variant="destructive" onClick={() => { void store.removeMessage(deleteId).then(() => client.invalidateQueries({ queryKey: ["scene-chat-history", user, chat] })); setDeleteId(null); }}>Mesajı sil</Button>
         </div>}
         <div className="border-t px-3 pt-1">
           {reply && <div className="flex items-center justify-between gap-2 text-xs"><span className="truncate">Yanıt: {msgs.find((item) => item.id === reply)?.text}</span><Button size="sm" variant="ghost" onClick={() => setReply(null)}>Vazgeç</Button></div>}

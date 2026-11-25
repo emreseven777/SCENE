@@ -89,6 +89,19 @@ function toMsg(row: MessageRow, me: string): Msg {
   };
 }
 
+export async function fetchChatMessages(chat: string, viewer: string, before: string | null, search: string, signal: AbortSignal) {
+  let request = requireSupabase().from("messages").select(MESSAGE_COLUMNS)
+    .eq("match_id", chat).order("id", { ascending: false }).limit(50);
+  if (before) request = request.lt("id", before);
+  if (search) {
+    const literal = search.replace(/[\\%_]/g, "\\$&");
+    request = request.is("deleted_at", null).ilike("body", `%${literal}%`);
+  }
+  const { data, error } = await request.abortSignal(signal);
+  if (error) throw error;
+  return (data as MessageRow[]).map((row) => toMsg(row, viewer));
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();
   const [data, setData] = useState<Data>(EMPTY);
