@@ -1,8 +1,8 @@
+import type { Title } from "@/lib/catalog";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { Heart, RotateCcw, X, Quote, MapPin } from "lucide-react";
-import { byId } from "@/lib/catalog";
 import { useStore, type Person } from "@/lib/store";
 import { PersonPhoto } from "@/components/person-photo";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,7 @@ export default function Discover() {
   const store = useStore();
   const { toast } = useToast();
   const [matchPid, setMatchPid] = useState<string | null>(null);
-  const [titleId, setTitleId] = useState<string | null>(null);
+  const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [dir, setDir] = useState(1);
 
   const mine = store.me?.favorites ?? [];
@@ -66,7 +66,7 @@ export default function Discover() {
               >
                 <Link href={`/kullanici/${current.p.id}`} className="block" data-testid="link-current-profile">
                   <div className="relative aspect-[4/5]">
-                    <PersonPhoto id={current.p.id} name={current.p.name} className="h-full w-full" textClassName="text-[9rem] leading-none" />
+                    <PersonPhoto id={current.p.id} name={current.p.name} avatarPath={current.p.avatar_path} className="h-full w-full" textClassName="text-[9rem] leading-none" />
                     <div className="vignette absolute inset-0" />
                     <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
                     <div className="absolute right-4 top-4 text-right">
@@ -84,10 +84,14 @@ export default function Discover() {
                   <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{current.c.length ? "Ortak favoriler" : "Henüz ortak favori yok"}</div>
                   <div className="flex gap-2 overflow-x-auto scrollbar-none">
                     {(current.c.length ? current.c : current.p.favorites).map((id) => {
-                      const t = byId(id); if (!t) return null;
+                      const t = store.titleById(id, current.p.id); if (!t) return null;
                       return (
-                        <button key={id} onClick={() => setTitleId(id)} data-testid={`button-title-${id}`} className={`relative h-24 w-16 shrink-0 overflow-hidden rounded ${current.c.includes(id) ? "ring-2 ring-primary" : "opacity-50"}`}>
-                          <img src={t.poster} alt={t.title} className="h-full w-full object-cover" />
+                        <button key={id} onClick={() => setSelectedTitle(t)} data-testid={`button-title-${id}`} className={`relative h-24 w-16 shrink-0 overflow-hidden rounded ${current.c.includes(id) ? "ring-2 ring-primary" : "opacity-50"}`}>
+                          {t.poster ? (
+                            <img src={t.poster} alt={t.title} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="line-clamp-4 px-1 text-xs font-semibold">{t.title}</span>
+                          )}
                         </button>
                       );
                     })}
@@ -125,7 +129,7 @@ export default function Discover() {
               return (
                 <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                   <Link href={`/kullanici/${p.id}`} data-testid={`link-person-${p.id}`} className="group relative block aspect-[3/4] overflow-hidden rounded-lg ring-1 ring-white/10">
-                    <PersonPhoto id={p.id} name={p.name} className="h-full w-full transition duration-500 group-hover:scale-105" textClassName="text-6xl" />
+                    <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-full w-full transition duration-500 group-hover:scale-105" textClassName="text-6xl" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
                     {status && <span className="absolute left-2 top-2 rounded-sm bg-primary px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest">{status}</span>}
                     <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
@@ -144,7 +148,7 @@ export default function Discover() {
       </div>
 
       <MatchOverlay pid={matchPid} onClose={() => setMatchPid(null)} />
-      <TitleDetail id={titleId} onClose={() => setTitleId(null)} />
+      <TitleDetail title={selectedTitle} onClose={() => setSelectedTitle(null)} />
     </div>
   );
 }

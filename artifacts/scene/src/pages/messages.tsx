@@ -25,7 +25,7 @@ function ConversationList({ activeId }: { activeId?: string }) {
       {convos.map(({ p, last }) => (
         <li key={p.id}>
           <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-white/[0.04]", activeId === p.id && "bg-white/[0.06]")}>
-            <PersonPhoto id={p.id} name={p.name} className="h-12 w-12 shrink-0 rounded-full" textClassName="text-lg" />
+            <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-12 w-12 shrink-0 rounded-full" textClassName="text-lg" />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-semibold">{p.name}</span>
@@ -95,7 +95,7 @@ export function Chat() {
         <div className="flex items-center gap-3 border-b border-white/5 px-4 py-3">
           <Link href="/mesajlar" className="lg:hidden" aria-label="Geri" data-testid="link-back-messages"><ArrowLeft size={20} /></Link>
           <Link href={`/kullanici/${p.id}`} className="flex items-center gap-3" data-testid="link-chat-profile">
-            <PersonPhoto id={p.id} name={p.name} className="h-10 w-10 rounded-full" textClassName="text-sm" />
+            <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-10 w-10 rounded-full" textClassName="text-sm" />
             <div>
               <div className="font-semibold leading-tight">{p.name}</div>
               <div className="text-[11px] text-muted-foreground">{common.length} ortak favori</div>

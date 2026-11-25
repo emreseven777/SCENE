@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { requireSupabase, turkishError } from "./supabase";
+import { AVATAR_BUCKET, prepareAvatar } from "./avatars";
+import { byId, savedTmdbTitle, type Title } from "./catalog";
 import { useAuth } from "./auth";
 import { toast } from "@/hooks/use-toast";
 
@@ -11,6 +13,7 @@ export interface Person {
   scene: string;
   onboarded: boolean;
   favorites: string[];
+  avatar_path: string | null;
 }
 export interface Msg { id: string; from: "me" | "them"; text: string; at: number }
 export interface MatchInfo { id: string; at: number }
@@ -19,15 +22,16 @@ export interface ProfilePatch { name?: string; city?: string; bio?: string; scen
 interface Data {
   me: Person | null;
   people: Person[];
+  titles: Record<string, Record<string, Title>>;
   liked: string[];
   passed: string[];
   matches: Record<string, MatchInfo>;
   messages: Record<string, Msg[]>;
 }
 
-const EMPTY: Data = { me: null, people: [], liked: [], passed: [], matches: {}, messages: {} };
+const EMPTY: Data = { me: null, people: [], titles: {}, liked: [], passed: [], matches: {}, messages: {} };
 
-interface ProfileRow { id: string; name: string; city: string; bio: string; scene: string; onboarded: boolean }
+interface ProfileRow { id: string; name: string; city: string; bio: string; scene: string; onboarded: boolean; avatar_path: string | null }
 interface MatchRow { id: string; user_a: string; user_b: string; created_at: string }
 interface MessageRow { id: number; match_id: string; sender_id: string; body: string; created_at: string }
 
@@ -37,7 +41,9 @@ interface Ctx extends Data {
   refresh: () => Promise<void>;
   personById: (id: string) => Person | undefined;
   isFav: (id: string) => boolean;
-  toggleFavorite: (id: string) => boolean;
+  titleById: (id: string, ownerId?: string) => Title | undefined;
+  toggleFavorite: (id: string, title?: Title) => boolean;
+  changeAvatar: (file: File | null) => Promise<boolean>;
   /** true = new match, false = liked, null = failed (error already shown). */
   like: (pid: string) => Promise<boolean | null>;
   unlike: (pid: string) => Promise<boolean>;
@@ -71,8 +77,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const sb = requireSupabase();
     try {
       const [profiles, favorites, likes, passes, matches, messages] = await Promise.all([
-        sb.from("profiles").select("id,name,city,bio,scene,onboarded"),
-        sb.from("favorites").select("user_id,title_id,created_at").order("created_at"),
+        sb.from("profiles").select("id,name,city,bio,scene,onboarded,avatar_path"),
+        sb.from("favorites").select("user_id,title_id,created_at,title_metadata").order("created_at"),
         sb.from("likes").select("liked_id"),
         sb.from("passes").select("passed_id"),
         sb.from("matches").select("id,user_a,user_b,created_at"),
@@ -81,7 +87,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       for (const r of [profiles, favorites, likes, passes, matches, messages]) if (r.error) throw r.error;
 
       const favs: Record<string, string[]> = {};
-      for (const f of favorites.data as { user_id: string; title_id: string }[]) (favs[f.user_id] ??= []).push(f.title_id);
+      const titles: Record<string, Record<string, Title>> = {};
+      const favoriteRows = favorites.data as { user_id: string; title_id: string; title_metadata: unknown }[];
+      for (const f of favoriteRows) {
+        (favs[f.user_id] ??= []).push(f.title_id);
+        const title = savedTmdbTitle(f.title_id, f.title_metadata);
+        if (title) (titles[f.user_id] ??= {})[title.id] = title;
+      }
       const toPerson = (p: ProfileRow): Person => ({ ...p, favorites: favs[p.id] ?? [] });
       const rows = profiles.data as ProfileRow[];
       const meRow = rows.find((p) => p.id === userId);
@@ -100,6 +112,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
 
       setData({
+        titles,
         me: meRow ? toPerson(meRow) : null,
         people: rows.filter((p) => p.id !== userId && (p.onboarded || matchMap[p.id])).map(toPerson),
         liked: (likes.data as { liked_id: string }[]).map((l) => l.liked_id),
@@ -152,16 +165,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [userId, refresh]);
 
-  const toggleFavorite = useCallback((id: string) => {
+  const toggleFavorite = useCallback((id: string, title?: Title) => {
     const me = dataRef.current.me;
     if (!me || !userId) return false;
     const has = me.favorites.includes(id);
     const apply = (add: boolean) => setData((d) => d.me ? { ...d, me: { ...d.me, favorites: add ? [...d.me.favorites.filter((f) => f !== id), id] : d.me.favorites.filter((f) => f !== id) } } : d);
+    const metadata = savedTmdbTitle(id, title ?? dataRef.current.titles[userId]?.[id]);
+    if (!has && metadata) {
+      setData((d) => ({ ...d, titles: { ...d.titles, [userId]: { ...d.titles[userId], [id]: metadata } } }));
+    }
     apply(!has);
     const sb = requireSupabase();
     const req = has
       ? sb.from("favorites").delete().eq("user_id", userId).eq("title_id", id)
-      : sb.from("favorites").insert({ user_id: userId, title_id: id });
+      : sb.from("favorites").insert({ user_id: userId, title_id: id, title_metadata: metadata ?? null });
     void req.then(({ error }) => { if (error) { apply(has); fail(error, "Favori kaydedilemedi"); } });
     return !has;
   }, [userId]);
@@ -240,6 +257,46 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setData((d) => d.me ? { ...d, me: { ...d.me, ...patch } } : d);
   }, [userId]);
 
+  const changeAvatar = useCallback(async (file: File | null) => {
+    const me = dataRef.current.me;
+    if (!userId || me?.id !== userId) throw new Error("Tekrar giriş yap.");
+    const sb = requireSupabase();
+    const bucket = sb.storage.from(AVATAR_BUCKET);
+    const previous = me.avatar_path;
+    const next = file ? `${userId}/${crypto.randomUUID()}.jpg` : null;
+    if (previous === next) return true;
+
+    if (file && next) {
+      const jpeg = await prepareAvatar(file);
+      const { error } = await bucket.upload(next, jpeg, { contentType: "image/jpeg", cacheControl: "60" });
+      if (error) {
+        await bucket.remove([next]).catch(() => undefined);
+        throw error;
+      }
+    }
+
+    try {
+      const update = sb.from("profiles").update({ avatar_path: next }).eq("id", userId);
+      const { data: row, error } = await (previous === null
+        ? update.is("avatar_path", null)
+        : update.eq("avatar_path", previous)).select("id").maybeSingle();
+      if (error) throw error;
+      if (!row) throw new Error("Fotoğraf başka bir oturumda değişti. Tekrar dene.");
+    } catch (error) {
+      // Storage policy prevents deleting a photo still referenced by the profile.
+      if (next) await bucket.remove([next]).catch(() => undefined);
+      await refresh();
+      throw error;
+    }
+
+    setData((d) => d.me?.id === userId && d.me.avatar_path === previous
+      ? { ...d, me: { ...d.me, avatar_path: next } }
+      : d);
+    if (!previous) return true;
+    const cleanup = await bucket.remove([previous]).catch(() => null);
+    return !!cleanup && !cleanup.error;
+  }, [userId, refresh]);
+
   const completeOnboarding = useCallback(async (p: { name: string; city: string; bio: string; favorites: string[] }) => {
     const sb = requireSupabase();
     try {
@@ -265,8 +322,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     ...data, ready, loadError, refresh,
     personById: (id) => data.people.find((p) => p.id === id),
     isFav: (id) => !!data.me?.favorites.includes(id),
-    toggleFavorite, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck,
-  }), [data, ready, loadError, refresh, toggleFavorite, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck]);
+    titleById: (id, ownerId = data.me?.id) => byId(id) ?? (ownerId ? data.titles[ownerId]?.[id] : undefined),
+    toggleFavorite, changeAvatar, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck,
+  }), [data, ready, loadError, refresh, toggleFavorite, changeAvatar, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck]);
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
