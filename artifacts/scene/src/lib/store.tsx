@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { requireSupabase, turkishError } from "./supabase";
-import { AVATAR_BUCKET, prepareAvatar } from "./avatars";
+import { AVATAR_BUCKET, MAX_PROFILE_PHOTOS } from "./avatars";
 import { byId, savedTmdbTitle, type Title } from "./catalog";
 import { useAuth } from "./auth";
 import { toast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ export interface Person {
   onboarded: boolean;
   favorites: string[];
   avatar_path: string | null;
+  avatar_paths: string[];
 }
 export interface Msg { id: string; from: "me" | "them"; text: string; at: number }
 export interface MatchInfo { id: string; at: number }
@@ -31,7 +32,7 @@ interface Data {
 
 const EMPTY: Data = { me: null, people: [], titles: {}, liked: [], passed: [], matches: {}, messages: {} };
 
-interface ProfileRow { id: string; name: string; city: string; bio: string; scene: string; onboarded: boolean; avatar_path: string | null }
+interface ProfileRow { id: string; name: string; city: string; bio: string; scene: string; onboarded: boolean; avatar_path: string | null; avatar_paths: string[] }
 interface MatchRow { id: string; user_a: string; user_b: string; created_at: string }
 interface MessageRow { id: number; match_id: string; sender_id: string; body: string; created_at: string }
 
@@ -43,7 +44,7 @@ interface Ctx extends Data {
   isFav: (id: string) => boolean;
   titleById: (id: string, ownerId?: string) => Title | undefined;
   toggleFavorite: (id: string, title?: Title) => boolean;
-  changeAvatar: (file: File | null) => Promise<boolean>;
+  savePhotos: (previous: string[], paths: string[], upload?: { index: number; image: Blob }) => Promise<boolean>;
   /** true = new match, false = liked, null = failed (error already shown). */
   like: (pid: string) => Promise<boolean | null>;
   unlike: (pid: string) => Promise<boolean>;
@@ -77,7 +78,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const sb = requireSupabase();
     try {
       const [profiles, favorites, likes, passes, matches, messages] = await Promise.all([
-        sb.from("profiles").select("id,name,city,bio,scene,onboarded,avatar_path"),
+        sb.from("profiles").select("id,name,city,bio,scene,onboarded,avatar_path,avatar_paths"),
         sb.from("favorites").select("user_id,title_id,created_at,title_metadata").order("created_at"),
         sb.from("likes").select("liked_id"),
         sb.from("passes").select("passed_id"),
@@ -257,43 +258,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setData((d) => d.me ? { ...d, me: { ...d.me, ...patch } } : d);
   }, [userId]);
 
-  const changeAvatar = useCallback(async (file: File | null) => {
-    const me = dataRef.current.me;
-    if (!userId || me?.id !== userId) throw new Error("Tekrar giriş yap.");
-    const sb = requireSupabase();
-    const bucket = sb.storage.from(AVATAR_BUCKET);
-    const previous = me.avatar_path;
-    const next = file ? `${userId}/${crypto.randomUUID()}.jpg` : null;
-    if (previous === next) return true;
-
-    if (file && next) {
-      const jpeg = await prepareAvatar(file);
-      const { error } = await bucket.upload(next, jpeg, { contentType: "image/jpeg", cacheControl: "60" });
-      if (error) {
-        await bucket.remove([next]).catch(() => undefined);
-        throw error;
-      }
-    }
+  const savePhotos = useCallback(async (previous: string[], paths: string[], upload?: { index: number; image: Blob }) => {
+    if (!userId || dataRef.current.me?.id !== userId) throw new Error("Tekrar giriş yap.");
+    const bucket = requireSupabase().storage.from(AVATAR_BUCKET);
+    const next = [...paths];
+    const uploadedPath = upload ? `${userId}/${crypto.randomUUID()}.jpg` : null;
+    if (upload && uploadedPath) next[upload.index] = uploadedPath;
+    if (next.length > MAX_PROFILE_PHOTOS) throw new Error("En fazla 6 fotoğraf ekleyebilirsin.");
 
     try {
-      const update = sb.from("profiles").update({ avatar_path: next }).eq("id", userId);
-      const { data: row, error } = await (previous === null
-        ? update.is("avatar_path", null)
-        : update.eq("avatar_path", previous)).select("id").maybeSingle();
+      if (upload && uploadedPath) {
+        const { error } = await bucket.upload(uploadedPath, upload.image, {
+          contentType: "image/jpeg", cacheControl: "60",
+        });
+        if (error) throw error;
+      }
+      const { data: row, error } = await requireSupabase().from("profiles")
+        .update({ avatar_paths: next })
+        .eq("id", userId)
+        .eq("avatar_paths", `{${previous.join(",")}}`)
+        .select("avatar_path,avatar_paths").maybeSingle();
       if (error) throw error;
-      if (!row) throw new Error("Fotoğraf başka bir oturumda değişti. Tekrar dene.");
+      if (!row) throw new Error("Fotoğraf listesi başka bir oturumda değişti. Tekrar dene.");
+
+      setData((data) => data.me?.id === userId ? { ...data, me: { ...data.me, ...row } } : data);
     } catch (error) {
-      // Storage policy prevents deleting a photo still referenced by the profile.
-      if (next) await bucket.remove([next]).catch(() => undefined);
+      // Storage RLS prevents cleanup from deleting a photo that was actually saved.
+      if (uploadedPath) await bucket.remove([uploadedPath]).catch(() => undefined);
       await refresh();
       throw error;
     }
 
-    setData((d) => d.me?.id === userId && d.me.avatar_path === previous
-      ? { ...d, me: { ...d.me, avatar_path: next } }
-      : d);
-    if (!previous) return true;
-    const cleanup = await bucket.remove([previous]).catch(() => null);
+    const removed = previous.filter((path) => !next.includes(path));
+    if (!removed.length) return true;
+    const cleanup = await bucket.remove(removed).catch(() => null);
     return !!cleanup && !cleanup.error;
   }, [userId, refresh]);
 
@@ -323,8 +321,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     personById: (id) => data.people.find((p) => p.id === id),
     isFav: (id) => !!data.me?.favorites.includes(id),
     titleById: (id, ownerId = data.me?.id) => byId(id) ?? (ownerId ? data.titles[ownerId]?.[id] : undefined),
-    toggleFavorite, changeAvatar, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck,
-  }), [data, ready, loadError, refresh, toggleFavorite, changeAvatar, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck]);
+    toggleFavorite, savePhotos, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck,
+  }), [data, ready, loadError, refresh, toggleFavorite, savePhotos, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck]);
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
