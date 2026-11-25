@@ -357,3 +357,11 @@ button:focus-visible, a:focus-visible, select:focus-visible {
 .ivory-match .scene-title, .ivory-match .text-brand-ink { color: #ffe2a1 !important; }
 .ivory-match p { color: #fff5df; }
 .ivory-match [data-testid='button-match-message'] { background: #f5d48b; color: #510919; }
+
+.ivory-welcome { background: radial-gradient(ellipse at 50% 10%, #fffaf0, #f4e0c4); color: #790e25; }
+.ivory-hero-brand a { flex-direction: column; gap: .4rem; }
+.ivory-hero-brand a > span:first-child { width: 5.5rem; height: 5.5rem; border: 2px solid #d9ae62; border-radius: 1.2rem; }
+.ivory-hero-brand svg { width: 4.2rem; height: 4.2rem; }
+.ivory-hero-brand a > span:last-child { font-family: Georgia, serif; font-size: clamp(3rem, 13vw, 4.8rem); line-height: 1; letter-spacing: .04em; color: #790e25; }
+.ivory-welcome-art { min-height: 18rem; background: transparent; }
+.ivory-welcome-art svg { object-fit: cover; }
