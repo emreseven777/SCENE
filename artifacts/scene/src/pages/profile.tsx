@@ -1,3 +1,4 @@
+import { useAdminAccess } from "@/lib/admin-access";
 import { useState } from "react";
 import { Link } from "wouter";
 import { LogOut, Mail, MapPin, Pencil, Plus, Quote } from "lucide-react";
@@ -22,6 +23,7 @@ import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
 
 export default function Profile() {
   const store = useStore();
+  const adminAccess = useAdminAccess();
   const me = store.me!;
   const { email, signOut } = useAuth();
   const { toast } = useToast();
@@ -78,6 +80,8 @@ export default function Profile() {
       <ProfilePhotoEditor person={me} />
       <div className="mt-6"><DatingFields person={me} /></div>
       <div className="mt-6"><AccountVisibility person={me} /></div>
+      <Link href="/kurallar" className="mt-4 block text-sm text-brand-ink underline">Kullanım koşulları, topluluk kuralları ve gizlilik</Link>
+      {adminAccess.data && <Button className="mt-4" variant="secondary" asChild><Link href="/yonetim">Yönetim paneli</Link></Button>}
 
       <div className="scene-panel mt-6 grid grid-cols-3 divide-x divide-border overflow-hidden">
         {[[me.favorites.length, "Favori"], [Object.keys(store.matches).length, "Eşleşme"], [store.liked.length, "Beğeni"]].map(([v, l]) => (

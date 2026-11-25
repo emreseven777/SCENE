@@ -110,7 +110,22 @@ export default function Cinema() {
       <Button variant={tab === "deck" ? "default" : "secondary"} onClick={() => setTab("deck")}>Salon</Button>
       {Object.entries(choices).map(([key, label]) => <Button key={key} variant={tab === key ? "default" : "secondary"} onClick={() => setTab(key as Choice)}>{label}</Button>)}
       <Button asChild variant="ghost"><Link href="/arama">Arşivde ara</Link></Button>
+      <Button asChild variant="ghost"><Link href="/sinema/topluluk">Topluluk odaları</Link></Button>
+      <Button asChild variant="ghost"><Link href="/sinema/etkinlikler">Sinema etkinlikleri</Link></Button>
     </div>
+    {archive.isSuccess && <details className="scene-panel mb-4 p-4">
+      <summary className="cursor-pointer font-semibold">Sinema istatistiklerim ve başarılarım</summary>
+      <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+        <div><dt>Favoriler</dt><dd>{user.favorites.length}</dd></div>
+        <div><dt>İzleme listem</dt><dd>{archive.data.filter((item) => item.choice === "watchlist").length}</dd></div>
+        <div><dt>Beğenmediklerim</dt><dd>{archive.data.filter((item) => item.choice === "disliked").length}</dd></div>
+        <div><dt>Kayıtlı salon tercihleri</dt><dd>{archive.data.length}</dd></div>
+      </dl>
+      {(user.favorites.length >= 5 || archive.data.length >= 10) && <ul className="mt-3 flex flex-wrap gap-2 text-sm text-brand-ink">
+        {user.favorites.length >= 5 && <li className="rounded-full border px-3 py-1">Koleksiyoncu · 5 favori</li>}
+        {archive.data.length >= 10 && <li className="rounded-full border px-3 py-1">Salon müdavimi · 10 tercih</li>}
+      </ul>}
+    </details>}
     {last && <Button className="mb-4" variant="secondary" disabled={busy} onClick={() => void change(last.title, last.previous, last.favorite, false)}><RotateCcw /> Son tercihi geri al</Button>}
     {archive.isError && <p role="alert">Tercihlerin yüklenemedi. <button className="underline" onClick={() => void archive.refetch()}>Tekrar dene</button></p>}
     {tab === "deck" ? <>

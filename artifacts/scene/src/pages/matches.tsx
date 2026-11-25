@@ -51,7 +51,7 @@ export default function Matches() {
                       <AlertDialogContent className="border-border bg-card">
                         <AlertDialogHeader>
                           <AlertDialogTitle>{p.name} ile eşleşmeyi kaldır?</AlertDialogTitle>
-                          <AlertDialogDescription>Sohbet geçmişi ikiniz için de silinir. Bu işlem geri alınamaz.</AlertDialogDescription>
+                          <AlertDialogDescription>İkinizin de profillere ve bu sohbete erişimi kapanır. Eşleşme yeniden kurulamaz.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Vazgeç</AlertDialogCancel>

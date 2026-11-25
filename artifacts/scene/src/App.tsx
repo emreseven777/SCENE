@@ -1,6 +1,6 @@
 import { MotionConfig } from 'framer-motion';
 import { ThemeProvider } from 'next-themes';
-import { type ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -15,18 +15,23 @@ import { supabaseConfigured } from '@/lib/supabase';
 import { AppShell } from '@/components/app-shell';
 import Discover from '@/pages/discover';
 import Matches from '@/pages/matches';
-import { Chat, MessagesIndex } from '@/pages/messages';
-import Profile from '@/pages/profile';
 import CreateProfile from '@/pages/create-profile';
 import { CompleteIdentity } from '@/pages/complete-identity';
 import { isProvince } from '@/lib/provinces';
 import Notifications from '@/pages/notifications';
 import { DatingFields } from '@/components/dating-profile';
-import Cinema from '@/pages/cinema';
-import SearchPage from '@/pages/search';
-import UserPage from '@/pages/user';
 import { LoginPage, RegisterPage, WelcomePage } from '@/pages/auth';
 
+const Chat = lazy(() => import('@/pages/messages').then((module) => ({ default: module.Chat })));
+const MessagesIndex = lazy(() => import('@/pages/messages').then((module) => ({ default: module.MessagesIndex })));
+const CinemaActivities = lazy(() => import('@/pages/cinema-activities'));
+const Community = lazy(() => import('@/pages/community'));
+const Admin = lazy(() => import('@/pages/admin'));
+const Cinema = lazy(() => import('@/pages/cinema'));
+const SearchPage = lazy(() => import('@/pages/search'));
+const Profile = lazy(() => import('@/pages/profile'));
+const UserPage = lazy(() => import('@/pages/user'));
+const Legal = lazy(() => import('@/pages/legal'));
 const queryClient = new QueryClient();
 
 function FullScreen({ children }: { children: ReactNode }) {
@@ -73,15 +78,19 @@ function SignedInApp() {
   return (
     <AppShell>
       <RoutedErrorBoundary>
+        <Suspense fallback={<Loading />}>
         <Switch>
           <Route path="/" component={Discover} />
           <Route path="/bildirimler" component={Notifications} />
               <Route path="/sinema" component={Cinema} />
+          <Route path="/sinema/topluluk" component={Community} />
+          <Route path="/sinema/etkinlikler" component={CinemaActivities} />
               <Route path="/begeniler" component={Matches} />
               <Route path="/eslesmeler" component={Matches} />
           <Route path="/mesajlar" component={MessagesIndex} />
           <Route path="/mesajlar/:id" component={Chat} />
           <Route path="/profil" component={Profile} />
+          <Route path="/yonetim" component={Admin} />
           <Route path="/profil/olustur" component={CreateProfile} />
           <Route path="/arama" component={SearchPage} />
           <Route path="/kullanici/:id" component={UserPage} />
@@ -89,6 +98,7 @@ function SignedInApp() {
           <Route path="/kayit"><Redirect to="/" /></Route>
           <Route component={NotFound} />
         </Switch>
+        </Suspense>
       </RoutedErrorBoundary>
     </AppShell>
   );
@@ -96,6 +106,8 @@ function SignedInApp() {
 
 function Router() {
   const { session, loading } = useAuth();
+  const [location] = useLocation();
+  if (location === '/kurallar') return <Suspense fallback={<Loading />}><Legal /></Suspense>;
   if (!supabaseConfigured) {
     return (
       <FullScreen>
@@ -125,6 +137,11 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function SessionStore({ children }: { children: ReactNode }) {
+  const { userId } = useAuth();
+  return <StoreProvider key={userId ?? "anonymous"}>{children}</StoreProvider>;
+}
+
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="scene-theme">
@@ -132,12 +149,12 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <AuthProvider>
-              <StoreProvider>
+              <SessionStore>
                 <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
                   <Router />
                 </WouterRouter>
                 <Toaster />
-              </StoreProvider>
+              </SessionStore>
             </AuthProvider>
           </TooltipProvider>
         </QueryClientProvider>

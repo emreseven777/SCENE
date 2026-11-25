@@ -164,6 +164,12 @@ export function AccountVisibility({ person }: { person: Person }) {
       catch { /* Store shows the error. */ } finally { setBusy(false); }
     }}>{person.discovery_hidden ? "Keşfet’te yeniden görün" : "Profilimi Keşfet’te gizle"}</Button>
     <p className="text-sm text-muted-foreground">Gizlemek mevcut eşleşmelerini ve sohbetlerini etkilemez.</p>
+    <Button variant="secondary" disabled={busy} onClick={async () => {
+      setBusy(true);
+      try { await updateMe({ account_hidden: !person.account_hidden }); await refresh(); }
+      catch { /* Store shows the error. */ } finally { setBusy(false); }
+    }}>{person.account_hidden ? "Hesabımı yeniden görünür yap" : "Hesabımı gizle"}</Button>
+    <p className="text-sm text-muted-foreground">Hesabı gizlemek profiline, favorilerine ve sohbetlerine erişimi yeniden açana kadar duraklatır.</p>
     <div>
       <Link href="/bildirimler" className="text-sm font-semibold text-brand-ink underline">Bildirim merkezi</Link>
     </div>

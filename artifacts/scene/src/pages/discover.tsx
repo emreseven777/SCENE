@@ -1,6 +1,6 @@
 import type { Title } from "@/lib/catalog";
 import { useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { motion } from "framer-motion";
 import { Heart, RotateCcw, Star, X, Quote, Film, Sparkles } from "lucide-react";
 import { useStore, type Person } from "@/lib/store";
@@ -16,30 +16,40 @@ import { TitleDetail } from "@/components/title-detail";
 
 export default function Discover() {
   const store = useStore();
+  const movieMatch = new URLSearchParams(useSearch()).get("mod") === "movie-match";
   const { toast } = useToast();
   const [matchPid, setMatchPid] = useState<string | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [last, setLast] = useState<{ id: string; direction: SwipeDirection } | null>(null);
+  const [visibleCount, setVisibleCount] = useState(24);
   const [filter, setFilter] = useState({ city: "", gender: "", goal: "", from: "", to: "", fit: "" });
 
   const allows = (preference: string | null | undefined, gender: string | null) =>
     !preference || preference === "everyone" || (preference === "women" && gender === "woman") || (preference === "men" && gender === "man");
   const mine = store.me?.favorites ?? [];
-  const commonOf = (p: Person) => p.favorites.filter((f) => mine.includes(f));
+  const fits = useMemo(() => {
+    const mineGenres = mine.flatMap((id) => store.titleById(id)?.genres ?? []);
+    return new Map(store.people.map((person) => [
+      person.id,
+      cinemaFit(mine, person.favorites, mineGenres, person.favorites.flatMap((id) => store.titleById(id, person.id)?.genres ?? [])),
+    ]));
+  }, [mine, store.people, store.titleById]);
   const cast = useMemo(() => store.people.filter((p) => p.onboarded && p.age !== null && isProvince(p.city) && !p.discovery_hidden && p.gender && p.looking_for && p.dating_goal
     && allows(store.me?.looking_for, p.gender) && allows(p.looking_for, store.me?.gender ?? null)
     && (!filter.city || p.city === filter.city) && (!filter.gender || p.gender === filter.gender)
     && (!filter.goal || p.dating_goal === filter.goal) && p.age >= Number(filter.from || 18)
     && (!filter.to || p.age <= Number(filter.to))
-    && (!filter.fit || (cinemaFit(mine,p.favorites) ?? -1) >= Number(filter.fit))),
-    [store.people, store.me?.looking_for, store.me?.gender, filter, mine]);
+    && (!movieMatch || (fits.get(p.id) ?? 0) > 0)
+    && (!filter.fit || (fits.get(p.id) ?? -1) >= Number(filter.fit))),
+    [store.people, store.me?.looking_for, store.me?.gender, filter, fits, movieMatch]);
   const deck = useMemo(
     () => cast.filter((p) => !store.liked.includes(p.id) && !store.passed.includes(p.id) && !store.matches[p.id])
-      .map((p) => ({ p, c: p.favorites.filter((f) => mine.includes(f)) }))
-      .sort((a, b) => (cinemaFit(mine, b.p.favorites) ?? -1) - (cinemaFit(mine, a.p.favorites) ?? -1) || b.c.length - a.c.length),
-    [cast, store.liked, store.passed, store.matches, mine],
+      .map((p) => ({ p, c: p.favorites.filter((f) => mine.includes(f)), score: fits.get(p.id) ?? null }))
+      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.c.length - a.c.length || a.p.id.localeCompare(b.p.id)),
+    [cast, store.liked, store.passed, store.matches, mine, fits],
   );
   const current = deck[0];
+  const daily = movieMatch ? [] : deck.filter((item) => (item.score ?? 0) > 0).slice(0, 3);
   const [busy, setBusy] = useState(false);
 
   const swipe = async (p: Person, direction: SwipeDirection) => {
@@ -72,12 +82,21 @@ export default function Discover() {
     <div className="scene-page">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="scene-title">Keşfet</h1>
+          <h1 className="scene-title">{movieMatch ? "Movie Match" : "Keşfet"}</h1>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">Seninle aynı filmleri ve dizileri seven insanlarla tanış.</p>
         </div>
-        <Button asChild variant="secondary"><Link href="/arama"><Film />Favori yapımlarını ekle</Link></Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="secondary"><Link href={movieMatch ? "/" : "/?mod=movie-match"}><Sparkles />{movieMatch ? "Keşfet’e dön" : "Movie Match"}</Link></Button>
+          <Button asChild variant="secondary"><Link href="/arama"><Film />Favori yapımlarını ekle</Link></Button>
+        </div>
       </header>
 
+      {daily.length > 0 && <section className="scene-panel mb-5 p-4">
+        <h2 className="mb-2 font-semibold">Bugünkü önerilerin</h2>
+        <ul className="flex flex-wrap gap-2">{daily.map(({ p, score }) => <li key={p.id}>
+          <Button asChild variant="secondary" size="sm"><Link href={`/kullanici/${p.id}`}>{p.name} · %{score}</Link></Button>
+        </li>)}</ul>
+      </section>}
       <details className="scene-panel mb-5 p-4">
         <summary className="cursor-pointer font-semibold">Keşfet filtreleri</summary>
         <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
@@ -101,7 +120,7 @@ export default function Discover() {
                     <div className="vignette absolute inset-0" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#201d29]/95 via-[#201d29]/20 to-transparent" />
                     <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-card px-3 py-2 text-xs font-semibold text-brand-ink shadow-sm">
-                      <Sparkles size={15} />{cinemaFit(mine, current.p.favorites) !== null && <span>%{cinemaFit(mine, current.p.favorites)} uyum · </span>}<span data-testid="text-common-count">{current.c.length}</span> ortak favori
+                      <Sparkles size={15} />{current.score !== null && <span>%{current.score} uyum · </span>}<span data-testid="text-common-count">{current.c.length}</span> ortak favori
                     </div>
                     <div className="absolute inset-x-0 bottom-0 p-5">
                       <ProfileIdentity person={current.p} />
@@ -154,8 +173,8 @@ export default function Discover() {
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {cast.length === 0 && <p className="col-span-full rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Kadro henüz boş. İlk kullanıcılardan birisin.</p>}
-            {cast.map((p, i) => {
-              const c = commonOf(p).length;
+            {cast.slice(0, visibleCount).map((p, i) => {
+              const c = p.favorites.filter((id) => mine.includes(id)).length;
               const status = store.matches[p.id] ? "Eşleşme" : store.liked.includes(p.id) ? "Beğendin" : null;
               return (
                 <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
@@ -174,6 +193,7 @@ export default function Discover() {
               );
             })}
           </div>
+          {visibleCount < cast.length && <Button className="mt-4" variant="secondary" onClick={() => setVisibleCount((count) => count + 24)}>Daha fazla profil göster</Button>}
         </section>
       </div>
 

@@ -28,6 +28,8 @@ Deno.serve(async (request) => {
   await auth.auth.signOut({ scope: "local" });
 
   const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, options);
+  const deletion = await admin.rpc("scene_begin_account_deletion", { account: user.id });
+  if (deletion.error) return reply(503);
   for (let attempt = 0; attempt < 50; attempt++) {
     const { data, error } = await admin.rpc("scene_owned_files", { account: user.id });
     if (error) return reply(503);

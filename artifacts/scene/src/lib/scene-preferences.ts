@@ -9,7 +9,9 @@ export const defaultPreferences = {
 export const detailLabels: Record<string, string> = {
   height: "Boy (cm)", occupation: "Meslek", education: "Eğitim", sign: "Burç",
   smoking: "Sigara", alcohol: "Alkol", interests: "İlgi alanları", movie: "Favori film",
-  series: "Favori dizi", actor: "Favori oyuncu",
+  series: "Favori dizi", actor: "Favori oyuncu", director: "Favori yönetmen",
+  personality: "Kişiliğin", friends: "Arkadaşlıkta aradıkların", lifestyle: "Yaşam tarzın",
+  memorable: "Seni en çok etkileyen sahne hangisi?", cinema_night: "İdeal sinema gecen nasıl olur?",
 };
 
 export function useScenePreferences(user: string | undefined) {

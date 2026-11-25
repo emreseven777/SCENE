@@ -21,6 +21,7 @@ export interface Person {
   looking_for: string | null;
   dating_goal: string | null;
   discovery_hidden: boolean;
+  account_hidden: boolean;
 }
 export interface Msg {
   id: string; from: "me" | "them"; text: string; at: number;
@@ -28,7 +29,7 @@ export interface Msg {
   replyTo: string | null; deleted: boolean; delivered: boolean; seen: boolean;
 }
 export interface MatchInfo { id: string; at: number }
-export interface ProfilePatch { name?: string; city?: string; bio?: string; scene?: string; gender?: string; looking_for?: string; dating_goal?: string; discovery_hidden?: boolean }
+export interface ProfilePatch { name?: string; city?: string; bio?: string; scene?: string; gender?: string; looking_for?: string; dating_goal?: string; discovery_hidden?: boolean; account_hidden?: boolean }
 
 interface Data {
   me: Person | null;
@@ -101,13 +102,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const sb = requireSupabase();
     try {
       const [profiles, favorites, likes, incoming, passes, matches, messages, readMarks] = await Promise.all([
-        sb.from("scene_profiles").select("id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths,gender,looking_for,dating_goal,discovery_hidden"),
+        sb.from("scene_profiles").select("id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths,gender,looking_for,dating_goal,discovery_hidden,account_hidden"),
         sb.from("favorites").select("user_id,title_id,created_at,title_metadata").order("created_at"),
         sb.from("likes").select("liked_id").eq("liker_id",userId),
         sb.from("likes").select("liker_id,kind").eq("liked_id",userId),
         sb.from("passes").select("passed_id"),
         sb.from("matches").select("id,user_a,user_b,created_at"),
-        sb.from("messages").select(MESSAGE_COLUMNS).order("created_at"),
+        sb.from("messages").select(MESSAGE_COLUMNS).order("id", { ascending: false }).limit(1000),
         sb.from("scene_read_marks").select("match_id,through_id").eq("user_id", userId),
       ]);
       for (const r of [profiles, favorites, likes, incoming, passes, matches, messages, readMarks]) if (r.error) throw r.error;
@@ -132,7 +133,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         byMatch[m.id] = other;
       }
       const msgs: Record<string, Msg[]> = {};
-      for (const row of messages.data as MessageRow[]) {
+      for (const row of (messages.data as MessageRow[]).slice().reverse()) {
         const other = byMatch[row.match_id];
         if (other) (msgs[other] ??= []).push(toMsg(row, userId));
       }
@@ -270,23 +271,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const unmatch = useCallback(async (pid: string) => {
-    const sb = requireSupabase();
-    const m = dataRef.current.matches[pid];
-    // Removing your like removes the match; deleting the match removes the private chat for both people.
-    const del = await sb.from("likes").delete().eq("liker_id", userId!).eq("liked_id", pid);
-    if (del.error) { fail(del.error); return false; }
-    if (m) {
-      const r = await sb.from("matches").delete().eq("id", m.id);
-      if (r.error) { fail(r.error); return false; }
-    }
-    await sb.from("passes").upsert({ user_id: userId, passed_id: pid });
+    const { error } = await requireSupabase().rpc("end_scene_match", { other: pid });
+    if (error) { fail(error); return false; }
     setData((d) => {
       const matches = { ...d.matches }; delete matches[pid];
       const messages = { ...d.messages }; delete messages[pid];
-      return { ...d, matches, messages, liked: d.liked.filter((x) => x !== pid), passed: [...d.passed, pid] };
+      return { ...d, matches, messages, liked: d.liked.filter((x) => x !== pid), passed: d.passed.includes(pid) ? d.passed : [...d.passed, pid] };
     });
     return true;
-  }, [userId]);
+  }, []);
 
   const send = useCallback<Ctx["send"]>(async (pid, text, options) => {
     const m = dataRef.current.matches[pid];
@@ -394,14 +387,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const completeOnboarding = useCallback(async (p: { name: string; bio: string; favorites: string[] }) => {
     const sb = requireSupabase();
     try {
-      const up = await sb.from("profiles").update({ name: p.name, bio: p.bio, onboarded: true }).eq("id", userId!);
-      if (up.error) throw up.error;
-      const del = await sb.from("favorites").delete().eq("user_id", userId!);
-      if (del.error) throw del.error;
       if (p.favorites.length) {
-        const ins = await sb.from("favorites").insert(p.favorites.map((title_id) => ({ user_id: userId, title_id })));
+        const ins = await sb.from("favorites").upsert(p.favorites.map((title_id) => ({ user_id: userId, title_id })), {
+          onConflict: "user_id,title_id", ignoreDuplicates: true,
+        });
         if (ins.error) throw ins.error;
       }
+      const up = await sb.from("profiles").update({ name: p.name, bio: p.bio, onboarded: true }).eq("id", userId!);
+      if (up.error) throw up.error;
       await refresh();
     } catch (e) { fail(e, "Profil oluşturulamadı"); throw e; }
   }, [userId, refresh]);

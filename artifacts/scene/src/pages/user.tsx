@@ -1,5 +1,5 @@
 import { ProfileDetails, ProfileSafety } from "@/components/dating-profile";
-import { cinemaFit } from "@/lib/dating";
+import { CINEMA_FIT_DESCRIPTION, cinemaFit } from "@/lib/dating";
 import type { Title } from "@/lib/catalog";
 import { useState } from "react";
 import { Link, useParams } from "wouter";
@@ -27,9 +27,10 @@ function UserView({ pid }: { pid: string }) {
   const p = store.personById(pid)!;
   const { toast } = useToast();
   const common = useCommon(p.favorites);
-  const fit = cinemaFit(store.me?.favorites ?? [], p.favorites);
   const ownGenres = new Set((store.me?.favorites ?? []).flatMap((id) => store.titleById(id)?.genres ?? []));
-  const commonGenres = [...new Set(p.favorites.flatMap((id) => store.titleById(id, p.id)?.genres ?? []))].filter((genre) => ownGenres.has(genre));
+  const theirGenres = p.favorites.flatMap((id) => store.titleById(id, p.id)?.genres ?? []);
+  const commonGenres = [...new Set(theirGenres)].filter((genre) => ownGenres.has(genre));
+  const fit = cinemaFit(store.me?.favorites ?? [], p.favorites, [...ownGenres], theirGenres);
   const others = p.favorites.filter((f) => !common.includes(f));
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [matchPid, setMatchPid] = useState<string | null>(null);
@@ -68,7 +69,7 @@ function UserView({ pid }: { pid: string }) {
         <section className="scene-panel p-4 sm:p-6">
           <h2 className="text-xl font-bold">Sinema uyumu</h2>
           {fit === null ? <p className="mt-2 text-sm text-muted-foreground">Uyumu hesaplamak için ikinizin de en az üç favorisi gerekli.</p>
-            : <p className="mt-2 text-sm"><strong>%{fit}</strong> · ortak favoriler, iki listenin birleşimindeki benzersiz yapımlara bölünür.</p>}
+            : <p className="mt-2 text-sm"><strong>%{fit}</strong> · {CINEMA_FIT_DESCRIPTION}</p>}
           {commonGenres.length > 0 && <p className="mt-2 text-sm">Ortak türler: {commonGenres.join(", ")}</p>}
         </section>
         <ProfileSafety person={p} />

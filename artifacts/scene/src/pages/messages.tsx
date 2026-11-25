@@ -1,3 +1,4 @@
+import { CinemaMessage, SharedCinema } from "@/components/shared-cinema";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AttachmentControls, AttachmentPreview, ChatAttachment, type PendingMedia } from "@/components/chat-experience";
 import { FilmDate } from "@/components/film-date";
@@ -72,6 +73,7 @@ export function Chat() {
   const [reply, setReply] = useState<string | null>(null);
   const [report, setReport] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const [clock, setClock] = useState(Date.now());
   const lastTyping = useRef(0);
   const client = useQueryClient();
@@ -81,6 +83,9 @@ export function Chat() {
   const preferences = useScenePreferences(user);
   const scrollRef = useRef<HTMLDivElement>(null);
   const msgs = p ? store.messages[p.id] ?? [] : [];
+  const filteredMessages = search.trim()
+    ? msgs.filter((message) => !message.deleted && message.text.toLocaleLowerCase("tr").includes(search.trim().toLocaleLowerCase("tr")))
+    : msgs;
   const common = useCommon(p?.favorites ?? []);
 
   useEffect(() => {
@@ -100,7 +105,7 @@ export function Chat() {
   }, [acknowledge, id, latest?.id, read]);
 
   useEffect(() => {
-    setMedia(null); setReply(null); setText(""); setReport(null);
+    setMedia(null); setReply(null); setText(""); setReport(null); setSearch("");
     lastTyping.current = 0;
   }, [id]);
 
@@ -202,16 +207,25 @@ export function Chat() {
           </Link>
           {chat && user && <FilmDate chat={chat} user={user} titles={common.flatMap((title) => store.titleById(title)?.title ?? [])} />}
         </div>
+        {chat && user && <SharedCinema key={chat} match={chat} viewer={user}
+          titles={[...new Set([...common, ...(store.me?.favorites ?? []), ...p.favorites])].flatMap((id) => store.titleById(id) ?? store.titleById(id, p.id) ?? [])}
+          onShare={publishTyping} />}
+        <details className="border-b px-4 py-2 text-sm">
+          <summary className="cursor-pointer font-semibold">Sohbette ara</summary>
+          <input className="mt-2 w-full rounded-lg border bg-card p-2 text-base" type="search" aria-label="Mesaj ara"
+            placeholder="Mesajlarda ara" value={search} onChange={(event) => setSearch(event.target.value)} />
+        </details>
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5">
           <div className="mx-auto max-w-xs text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Eşleştiniz. Bu sohbeti yalnızca ikiniz görebilirsiniz.</div>
           {!msgs.length && common.length > 0 && <button type="button" className="mx-auto block rounded-xl border bg-muted p-2 text-xs" onClick={() => setText(`${store.titleById(common[0])?.title ?? "Ortak favorimiz"} için en sevdiğin sahne hangisi?`)}>Ortak bir favoriyle sohbet başlat</button>}
+          {search.trim() && !filteredMessages.length && <p role="status" className="text-sm text-muted-foreground">Aramana uyan mesaj bulunamadı.</p>}
           <AnimatePresence initial={false}>
-            {msgs.map((m) => (
+            {filteredMessages.map((m) => (
               <motion.div key={m.id} layout initial={{ opacity: 0, y: 10, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={cn("flex flex-col", m.from === "me" ? "items-end" : "items-start")} data-testid={`msg-${m.id}`}>
                 <div className={cn("max-w-[82%] break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed", m.from === "me" ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm bg-muted")}>
                   {m.replyTo && !m.deleted && <blockquote className="mb-2 line-clamp-2 border-l-2 border-current pl-2 text-xs">{msgs.find((item) => item.id === m.replyTo)?.text ?? "Yanıtlanan mesaj"}</blockquote>}
                   {m.mediaPath && !m.deleted && <ChatAttachment message={m} blur={preferences.data?.blur_photos ?? true} />}
-                  <p>{m.text}</p>
+                  <CinemaMessage body={m.text} />
                 </div>
                 <div className="mt-1 font-mono text-[10px] text-muted-foreground">{format(m.at, "HH:mm")}{m.from === "me" && !m.deleted && <> · {m.seen ? "Görüldü" : m.delivered ? "İletildi" : "Gönderildi"}</>}</div>
                 {!m.deleted && <details className="mt-1 max-w-full text-xs">
@@ -236,7 +250,16 @@ export function Chat() {
           {reply && <div className="flex items-center justify-between gap-2 text-xs"><span className="truncate">Yanıt: {msgs.find((item) => item.id === reply)?.text}</span><Button size="sm" variant="ghost" onClick={() => setReply(null)}>Vazgeç</Button></div>}
           {!text.trim() && !media && <details className="mb-2 text-xs"><summary className="cursor-pointer py-2 text-brand-ink">Scene Quiz · Sohbet kartları</summary><div className="flex flex-wrap gap-2">{["Hayatın bir film olsaydı adı ne olurdu?","Birlikte hangi filmi izlemek isterdin?","En sevdiğin film karakteri kim?","Bir filmin finalini değiştirebilseydin hangisi olurdu?"].map(question => <button key={question} type="button" className="rounded-xl border bg-card p-2 text-left" onClick={() => publishTyping(question)}>{question}</button>)}</div></details>}
           {media && <AttachmentPreview media={media} onRemove={() => setMedia(null)} />}
-          <AttachmentControls disabled={sending || !!media} onPick={setMedia} />
+          <div className="flex flex-wrap items-start gap-2">
+            <AttachmentControls disabled={sending || !!media} onPick={setMedia} />
+            <details className="text-sm">
+              <summary className="cursor-pointer rounded-md px-2 py-2">Emoji</summary>
+              <div className="flex flex-wrap gap-1">
+                {["🎬", "🍿", "❤️", "😂", "👍", "✨"].map((emoji) => <Button size="icon" key={emoji}
+                  variant="ghost" type="button" onClick={() => publishTyping((text + emoji).slice(0, 2000))}>{emoji}</Button>)}
+              </div>
+            </details>
+          </div>
         </div>
         <form onSubmit={(e) => void submit(e)} className="flex gap-2 px-3 pb-3">
           <input value={text} onChange={(e) => publishTyping(e.target.value)} maxLength={2000} placeholder="Bir replik yaz..." data-testid="input-message" className="h-11 min-w-0 flex-1 rounded-full bg-muted px-4 text-base outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-primary" />

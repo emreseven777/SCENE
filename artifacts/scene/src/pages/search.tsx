@@ -1,3 +1,4 @@
+import { useSearch } from "wouter";
 import { SceneHeading } from "@/components/scene-brand";
 import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -18,7 +19,9 @@ const norm = (s: string) => s.toLocaleLowerCase("tr").normalize("NFD").replace(/
 export default function SearchPage() {
   const store = useStore();
   const { toast } = useToast();
-  const [q, setQ] = useState("");
+  const urlQuery = new URLSearchParams(useSearch()).get("q") ?? "";
+  const [q, setQ] = useState(urlQuery);
+  useEffect(() => setQ(urlQuery), [urlQuery]);
   const [type, setType] = useState<"all" | TitleType>("all");
   const [selected, setSelected] = useState<Title | null>(null);
   const query = q.trim();

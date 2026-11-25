@@ -79,7 +79,7 @@ export function AttachmentControls({ disabled, onPick }: { disabled: boolean; on
   return <div className="flex items-center gap-1">
     {[gallery, camera].map((ref, index) => <input key={index} ref={ref} type="file" accept="image/*" capture={index ? "environment" : undefined}
       hidden onChange={(event) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) void choose(file); }} />)}
-    <Button type="button" size="icon" variant="ghost" disabled={disabled || recording} aria-label="Galeriden fotoğraf seç" onClick={() => gallery.current?.click()}><ImagePlus /></Button>
+    <Button type="button" size="icon" variant="ghost" disabled={disabled || recording} aria-label="Galeriden fotoğraf veya GIF seç" onClick={() => gallery.current?.click()}><ImagePlus /></Button>
     <Button type="button" size="icon" variant="ghost" disabled={disabled || recording} aria-label="Kamerayla fotoğraf çek" onClick={() => camera.current?.click()}><Camera /></Button>
     {typeof MediaRecorder !== "undefined" && !!navigator.mediaDevices?.getUserMedia && (
       <Button type="button" size="icon" variant={recording ? "default" : "ghost"} disabled={disabled || starting}

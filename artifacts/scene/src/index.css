@@ -141,7 +141,7 @@
 :root, .dark {
   --radius: 1rem;
   --app-font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --app-font-serif: Georgia, 'Times New Roman', serif;
+  --app-font-serif: var(--app-font-sans);
   --app-font-mono: var(--app-font-sans);
   --card-foreground: var(--foreground);
   --card-border: var(--border);

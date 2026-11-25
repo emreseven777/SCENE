@@ -1,11 +1,18 @@
 import { requireSupabase } from "./supabase";
 
 export const CHAT_BUCKET = "scene-chat";
+const imageExtensions: Record<string, string> = { "image/jpeg": "jpg", "image/gif": "gif" };
 const audioExtensions: Record<string, string> = {
   "audio/webm": "webm", "audio/mp4": "m4a", "audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/aac": "aac",
 };
 
 export async function prepareChatPhoto(file: File) {
+  if (file.type === "image/gif") {
+    if (file.size > 8 * 1024 * 1024) throw new Error("En fazla 8 MB boyutunda GIF seç.");
+    const signature = new TextDecoder().decode(await file.slice(0, 6).arrayBuffer());
+    if (signature !== "GIF87a" && signature !== "GIF89a") throw new Error("Geçerli bir GIF seç.");
+    return file;
+  }
   if (file.size > 24 * 1024 * 1024) throw new Error("En fazla 24 MB boyutunda fotoğraf seç.");
   const url = URL.createObjectURL(file);
   try {
@@ -27,7 +34,7 @@ export async function prepareChatPhoto(file: File) {
 
 export async function uploadChatMedia(match: string, user: string, file: Blob, kind: "photo" | "audio") {
   const mime = file.type.split(";")[0];
-  const extension = kind === "photo" ? (mime === "image/jpeg" ? "jpg" : null) : audioExtensions[mime];
+  const extension = kind === "photo" ? imageExtensions[mime] : audioExtensions[mime];
   if (!extension || !file.size || file.size > 8 * 1024 * 1024) throw new Error("Dosya biçimi desteklenmiyor veya 8 MB sınırı aşıldı.");
   const path = `${match}/${user}/${crypto.randomUUID()}.${extension}`;
   const { error } = await requireSupabase().storage.from(CHAT_BUCKET).upload(path, file, { contentType: mime, cacheControl: "30" });
