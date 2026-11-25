@@ -22,3 +22,9 @@ Bu çalışma yayın onayı bekliyor. Mevcut üretim projesi ve veritabanı koru
 1. Yönlendirme bayrağını kapat ve önceki Vercel üretim dağıtımını yeniden etkinleştir. Eski domain eşlemesini tut. Auth Site URL ve şablonları kayıttan geri yükle. Gönderilmiş Movia bağlantılarının süresi dolana kadar yeni Auth yönlendirme izinlerini ve gerekli rotaları erişilebilir tut. Her iki posta akışını tekrar dene.
 2. Veritabanında yeni kayıt ve şikâyetleri koru. Yeni şikâyet değerlerini eski kısıtlamaya sığdırmak için satır silme veya kategori değiştirme. Eski istemci eski değerleri yazmaya devam edebilir. Kayıt tetikleyicisiyle eski istemci uyumu bozulursa önceden prova edilmiş ileri düzeltmeyi uygula ve mevcut kabul kayıtlarını tut.
 3. Yedekten canlıya tam dönüş ancak veri bütünlüğü olayı, doğrulanmış geri yükleme ve operatörün ayrıca onayıyla yapılır. Aradaki üretim değişiklikleri saklanmalı ve tekrar uygulanabilirliği belirlenmeli.
+
+## Geri yükleme provası
+
+25 Kasım 2026'da yerel PostgreSQL 17.12 üzerinde uygulama migration'ları ve üç SQL regresyon paketi çalıştırıldı. Yapay hesap, profil, eşleşme, mesaj ve sohbet dosyasıyla veritabanı ve dosyalar ayrı ayrı arşivlendi. Arşivler SHA-256 ile doğrulandı ve izole bir PostgreSQL dizinine geri yüklendi. Yeniden açılan veritabanında satır sayıları, medya baytları, eşleşmiş üyeye erişim ve üçüncü üyeye erişim reddi doğrulandı. Auth ve Storage şemaları test fikstürüydü.
+
+Üretim kabulü için canlı örnekten alınmış erişimi kısıtlı, şifreli yedekler gereklidir. Veritabanı ve Storage nesneleri ayrı alınmalı. Dosya manifestinde bucket, nesne anahtarı, bayt uzunluğu ve SHA-256 bulunmalı. Geri yüklemede gerçek Auth, Storage ve RLS kontrolleri izole ortamda tekrarlanmalı. Son provayı ve üretimden alınan iki arşivin doğrulamasını tamamlamadan geçiş başlatılmamalı. [Supabase yedekler](https://supabase.com/docs/guides/platform/backups)
