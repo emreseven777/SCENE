@@ -5,6 +5,7 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { CinemaCollage, SceneBrand, ThemeToggle } from "@/components/scene-brand";
+import { latestAdultBirthDate } from "@/lib/provinces";
 import { useAuth } from "@/lib/auth";
 import { turkishError } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -111,6 +112,7 @@ export function LoginPage() {
         {error && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm" data-testid="text-login-error">{error}</p>}
         <Button type="submit" disabled={busy} className="h-12 w-full text-base" data-testid="button-login">{busy ? <Loader2 className="animate-spin" size={18} /> : "Giriş yap"}</Button>
       </form>
+      <Link href="/kurallar" className="mt-4 block text-center text-sm text-brand-ink underline">KVKK ve hukuki belgeler</Link>
       <p className="mt-6 text-center text-sm text-muted-foreground">Hesabın yok mu? <Link href="/kayit" className="font-semibold text-foreground underline decoration-primary underline-offset-4" data-testid="link-to-register">Kayıt ol</Link></p>
     </Frame>
   );
@@ -122,6 +124,9 @@ export function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const latest = latestAdultBirthDate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -129,9 +134,13 @@ export function RegisterPage() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (password.length < 6) { setError("Şifre en az 6 karakter olmalı."); return; }
+    if (!birthDate || birthDate > latest || !termsAccepted) {
+      setError("Üyelik için 18 yaşını doldurmalı ve Kullanım Koşullarını kabul etmelisin.");
+      return;
+    }
     setBusy(true); setError(null);
     try {
-      const { needsConfirmation } = await signUp(email, password, name);
+      const { needsConfirmation } = await signUp(email, password, name, birthDate, termsAccepted);
       if (needsConfirmation) setSentTo(email.trim()); else go("/profil/olustur");
     } catch (err) { setError(turkishError(err)); }
     finally { setBusy(false); }
@@ -156,6 +165,24 @@ export function RegisterPage() {
         <div className="space-y-1.5"><Label htmlFor="name">İsim</Label><Input id="name" autoComplete="given-name" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} className="h-12 text-base" data-testid="input-register-name" /></div>
         <div className="space-y-1.5"><Label htmlFor="r-email">E-posta</Label><Input id="r-email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 text-base" data-testid="input-register-email" /></div>
         <div className="space-y-1.5"><Label htmlFor="r-password">Şifre</Label><Input id="r-password" type="password" autoComplete="new-password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 text-base" data-testid="input-register-password" /><p className="text-xs text-muted-foreground">En az 6 karakter.</p></div>
+        <div className="space-y-1.5">
+          <Label htmlFor="register-birth-date">Doğum tarihi</Label>
+          <Input id="register-birth-date" type="date" autoComplete="bday" required max={latest}
+            value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-12 text-base" />
+          <p className="text-xs text-muted-foreground">SCENE 18 yaş ve üzeri içindir. Profilde yalnızca yaşın gösterilir.</p>
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-brand-ink">
+          <Link className="underline" href="/kurallar?belge=aydinlatma" target="_blank" rel="noopener">KVKK Aydınlatma Metni</Link>
+          <Link className="underline" href="/kurallar?belge=gizlilik" target="_blank" rel="noopener">Gizlilik Politikası</Link>
+        </div>
+        <div className="flex items-start gap-2 text-sm">
+          <input id="register-terms" type="checkbox" required checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)} className="mt-1 accent-primary" />
+          <div>
+            <label htmlFor="register-terms"><strong>Kullanım Koşullarını</strong> kabul ediyorum.</label>{" "}
+            <Link className="text-brand-ink underline" href="/kurallar?belge=kosullar" target="_blank" rel="noopener">Koşulları aç</Link>
+          </div>
+        </div>
         {error && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm" data-testid="text-register-error">{error}</p>}
         <Button type="submit" disabled={busy} className="h-12 w-full text-base" data-testid="button-register">{busy ? <Loader2 className="animate-spin" size={18} /> : "Hesap oluştur"}</Button>
       </form>

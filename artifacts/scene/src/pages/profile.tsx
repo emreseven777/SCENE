@@ -17,6 +17,7 @@ import { HeartButton } from "@/components/heart-button";
 import { TitleDetail } from "@/components/title-detail";
 import { ProvinceSelect } from "@/components/province-select";
 import { PersonPhoto } from "@/components/person-photo";
+import { PrivacySettings } from "@/components/privacy-settings";
 import { DeleteAccount } from "@/components/delete-account";
 import { DatingFields, AccountVisibility } from "@/components/dating-profile";
 import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
@@ -80,7 +81,7 @@ export default function Profile() {
       <ProfilePhotoEditor person={me} />
       <div className="mt-6"><DatingFields person={me} /></div>
       <div className="mt-6"><AccountVisibility person={me} /></div>
-      <Link href="/kurallar" className="mt-4 block text-sm text-brand-ink underline">Kullanım koşulları, topluluk kuralları ve gizlilik</Link>
+      <div className="mt-6"><PrivacySettings user={me.id} photos={me.avatar_paths.length ? me.avatar_paths : me.avatar_path ? [me.avatar_path] : []} /></div>
       {adminAccess.data && <Button className="mt-4" variant="secondary" asChild><Link href="/yonetim">Yönetim paneli</Link></Button>}
 
       <div className="scene-panel mt-6 grid grid-cols-3 divide-x divide-border overflow-hidden">

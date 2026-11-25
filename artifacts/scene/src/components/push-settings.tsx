@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import { setPushConsent } from "@/lib/privacy";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { requireSupabase, turkishError } from "@/lib/supabase";
 
@@ -11,6 +13,8 @@ function urlScope() {
 
 export function PushSettings({ user }: { user: string }) {
   const [busy, setBusy] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const client = useQueryClient();
   const [status, setStatus] = useState("");
   const supported = !!publicKey && window.isSecureContext && "PushManager" in window
     && "Notification" in window && "serviceWorker" in navigator;
@@ -30,7 +34,14 @@ export function PushSettings({ user }: { user: string }) {
     <h2 className="text-xl font-bold">Mesaj bildirimleri</h2>
     {!publicKey ? <p className="text-sm text-muted-foreground">Bu kurulumda arka plan bildirimleri yapılandırılmadı.</p>
       : !supported ? <p className="text-sm text-muted-foreground">Bu tarayıcıda arka plan bildirimi kullanılamıyor. iPhone’da SCENE’i Ana Ekran’a ekleyip oradan aç.</p>
-        : <Button variant="secondary" disabled={busy || subscription.isPending} onClick={async () => {
+        : <>
+          {subscription.isSuccess && !subscription.data && <div className="flex items-start gap-2 text-sm">
+            <input id="scene-device-push-consent" type="checkbox" className="mt-1 accent-primary"
+              checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+            <div><label htmlFor="scene-device-push-consent">Bu cihazda mesaj bildirimi almak için açık rıza veriyorum.</label>{" "}
+              <Link href="/kurallar?belge=bildirim-rizasi" className="text-brand-ink underline">Rıza metni</Link></div>
+          </div>}
+          <Button variant="secondary" disabled={busy || !subscription.isSuccess || (!subscription.data && !consent)} onClick={async () => {
           setBusy(true); setStatus("");
           try {
             if (!subscription.data && await Notification.requestPermission() !== "granted") throw new Error("Bildirim izni verilmedi.");
@@ -46,14 +57,17 @@ export function PushSettings({ user }: { user: string }) {
             } else {
               const item = existing ?? await ready.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: publicKey });
               const keys = item.toJSON().keys;
+              await setPushConsent(true);
               const { error } = await table.upsert({ user_id:user,endpoint:item.endpoint,p256dh:keys?.p256dh,auth_secret:keys?.auth });
               if (error) throw error;
               setStatus("Bu cihaz için bildirimler açıldı.");
             }
+            setConsent(false);
+            void client.invalidateQueries({ queryKey: ["scene-privacy", user] });
             await subscription.refetch();
           } catch (error) { setStatus(turkishError(error)); }
           finally { setBusy(false); }
-        }}>{subscription.data ? "Bu cihazda kapat" : "Bu cihazda aç"}</Button>}
+        }}>{subscription.data ? "Bu cihazda kapat" : "Bu cihazda aç"}</Button></>}
     {status && <p role="status" className="text-sm">{status}</p>}
   </section>;
 }

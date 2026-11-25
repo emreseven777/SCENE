@@ -1,4 +1,5 @@
 import { reportCategories } from "@/components/report-profile";
+import { requestKinds, requestStatuses } from "@/lib/privacy";
 import { useAdminAccess } from "@/lib/admin-access";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -9,18 +10,19 @@ import { Textarea } from "@/components/ui/textarea";
 
 const queues = {
   users: "Kullanıcılar", reports: "Şikâyetler", verification: "Doğrulama",
-  log: "İşlem kayıtları", statistics: "İstatistikler",
+  log: "İşlem kayıtları", privacy: "KVKK başvuruları", statistics: "İstatistikler",
 } as const;
 type Queue = keyof typeof queues;
 type Row = {
   id: string | number; name?: string; state?: string; created_at?: string; until_at?: string;
   category?: keyof typeof reportCategories; safety_reports?: number; reported_message?: string; reported_id?: string; message_id?: number; pending_reports?: number; actor?: string;
-  action?: string; target?: string; reason?: string; profiles?: number; active_matches?: number; messages?: number;
+  kind?: keyof typeof requestKinds; response?: string; action?: string; target?: string; reason?: string; profiles?: number; active_matches?: number; messages?: number;
 };
 
 
 type Action = { name: string; label: string };
 function actionsFor(queue: Queue, row: Row): Action[] {
+  if (queue === "privacy" && row.state !== "resolved") return [{ name: "privacy_reply", label: "Başvuruyu yanıtla" }];
   if (queue === "users" && row.state !== "deleting") return row.state === "active"
     ? [{ name: "suspend", label: "7 gün askıya al" }, { name: "ban", label: "Yasakla" }]
     : [{ name: "restore", label: "Kısıtlamayı kaldır" }];
@@ -50,20 +52,27 @@ export default function Admin() {
     enabled: access.data === true,
     gcTime: 0,
     queryFn: async () => {
-      const { data, error } = await requireSupabase().rpc("scene_moderation_queue", { queue_name: queue, page_start: offset });
+      const db = requireSupabase();
+      const { data, error } = queue === "privacy"
+        ? await db.rpc("scene_privacy_inbox", { page_start: offset })
+        : await db.rpc("scene_moderation_queue", { queue_name: queue, page_start: offset });
       if (error) throw error;
       return data as Row[];
     },
   });
   const mutation = useMutation({
     mutationFn: async (selected: NonNullable<typeof decision>) => {
-      const { error } = await requireSupabase().rpc("scene_moderate", {
-        action_name: selected.action.name, subject: selected.subject, explanation: reason.trim(),
-      });
+      const db = requireSupabase();
+      const { error } = selected.action.name === "privacy_reply"
+        ? await db.rpc("scene_privacy_review", { request_id: selected.subject, reply: reason.trim() })
+        : await db.rpc("scene_moderate", { action_name: selected.action.name, subject: selected.subject, explanation: reason.trim() });
       if (error) throw error;
     },
     onSuccess: async () => { setDecision(undefined); setReason(""); await rows.refetch(); },
   });
+
+  const minimum = queue === "privacy" ? 10 : 5;
+  const maximum = queue === "privacy" ? 2000 : 500;
 
   return <main className="scene-page max-w-4xl">
     <h1 className="scene-title mb-4">Yönetim</h1>
@@ -84,9 +93,9 @@ export default function Admin() {
         <div><dt>Silinmemiş özel mesajlar</dt><dd>{row.messages}</dd></div>
         <div><dt>Bekleyen şikâyetler</dt><dd>{row.pending_reports}</dd></div>
       </dl> : <article key={row.id} className="scene-panel mb-3 space-y-2 p-4">
-        <h2 className="break-words font-semibold">{row.name || row.action || row.id}</h2>
+        <h2 className="break-words font-semibold">{row.name || (row.kind && requestKinds[row.kind]) || row.action || row.id}</h2>
         <p className="break-all text-xs text-muted-foreground">{row.id} · {row.created_at && new Date(row.created_at).toLocaleString("tr-TR")}</p>
-        {row.state && <p>{states[row.state] ?? row.state}</p>}
+        {row.state && <p>{(queue === "privacy" ? requestStatuses[row.state] : states[row.state]) ?? row.state}</p>}
         {row.until_at && row.state === "suspended" && <p>Askı bitişi {new Date(row.until_at).toLocaleString("tr-TR")}</p>}
         {!!row.safety_reports && <p>{row.safety_reports} açık sahte profil, spam veya yaş sınırı bildirimi</p>}
         {row.category && <p>{reportCategories[row.category]}</p>}
@@ -94,7 +103,8 @@ export default function Admin() {
         {row.reported_id && <p className="break-all">Şikâyet edilen hesap {row.reported_id}</p>}
         {row.message_id != null && <p>Mesaj kaydı {row.message_id}</p>}
         {row.reported_message && <blockquote className="break-words border-l pl-3">{row.reported_message}</blockquote>}
-        {row.reason && <p className="break-words">{row.reason}</p>}
+        {row.reason && <p className="whitespace-pre-wrap break-words">{row.reason}</p>}
+        {row.response && <p className="whitespace-pre-wrap break-words">Yanıt · {row.response}</p>}
         {row.actor && <p className="break-all">Yönetici {row.actor}</p>}
         {row.target && <p className="break-all">İlgili kayıt {row.target}</p>}
         <div className="flex flex-wrap gap-2">
@@ -103,13 +113,13 @@ export default function Admin() {
         </div>
         {decision?.subject === String(row.id) && <form className="space-y-2" onSubmit={(event) => {
           event.preventDefault();
-          if (!mutation.isPending && reason.trim().length >= 5) mutation.mutate(decision);
+          if (!mutation.isPending && reason.trim().length >= minimum) mutation.mutate(decision);
         }}>
-          <label className="block text-sm">{decision.action.label} için gerekçe
-            <Textarea required minLength={5} maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)} />
+          <label className="block text-sm">{queue === "privacy" ? "Başvuru sahibine gönderilecek yanıt" : `${decision.action.label} için gerekçe`}
+            <Textarea required minLength={minimum} maxLength={maximum} value={reason} onChange={(event) => setReason(event.target.value)} />
           </label>
           {mutation.isError && <p role="alert">{turkishError(mutation.error)}</p>}
-          <Button size="sm" disabled={mutation.isPending || reason.trim().length < 5}>Kararı kaydet</Button>
+          <Button size="sm" disabled={mutation.isPending || reason.trim().length < minimum}>Kararı kaydet</Button>
           <Button size="sm" type="button" variant="ghost" disabled={mutation.isPending} onClick={() => setDecision(undefined)}>Vazgeç</Button>
         </form>}
       </article>)}

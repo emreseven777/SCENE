@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { LEGAL_VERSION } from "./legal-documents";
 import { supabase } from "./supabase";
 
 interface AuthCtx {
@@ -8,7 +9,7 @@ interface AuthCtx {
   email: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<{ needsConfirmation: boolean }>;
+  signUp: (email: string, password: string, name: string, birthDate: string, termsAccepted: boolean) => Promise<{ needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
 }
 
@@ -34,12 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
     },
-    signUp: async (email, password, name) => {
+    signUp: async (email, password, name, birthDate, termsAccepted) => {
       const { data, error } = await supabase!.auth.signUp({
         email: email.trim(),
         password,
         options: {
-          data: { name: name.trim() },
+          data: { name: name.trim(), scene_registration: { birth_date: birthDate, terms_accepted: termsAccepted, version: LEGAL_VERSION } },
           emailRedirectTo: new URL(import.meta.env.BASE_URL, window.location.origin).href,
         },
       });
