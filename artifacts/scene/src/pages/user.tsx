@@ -1,5 +1,5 @@
 import { ProfileDetails, ProfileSafety } from "@/components/dating-profile";
-import { CINEMA_FIT_DESCRIPTION, cinemaFit } from "@/lib/dating";
+import { CINEMA_FIT_DESCRIPTION, cinemaFit, profileCinemaSignals } from "@/lib/dating";
 import type { Title } from "@/lib/catalog";
 import { useState } from "react";
 import { Link, useParams } from "wouter";
@@ -27,10 +27,10 @@ function UserView({ pid }: { pid: string }) {
   const p = store.personById(pid)!;
   const { toast } = useToast();
   const common = useCommon(p.favorites);
-  const ownGenres = new Set((store.me?.favorites ?? []).flatMap((id) => store.titleById(id)?.genres ?? []));
-  const theirGenres = p.favorites.flatMap((id) => store.titleById(id, p.id)?.genres ?? []);
-  const commonGenres = [...new Set(theirGenres)].filter((genre) => ownGenres.has(genre));
-  const fit = cinemaFit(store.me?.favorites ?? [], p.favorites, [...ownGenres], theirGenres);
+  const own = profileCinemaSignals(store.me?.favorites ?? [], store.me?.discovery_details, (id) => store.titleById(id));
+  const other = profileCinemaSignals(p.favorites, p.discovery_details, (id) => store.titleById(id, p.id));
+  const commonGenres = other.genres.filter((genre) => own.genres.includes(genre));
+  const fit = cinemaFit(own.titles, other.titles, own.genres, other.genres);
   const others = p.favorites.filter((f) => !common.includes(f));
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [matchPid, setMatchPid] = useState<string | null>(null);

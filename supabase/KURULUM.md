@@ -52,3 +52,13 @@ Mevcut `tmdb-catalog` Edge Function’ını bu daldaki kodla yeniden yayımla. �
 ### Yayın öncesi canlı test
 
 İki test hesabıyla karşılıklı beğeni, iletildi/görüldü, gizlilik tercihleri, engelleme sonrası yeni mesajın reddi, fotoğraf ve ses, film randevusu ve tercihin geri alınmasını doğrula. Bir test hesabını kalıcı silip Storage dosyalarının da temizlendiğini kontrol et. Push açıksa iPhone Ana Ekran sürümünü kapattıktan sonra dene. Profil doğrulama başvuruları kayda alınır. Sonuçların işlenmesi için yönetici incelemesi veya doğrulama sağlayıcısı gerekir. Uygulama doğrulama rozeti üretmez.
+
+## SCENE 8.1 profil alanları
+
+Test ortamında `20261125151918_scene_81_profile_choices.sql` migration’ını uygulanmış önceki migration’ların üzerine ekle. Tanınan eski cevaplar standart değerlere çevrilir. Kesin eşleştirilemeyen cevaplar kullanıcı yeni bir değer seçene kadar korunur. Eski burç yanıtı kayıtlı kalır. Otomatik burcun diğer üyelere görünmesi için üyenin **Burç → Otomatik** seçmesi ve isteğe bağlı bilgileri paylaşmayı açması gerekir. Doğum tarihi özel tabloda kalır.
+
+Aynı sürümde `tmdb-catalog` Edge Function’ını güncelle. Profildeki film, dizi, oyuncu ve yönetmen araması mevcut `TMDB_READ_ACCESS_TOKEN` secret’ını kullanır.
+
+Yayın ortamı için Supabase **Authentication → URL Configuration** bölümünde **Site URL** değerini `https://joinscene.vercel.app/` yap ve bu tam adresi **Redirect URLs** listesine ekle. Gerekli eski ve test yönlendirmelerini koru. Kayıt e-postası, kayıt sırasında kullanılan ortamın adresine döner. Yayından önce test hesabıyla e-posta bağlantısını, profil kaydını, gizlilik seçeneklerini ve Keşfet filtrelerini doğrula.
+
+Yerel veritabanında `supabase/tests/scene_profile_81.sql` dosyası seçim doğrulamasını, burç hesabını ve gizliliği sınar. Yalnızca test veritabanında çalıştır.

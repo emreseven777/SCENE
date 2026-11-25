@@ -1,4 +1,5 @@
 import { canonicalTitle, savedTmdbTitle, type Title, type TitleType } from "./catalog";
+import { isTmdbPick, type TmdbField, type TmdbPick } from "./profile-choices";
 import { requireSupabase } from "./supabase";
 
 export async function fetchCatalog(query: string, type: TitleType | "all", page: number, signal: AbortSignal) {
@@ -34,4 +35,12 @@ export async function fetchCinemaDetails(id: string, signal: AbortSignal) {
   );
   if (error || !data) throw error ?? new Error("Yapım ayrıntıları yüklenemedi.");
   return data;
+}
+
+export async function searchProfileTmdb(field: TmdbField, query: string, page: number, signal: AbortSignal) {
+  const { data, error } = await requireSupabase().functions.invoke<{ results: TmdbPick[]; nextPage: number | null }>(
+    "tmdb-catalog", { body: { mode: "profile-search", field, query, page }, signal },
+  );
+  if (error || !data || !Array.isArray(data.results)) throw error ?? new Error("Arama yapılamadı.");
+  return { results: data.results.filter((item) => isTmdbPick(item, field)), nextPage: data.nextPage };
 }
