@@ -36,7 +36,7 @@ export default function Discover() {
   const deck = useMemo(
     () => cast.filter((p) => !store.liked.includes(p.id) && !store.passed.includes(p.id) && !store.matches[p.id])
       .map((p) => ({ p, c: p.favorites.filter((f) => mine.includes(f)) }))
-      .sort((a, b) => b.c.length - a.c.length),
+      .sort((a, b) => (cinemaFit(mine, b.p.favorites) ?? -1) - (cinemaFit(mine, a.p.favorites) ?? -1) || b.c.length - a.c.length),
     [cast, store.liked, store.passed, store.matches, mine],
   );
   const current = deck[0];
@@ -101,7 +101,7 @@ export default function Discover() {
                     <div className="vignette absolute inset-0" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#201d29]/95 via-[#201d29]/20 to-transparent" />
                     <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-card px-3 py-2 text-xs font-semibold text-brand-ink shadow-sm">
-                      <Sparkles size={15} /><span data-testid="text-common-count">{current.c.length}</span> ortak favori
+                      <Sparkles size={15} />{cinemaFit(mine, current.p.favorites) !== null && <span>%{cinemaFit(mine, current.p.favorites)} uyum · </span>}<span data-testid="text-common-count">{current.c.length}</span> ortak favori
                     </div>
                     <div className="absolute inset-x-0 bottom-0 p-5">
                       <ProfileIdentity person={current.p} />
