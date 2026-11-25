@@ -27,7 +27,7 @@ const upcomingStores = [
 
 function ComingSoonStores() {
   return (
-    <section aria-labelledby="coming-soon-heading" className="mt-7 w-full min-w-0 border-t border-[#d5b57c]/55 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <section aria-labelledby="coming-soon-heading" aria-describedby="coming-soon-description" className="mt-7 w-full min-w-0 border-t border-[#d5b57c]/55 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <h2 id="coming-soon-heading" className="text-xl font-bold tracking-tight text-[#790e25]">Çok yakında cebinde</h2>
       <ul className="mt-3 grid grid-cols-2 gap-2.5 sm:gap-3" aria-label="Uygulama mağazaları">
         {upcomingStores.map(({ name, logo }) => (
@@ -42,7 +42,7 @@ function ComingSoonStores() {
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-xs text-[#653a36]">iOS ve Android için hazırlanıyor.</p>
+      <p id="coming-soon-description" className="mt-3 text-xs text-[#653a36]">iOS ve Android için hazırlanıyor.</p>
     </section>
   );
 }
