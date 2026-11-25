@@ -20,16 +20,16 @@ function DiscoverPortrait({ person, score, common }: { person: Person; score: nu
   const photos = [...new Set([person.avatar_path, ...person.avatar_paths].filter((path): path is string => !!path))];
   const active = Math.min(photoIndex, Math.max(0, photos.length - 1));
 
-  return <div className="relative aspect-[3/4] min-h-72 max-h-[34rem] overflow-hidden rounded-t-3xl bg-[#28131b]"
+  return <div className="relative h-[clamp(17rem,calc(100svh-22rem),30rem)] overflow-hidden rounded-t-3xl lg:aspect-[3/4] lg:h-auto lg:max-h-[34rem]"
     data-testid="discover-portrait">
-    <PersonPhoto contain id={person.id} name={person.name} avatarPath={photos[active] ?? null}
+    <PersonPhoto id={person.id} name={person.name} avatarPath={photos[active] ?? null}
       className="absolute inset-0 size-full" textClassName="text-8xl" />
-    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#20131a] via-transparent to-[#20131a]/35" />
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-linear-to-t from-black/70 to-transparent" />
     <div className="absolute inset-x-3 top-3 flex min-w-0 flex-wrap items-center gap-2">
       {photos.length > 1 && <div className="flex w-full gap-1" role="group" aria-label="Profil fotoğrafını seç">
         {photos.map((path, index) => <button key={path} type="button" aria-label={`Fotoğraf ${index + 1}`} aria-pressed={active === index}
           onClick={() => setPhotoIndex(index)} className="flex h-8 min-w-0 flex-1 items-center rounded-sm focus-visible:outline-white">
-          <span className={`h-1 w-full rounded-full ${active === index ? "bg-white" : "bg-white/45"}`} />
+          <span className={`h-1 w-full rounded-full shadow-sm shadow-black/45 ${active === index ? "bg-white" : "bg-white/45"}`} />
         </button>)}
       </div>}
       <span className="flex max-w-full items-center gap-1.5 break-words rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-brand-ink">
@@ -44,9 +44,8 @@ function DiscoverPortrait({ person, score, common }: { person: Person; score: nu
         className="absolute right-2 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/65 text-white disabled:invisible"><ChevronRight /></button>
     </>}
     <Link href={`/kullanici/${person.id}`} data-testid="link-current-profile"
-      className="absolute inset-x-0 bottom-0 block min-w-0 px-4 pb-4 pt-8 sm:px-5">
-      <ProfileIdentity person={person} size="text-[clamp(1.75rem,7vw,2.75rem)]" />
-      {(person.scene || person.bio) && <p className="mt-2 line-clamp-2 break-words text-sm text-white/90">{person.scene || person.bio}</p>}
+      className="absolute inset-x-0 bottom-0 block min-w-0 px-4 pb-5 pt-6 drop-shadow-sm sm:px-5">
+      <ProfileIdentity person={person} size="text-[clamp(2rem,8vw,2.75rem)]" />
     </Link>
   </div>;
 }
