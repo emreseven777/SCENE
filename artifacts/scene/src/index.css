@@ -141,7 +141,7 @@
 :root, .dark {
   --radius: 1rem;
   --app-font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --app-font-serif: var(--app-font-sans);
+  --app-font-serif: Georgia, 'Times New Roman', serif;
   --app-font-mono: var(--app-font-sans);
   --card-foreground: var(--foreground);
   --card-border: var(--border);
@@ -324,7 +324,7 @@ button:focus-visible, a:focus-visible, select:focus-visible {
 }
 
 @utility scene-title {
-  font-family: var(--font-display);
+  font-family: var(--app-font-serif);
   font-size: clamp(2rem, 7vw, 3.65rem);
   font-weight: 700;
   line-height: 1.04;
@@ -352,3 +352,8 @@ button:focus-visible, a:focus-visible, select:focus-visible {
 :root:not(.dark) body { background-image: radial-gradient(ellipse at top, #fffaf0, transparent 65%); }
 :root:not(.dark) .scene-title { color: #810e28; }
 .dark { --primary: 350 70% 42%; }
+
+.ivory-match { background: radial-gradient(ellipse at top, #a8243c, #510919 75%); color: #fff5df; border-color: #d6ad64; }
+.ivory-match .scene-title, .ivory-match .text-brand-ink { color: #ffe2a1 !important; }
+.ivory-match p { color: #fff5df; }
+.ivory-match [data-testid='button-match-message'] { background: #f5d48b; color: #510919; }
