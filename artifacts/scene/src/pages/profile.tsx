@@ -29,6 +29,8 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: me.name, city: me.city, bio: me.bio, scene: me.scene });
   const [titleId, setTitleId] = useState<string | null>(null);
+  const profileSteps = [{label:"İsim",done:!!me.name.trim()},{label:"Profil fotoğrafı",done:!!me.avatar_path},{label:"Hakkında",done:!!me.bio.trim()},{label:"Unutamadığın sahne",done:!!me.scene.trim()},{label:"En az 5 favori yapım",done:me.favorites.length >= 5},{label:"İlişki beklentisi",done:!!me.dating_goal}];
+  const completion = Math.round(profileSteps.filter(s => s.done).length / profileSteps.length * 100);
   const best = store.people.filter((p) => p.onboarded).map((p) => ({ p, c: p.favorites.filter((f) => me.favorites.includes(f)).length })).sort((a, b) => b.c - a.c)[0];
 
   const save = async () => {
@@ -60,6 +62,11 @@ export default function Profile() {
         <Button variant="secondary" onClick={() => { setForm({ name: me.name, city: me.city, bio: me.bio, scene: me.scene }); setEditing(true); }} data-testid="button-edit-profile"><Pencil size={15} className="mr-2" />Düzenle</Button>
       </div>
 
+      <section className="scene-panel mt-6 p-5">
+        <div className="flex items-center justify-between"><h2 className="font-display text-xl font-bold">Profil gücün</h2><span className="font-bold text-brand-ink">%{completion}</span></div>
+        <progress aria-label="Profil tamamlanma oranı" value={completion} max={100} className="mt-3 h-2 w-full accent-primary" />
+        <div className="mt-3 grid grid-cols-2 gap-2 text-sm">{profileSteps.map(s => <span key={s.label} className={s.done ? "text-brand-ink" : "text-muted-foreground"}>{s.done ? "✓" : "○"} {s.label}</span>)}</div>
+      </section>
       <ProfilePhotoEditor person={me} />
       <div className="mt-6"><DatingFields person={me} /></div>
       <div className="mt-6"><AccountVisibility person={me} /></div>
