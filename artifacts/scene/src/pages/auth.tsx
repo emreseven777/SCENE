@@ -20,20 +20,20 @@ function AuthHeader() {
 
 export function WelcomePage() {
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-7">
-      <AuthHeader />
-      <main className="scene-panel my-auto grid overflow-hidden md:grid-cols-[1fr_1.05fr]">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col justify-center p-6 sm:p-12 lg:p-16">
-          <h1 className="scene-title">Her aşk bir <span className="text-brand-ink">sahneyle başlar.</span></h1>
-          <p className="mt-4 max-w-xs text-base leading-relaxed text-muted-foreground">Film ve dizi tutkunları için tanışma uygulaması.</p>
-          <div className="mt-7 flex flex-wrap items-center gap-2">
-            <Button asChild size="lg"><Link href="/kayit">Hemen başla <ArrowRight /></Link></Button>
-            <Button asChild variant="ghost" size="lg"><Link href="/giris">Giriş yap</Link></Button>
-          </div>
-        </motion.div>
-        <CinemaCollage className="scene-gradient min-h-52 sm:min-h-72 md:min-h-[29rem]" />
-      </main>
-    </div>
+    <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-col overflow-hidden text-center">
+      <div className="relative flex justify-end px-4 pt-[max(1rem,env(safe-area-inset-top))]"><ThemeToggle /></div>
+      <div className="relative z-10 flex flex-col items-center px-5 pt-2">
+        <div className="ivory-hero-brand"><SceneBrand /></div>
+        <h1 className="mt-4 font-serif text-[clamp(1.5rem,6vw,2.2rem)] font-bold italic leading-tight text-[#790e25]">Her aşk bir sahneyle başlar.</h1>
+        <p className="mt-3 text-sm text-[#653a36]">Film ve dizi tutkunları için tanışma uygulaması.</p>
+        <div className="mt-5 flex w-full justify-center gap-3 text-xs font-semibold text-[#790e25]"><span>🎬 Aynı filmler</span><span>♡ Ortak tutkular</span><span>📺 Aynı diziler</span></div>
+      </div>
+      <CinemaCollage className="ivory-welcome-art mt-3 min-h-64 flex-1" />
+      <div className="relative z-10 grid gap-3 px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
+        <Button asChild size="lg" className="h-14 w-full rounded-full bg-[#810e28] text-white shadow-lg"><Link href="/kayit">Keşfetmeye Başla <ArrowRight /></Link></Button>
+        <Button asChild variant="outline" size="lg" className="h-12 w-full rounded-full border-[#810e28] bg-transparent text-[#810e28]"><Link href="/giris">Giriş Yap</Link></Button>
+      </div>
+    </main>
   );
 }
 
