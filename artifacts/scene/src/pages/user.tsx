@@ -1,7 +1,7 @@
 import type { Title } from "@/lib/catalog";
 import { useState } from "react";
 import { Link, useParams } from "wouter";
-import { ArrowLeft, Heart, MapPin, MessageCircle, Quote } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCommon, useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Poster } from "@/components/poster";
 import { TitleDetail } from "@/components/title-detail";
 import { MatchOverlay } from "@/components/match-overlay";
-import { PersonPhoto } from "@/components/person-photo";
+import { ProfilePortrait, ProfileAbout } from "@/components/profile-gallery";
 import NotFound from "./not-found";
 
 export default function UserPage() {
@@ -34,17 +34,9 @@ function UserView({ pid }: { pid: string }) {
 
   return (
     <div>
-      <div className="relative h-[62vh] min-h-[420px] overflow-hidden lg:h-[70vh]">
-        <motion.div className="h-full w-full" initial={{ scale: 1.12 }} animate={{ scale: 1 }} transition={{ duration: 1.4, ease: "easeOut" }}>
-          <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-full w-full" textClassName="text-[12rem] leading-none opacity-60" />
-        </motion.div>
-        <div className="vignette absolute inset-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-        <Link href="/" data-testid="link-back" className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-black/50 backdrop-blur hover:bg-black/70"><ArrowLeft size={18} /></Link>
-        <div className="absolute inset-x-0 bottom-0 mx-auto max-w-5xl px-4 pb-6 lg:px-10">
-          <h1 className="font-display text-7xl font-black uppercase leading-[0.85] lg:text-8xl" data-testid="text-user-name">{p.name}</h1>
-          <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground"><MapPin size={14} />{p.city || "Şehir belirtilmemiş"}</div>
-        </div>
+      <div className="relative">
+        <ProfilePortrait key={p.id} person={p} />
+        <Link href="/" aria-label="Keşfet’e dön" data-testid="link-back" className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/70"><ArrowLeft size={18} /></Link>
       </div>
 
       <div className="mx-auto max-w-5xl space-y-10 px-4 lg:px-10">
@@ -66,15 +58,7 @@ function UserView({ pid }: { pid: string }) {
           <div className="rounded-md border border-primary/30 px-4 py-2.5"><span className="font-display text-2xl font-black text-primary" data-testid="text-user-common">{common.length}</span> <span className="text-sm text-muted-foreground">ortak film ve dizi</span></div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
-          <p className="text-lg leading-relaxed text-foreground/85">{p.bio || "Henüz kendinden bahsetmemiş."}</p>
-          {p.scene && (
-            <blockquote className="border-l-2 border-primary pl-4">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Unutamadığı sahne</div>
-              <p className="mt-2 flex gap-2 font-display text-2xl font-bold leading-tight"><Quote size={16} className="mt-1 shrink-0 text-primary" />{p.scene}</p>
-            </blockquote>
-          )}
-        </div>
+        <ProfileAbout person={p} />
 
         <section>
           <h2 className="mb-4 font-display text-3xl font-extrabold uppercase">Ortak <span className="text-primary">favoriler</span></h2>

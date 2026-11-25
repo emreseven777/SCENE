@@ -10,7 +10,9 @@ Bu güncelleme mevcut Supabase projesine eklenir. Supabase Free ve TMDB'nin tica
 
 ## 2. Mevcut veritabanını güncelle
 
-Supabase'de aynı projenin **SQL Editor → New query** ekranını aç. Bu dalda `supabase/migrations/0002_catalog_and_avatars.sql` dosyasını GitHub'da **Raw** görünümünde açıp tamamını kopyala. SQL Editor'a yapıştır ve **Run**'a dokun. Bu migration mevcut profillere ve favorilere iki isteğe bağlı alan ekler, ayrıca özel fotoğraf depolama alanını ve erişim kurallarını oluşturur. Yayındaki SCENE için yalnızca bu yeni migration gerekir.
+Supabase'de aynı projenin **SQL Editor → New query** ekranını aç. Bu dalda `supabase/migrations/0002_catalog_and_avatars.sql` dosyasını GitHub'da **Raw** görünümünde açıp tamamını kopyala. SQL Editor'a yapıştır ve **Run**'a dokun. Bu migration mevcut profillere ve favorilere iki isteğe bağlı alan ekler, ayrıca özel fotoğraf depolama alanını ve erişim kurallarını oluşturur. Bu dosya daha önce başarıyla çalıştırıldıysa tekrar çalıştırman gerekmez.
+
+Galerili sürümü hazırlarken, aynı SQL Editor'da `supabase/migrations/20261125043326_profile_photo_gallery.sql` dosyasını da çalıştır ve başarı mesajını bekle. Bu dosya mevcut fotoğrafı galerinin ilk sırasına taşır, yeni yükleme gerektirmez ve aynı özel depolama alanını kullanır. Galerili web sürümünü ancak bu iki migration ve katalog işlevi doğrulandıktan sonra yayımla.
 
 ## 3. Katalog işlevini yayımla
 
@@ -22,7 +24,7 @@ Supabase'de aynı projenin **SQL Editor → New query** ekranını aç. Bu dalda
 
 Mevcut web uygulamasını güncellenen GitHub dalıyla yeniden yayımla. Mevcut `VITE_SUPABASE_URL` ve `VITE_SUPABASE_ANON_KEY` değerlerin aynı kalır. Yeni bir yayın ortamı kuruyorsan Supabase'in **Connect** panelinden Project URL ve **publishable** ya da eski **anon** anahtarını kullan. Tarayıcıya yalnızca bu anahtar gider. Supabase secret veya service role anahtarı sunucu tarafında kalır.
 
-Safari'de uygulamayı açıp **Ara** ekranında örneğin **Kış Uykusu** ve **The Last of Us** ara. **Profil**'de bir galeri fotoğrafı seç, değiştir ve sil. İkinci bir hesapla yayımlanan fotoğrafın profil sayfasında göründüğünü ve silindikten sonra güncelleme ile kaybolduğunu kontrol et.
+Safari'de uygulamayı açıp **Ara** ekranında örneğin **Kış Uykusu** ve **The Last of Us** ara. **Profil**'de iki fotoğraf ekle, kırp, sırala ve ana fotoğrafı seç. **Profil önizleme** ekranında fotoğraflar arasında kaydır. Ardından bir fotoğrafı değiştir ve sil. İkinci bir hesapla yayımlanan fotoğrafın profil sayfasında göründüğünü ve silindikten sonra güncelleme ile kaybolduğunu kontrol et.
 
 ### Terminalden yayına alanlar için
 
