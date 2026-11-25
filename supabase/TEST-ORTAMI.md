@@ -22,8 +22,9 @@ supabase status
 7. `20261125053832_scene_web_push.sql`
 8. `20261125065647_scene_safety_and_moderation.sql`
 9. `20261125065800_scene_cinema_community.sql`
+10. `20261125071950_scene_rpc_hardening.sql`
 
-Sekizinci migration yeni profil ve eşleşme alanları ile yönetim altyapısını ekler. Dokuzuncu migration özel sohbet bucket’ına GIF biçimini ve yeni sinema tablolarını ekler. Var olan kayıtlar ve medya yolları korunur.
+Sekizinci migration yeni profil ve eşleşme alanları ile yönetim altyapısını ekler. Dokuzuncu migration özel sohbet bucket’ına GIF biçimini ve yeni sinema tablolarını ekler. Onuncu migration SQL işlev izinlerini ve arama yolunu sıkılaştırır. Var olan kayıtlar ve medya yolları korunur.
 
 ## Web uygulaması ve Edge Functions
 
@@ -69,3 +70,8 @@ SQL senaryosu geçici test kayıtlarını işlem sonunda geri alır. İzole Supa
 - Fiziksel iPhone Safari’de galeri, kamera, mikrofon, Ana Ekran kurulumu ve arka plan bildirimini dene. Arka plan bildirimi iOS 16.4 veya üstünde, ana ekrana yüklenmiş uygulamayı gerektirir.
 
 Doğrulama kuyruğu başvuruyu gösterir ve gerekçeli ret kararı alır. Gerçek kimlik kanıtı veya bağımsız doğrulama süreci tanımlanıncaya kadar olumlu karar ve rozet üretilmez.
+
+
+## Vercel önizleme yapılandırması
+
+`scene-artifacts` projesinin Root Directory alanı `artifacts/scene` olmalı. Bu dizindeki `vercel.json` derleme komutunu, `dist/public` çıktı dizinini ve doğrudan açılan uygulama rotaları için SPA yönlendirmesini tanımlar. Derleme için `PORT` ve `BASE_PATH` isteğe bağlıdır. Supabase URL ve açık anahtar değişkenlerini yalnızca test projesini kullanan Preview ortamına bağla.

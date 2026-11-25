@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Camera, ImagePlus, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { requireSupabase, turkishError } from "@/lib/supabase";
+import { downloadPrivateObject, turkishError } from "@/lib/supabase";
 import { CHAT_BUCKET, prepareChatPhoto } from "@/lib/chat-media";
 import { useToast } from "@/hooks/use-toast";
 import type { Msg } from "@/lib/store";
@@ -105,11 +105,7 @@ export function ChatAttachment({ message, blur }: { message: Msg; blur: boolean 
   const file = useQuery({
     queryKey: ["chat-media", message.mediaPath],
     enabled: !!message.mediaPath && !hidden,
-    queryFn: async () => {
-      const { data, error } = await requireSupabase().storage.from(CHAT_BUCKET).download(message.mediaPath!);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: ({ signal }) => downloadPrivateObject(CHAT_BUCKET, message.mediaPath!, signal),
     gcTime: 0, retry: false,
   });
   const url = useObjectUrl(file.data);

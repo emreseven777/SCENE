@@ -37,7 +37,7 @@ export async function uploadChatMedia(match: string, user: string, file: Blob, k
   const extension = kind === "photo" ? imageExtensions[mime] : audioExtensions[mime];
   if (!extension || !file.size || file.size > 8 * 1024 * 1024) throw new Error("Dosya biçimi desteklenmiyor veya 8 MB sınırı aşıldı.");
   const path = `${match}/${user}/${crypto.randomUUID()}.${extension}`;
-  const { error } = await requireSupabase().storage.from(CHAT_BUCKET).upload(path, file, { contentType: mime, cacheControl: "30" });
+  const { error } = await requireSupabase().storage.from(CHAT_BUCKET).upload(path, file, { contentType: mime, cacheControl: "0" });
   if (error) throw error;
   return path;
 }

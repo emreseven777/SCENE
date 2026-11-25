@@ -18,6 +18,23 @@ export function requireSupabase(): SupabaseClient {
   return supabase;
 }
 
+export async function downloadPrivateObject(bucket: string, path: string, signal: AbortSignal): Promise<Blob> {
+  const { data, error } = await requireSupabase().auth.getSession();
+  if (error) throw error;
+  if (!data.session || !url || !anonKey) throw new Error("Oturum açman gerekiyor.");
+  const objectKey = [bucket, ...path.split("/")].map(encodeURIComponent).join("/");
+  const endpoint = new URL(`${url.replace(/\/$/, "")}/storage/v1/object/authenticated/${objectKey}`);
+  // Vary the URL so an intermediary cannot replay a previous authorized download after a block.
+  endpoint.searchParams.set("request", crypto.randomUUID());
+  const response = await fetch(endpoint, {
+    cache: "no-store",
+    headers: { apikey: anonKey, Authorization: `Bearer ${data.session.access_token}` },
+    signal,
+  });
+  if (!response.ok) throw new Error("Dosyaya erişilemiyor.");
+  return response.blob();
+}
+
 const AUTH_ERRORS: Record<string, string> = {
   "Invalid login credentials": "E-posta veya şifre hatalı.",
   "Email not confirmed": "E-postanı henüz onaylamadın. Gelen kutundaki bağlantıya dokun.",
