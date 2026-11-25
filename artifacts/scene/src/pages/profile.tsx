@@ -88,7 +88,7 @@ export default function Profile() {
           <div key={l} className="bg-card p-4 text-center"><div className="font-display text-3xl font-bold text-brand-ink">{v}</div><div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{l}</div></div>
         ))}
       </div>
-      {best && best.c > 0 && <p className="mt-3 text-sm text-muted-foreground">En çok ortak noktan: <Link href={`/kullanici/${best.p.id}`} className="text-foreground underline decoration-primary underline-offset-4">{best.p.name}</Link> ({best.c} yapım)</p>}
+      {best && best.c > 0 && <p className="mt-3 text-sm text-muted-foreground">En çok ortak noktan: <Link href={`/kullanici/${best.p.id}`} className="text-foreground underline decoration-primary underline-offset-4 [overflow-wrap:anywhere]">{best.p.name}</Link> ({best.c} yapım)</p>}
 
       <section className="mt-10">
         <div className="mb-4 flex items-baseline justify-between">
@@ -109,7 +109,7 @@ export default function Profile() {
 
       <section className="scene-panel mt-8 p-5 sm:p-7">
         <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Hesap</div>
-        <div className="mt-2 flex items-center gap-2 text-sm text-foreground/80" data-testid="text-my-email"><Mail size={14} className="text-brand-ink" />{email}</div>
+        <div className="mt-2 flex items-center gap-2 text-sm text-foreground/80" data-testid="text-my-email"><Mail size={14} className="shrink-0 text-brand-ink" /><span className="min-w-0 [overflow-wrap:anywhere]">{email}</span></div>
         <p className="mt-1 text-xs text-muted-foreground">E-posta adresin yalnızca sana görünür.</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <DeleteAccount />

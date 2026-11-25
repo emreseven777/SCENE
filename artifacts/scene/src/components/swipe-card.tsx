@@ -49,7 +49,7 @@ export function SwipeCard({ children, next, labels, disabled, onSwipe }: {
     }
   };
   return (
-    <div className="relative mb-4 isolate" data-testid="swipe-deck">
+    <div className="relative isolate mb-4 min-w-0 overflow-x-clip" data-testid="swipe-deck">
       {next && <div className="pointer-events-none absolute inset-x-3 top-3 bottom-[-.65rem] -z-10 scale-[.97] overflow-hidden rounded-3xl border bg-muted opacity-65" aria-hidden="true">{next}</div>}
       <motion.div
         data-testid="swipe-card"

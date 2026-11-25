@@ -2,7 +2,7 @@ import type { Title } from "@/lib/catalog";
 import { useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { motion } from "framer-motion";
-import { Heart, RotateCcw, Star, X, Quote, Film, Sparkles } from "lucide-react";
+import { Heart, RotateCcw, Star, X, Film, Sparkles, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { useStore, type Person } from "@/lib/store";
 import { SwipeCard, type SwipeDirection } from "@/components/swipe-card";
 import { cinemaFit, GENDERS, GOALS, profileCinemaSignals, profileGenres, selectedTrait } from "@/lib/dating";
@@ -15,6 +15,44 @@ import { Button } from "@/components/ui/button";
 import { MatchOverlay } from "@/components/match-overlay";
 import { TitleDetail } from "@/components/title-detail";
 
+function DiscoverPortrait({ person, score, common }: { person: Person; score: number | null; common: number }) {
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const photos = [...new Set([person.avatar_path, ...person.avatar_paths].filter((path): path is string => !!path))];
+  const active = Math.min(photoIndex, Math.max(0, photos.length - 1));
+
+  return <div className="relative aspect-[3/4] min-h-72 max-h-[34rem] overflow-hidden rounded-t-3xl bg-[#28131b]"
+    data-testid="discover-portrait">
+    <PersonPhoto contain id={person.id} name={person.name} avatarPath={photos[active] ?? null}
+      className="absolute inset-0 size-full" textClassName="text-8xl" />
+    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#20131a] via-transparent to-[#20131a]/35" />
+    <div className="absolute inset-x-3 top-3 flex min-w-0 flex-wrap items-center gap-2">
+      {photos.length > 1 && <div className="flex w-full gap-1" role="group" aria-label="Profil fotoğrafını seç">
+        {photos.map((path, index) => <button key={path} type="button" aria-label={`Fotoğraf ${index + 1}`} aria-pressed={active === index}
+          onClick={() => setPhotoIndex(index)} className="flex h-8 min-w-0 flex-1 items-center rounded-sm focus-visible:outline-white">
+          <span className={`h-1 w-full rounded-full ${active === index ? "bg-white" : "bg-white/45"}`} />
+        </button>)}
+      </div>}
+      <span className="flex max-w-full items-center gap-1.5 break-words rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-brand-ink">
+        <Sparkles size={14} className="shrink-0" />{score !== null && <span>%{score} uyum</span>}
+        <span><span data-testid="text-common-count">{common}</span> ortak favori</span>
+      </span>
+    </div>
+    {photos.length > 1 && <>
+      <button type="button" aria-label="Önceki fotoğraf" disabled={active === 0} onClick={() => setPhotoIndex(active - 1)}
+        className="absolute left-2 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/65 text-white disabled:invisible"><ChevronLeft /></button>
+      <button type="button" aria-label="Sonraki fotoğraf" disabled={active === photos.length - 1} onClick={() => setPhotoIndex(active + 1)}
+        className="absolute right-2 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/65 text-white disabled:invisible"><ChevronRight /></button>
+    </>}
+    <Link href={`/kullanici/${person.id}`} data-testid="link-current-profile"
+      className="absolute inset-x-0 bottom-0 block min-w-0 px-4 pb-4 pt-8 sm:px-5">
+      <ProfileIdentity person={person} size="text-[clamp(1.75rem,7vw,2.75rem)]" />
+      {(person.scene || person.bio) && <p className="mt-2 line-clamp-2 break-words text-sm text-white/90">{person.scene || person.bio}</p>}
+    </Link>
+  </div>;
+}
+
+const emptyFilters = { city: "", gender: "", goal: "", from: "", to: "", fit: "", heightFrom: "", heightTo: "", education: "", smoking: "", alcohol: "", relationship: "", children: "", sport: "", genre: "", interest: "", occupation: "" };
+
 export default function Discover() {
   const store = useStore();
   const movieMatch = new URLSearchParams(useSearch()).get("mod") === "movie-match";
@@ -23,7 +61,7 @@ export default function Discover() {
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [last, setLast] = useState<{ id: string; direction: SwipeDirection } | null>(null);
   const [visibleCount, setVisibleCount] = useState(24);
-  const [filter, setFilter] = useState({ city: "", gender: "", goal: "", from: "", to: "", fit: "", heightFrom: "", heightTo: "", education: "", smoking: "", alcohol: "", relationship: "", children: "", sport: "", genre: "", interest: "", occupation: "" });
+  const [filter, setFilter] = useState(emptyFilters);
 
   const allows = (preference: string | null | undefined, gender: string | null) =>
     !preference || preference === "everyone" || (preference === "women" && gender === "woman") || (preference === "men" && gender === "man");
@@ -63,9 +101,13 @@ export default function Discover() {
   );
   const current = deck[0];
   const calendarDay = new Intl.DateTimeFormat("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric" }).format();
-  const eligible = movieMatch ? [] : deck.filter((item) => (item.score ?? 0) > 0).slice(0, 9);
+  const eligible = movieMatch ? [] : deck.slice(1).filter((item) => (item.score ?? 0) > 0).slice(0, 9);
   const daily = Array.from({ length: Math.min(3, eligible.length) },
     (_, index) => eligible[(Number(calendarDay) * 3 + index) % eligible.length]);
+  const dailyIds = new Set(daily.map(({ p }) => p.id));
+  const members = cast.filter(({ id }) => id !== current?.p.id && !dailyIds.has(id)
+    && (!store.passed.includes(id) || !!store.matches[id]));
+  const activeFilters = Object.values(filter).filter(Boolean).length;
   const [busy, setBusy] = useState(false);
 
   const swipe = async (p: Person, direction: SwipeDirection) => {
@@ -95,85 +137,67 @@ export default function Discover() {
   };
 
   return (
-    <div className="scene-page">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="scene-title">{movieMatch ? "Movie Match" : "Keşfet"}</h1>
-          <p className="mt-2 max-w-md text-sm text-muted-foreground">Seninle aynı filmleri ve dizileri seven insanlarla tanış.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="secondary"><Link href={movieMatch ? "/" : "/?mod=movie-match"}><Sparkles />{movieMatch ? "Keşfet’e dön" : "Movie Match"}</Link></Button>
-          <Button asChild variant="secondary"><Link href="/arama"><Film />Favori yapımlarını ekle</Link></Button>
+    <div className="scene-page min-w-0 space-y-3 pt-3 sm:space-y-4">
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="scene-title text-[clamp(2rem,7vw,3rem)]">{movieMatch ? "Movie Match" : "Keşfet"}</h1>
+        <div className="flex min-w-0 flex-wrap gap-1.5">
+          <Button asChild variant="secondary" size="sm"><Link href={movieMatch ? "/" : "/?mod=movie-match"}><Sparkles />{movieMatch ? "Keşfet’e dön" : "Movie Match"}</Link></Button>
+          <Button asChild variant="ghost" size="icon"><Link href="/arama" aria-label="Favori yapımlarını ekle"><Film /></Link></Button>
         </div>
       </header>
 
-      {daily.length > 0 && <section className="scene-panel mb-5 p-4">
-        <h2 className="mb-2 font-semibold">Bugünkü önerilerin</h2>
-        <ul className="flex flex-wrap gap-2">{daily.map(({ p, score }) => <li key={p.id}>
-          <Button asChild variant="secondary" size="sm"><Link href={`/kullanici/${p.id}`}>{p.name} · %{score}</Link></Button>
-        </li>)}</ul>
-      </section>}
-      <details className="scene-panel mb-5 p-4">
-        <summary className="cursor-pointer font-semibold">Keşfet filtreleri</summary>
-        <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+      <details className="scene-panel group min-w-0 px-3 py-2 sm:px-4">
+        <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 font-semibold [&::-webkit-details-marker]:hidden">
+          <SlidersHorizontal size={16} /> Keşfet filtreleri
+          {activeFilters > 0 && <span className="rounded-full bg-secondary px-2 text-xs text-brand-ink">{activeFilters}</span>}
+          <ChevronDown size={17} className="ml-auto transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="mt-2 grid grid-cols-2 gap-2 pb-2 text-sm sm:grid-cols-3">
           {([
             ["city", "İl", Object.fromEntries(PROVINCES.map((name) => [name, name]))],
             ["gender", "Cinsiyet", GENDERS], ["goal", "Tanışma amacı", GOALS],
-          ] as const).map(([key, label, options]) => <label key={key}>{label}<select className="mt-1 w-full rounded-lg border bg-card p-2" value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}><option value="">Tümü</option>{Object.entries(options).map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>)}
-          {([["from", "En düşük yaş", 18], ["to", "En yüksek yaş", 18], ["fit", "En düşük uyum (%)", 0]] as const).map(([key, label, min]) => <label key={key}>{label}<input className="mt-1 w-full rounded-lg border bg-card p-2" type="number" min={min} max={key === "fit" ? 100 : undefined} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} /></label>)}
+          ] as const).map(([key, label, options]) => <label className="min-w-0" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm" value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}><option value="">Tümü</option>{Object.entries(options).map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>)}
+          {([["from", "En düşük yaş", 18], ["to", "En yüksek yaş", 18], ["fit", "En düşük uyum (%)", 0]] as const).map(([key, label, min]) => <label className="min-w-0" key={key}>{label}<input className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm" type="number" min={min} max={key === "fit" ? 100 : undefined} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} /></label>)}
           {([
             ["education","Eğitim",CHOICES.education], ["smoking","Sigara",CHOICES.smoking], ["alcohol","Alkol",CHOICES.alcohol],
             ["relationship","İlişki beklentisi",CHOICES.relationship], ["children","Çocuk",CHOICES.children], ["sport","Spor",CHOICES.sport],
             ["genre","Favori tür",Object.fromEntries(GENRES.map((genre) => [genre,genre]))],
             ["interest","İlgi alanı",Object.fromEntries(INTERESTS.map((name) => [name,name]))],
             ["occupation","Meslek",Object.fromEntries(OCCUPATIONS.map((name) => [name,name]))],
-          ] as const).map(([key,label,options]) => <label key={key}>{label}<select className="mt-1 w-full rounded-lg border bg-card p-2"
+          ] as const).map(([key,label,options]) => <label className="min-w-0" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm"
             aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
             <option value="">Tümü</option>{Object.entries(options).map(([value,name]) => <option key={value} value={value}>{name}</option>)}
           </select></label>)}
-          {([["heightFrom","En kısa boy"],["heightTo","En uzun boy"]] as const).map(([key,label]) => <label key={key}>{label}<select className="mt-1 w-full rounded-lg border bg-card p-2"
+          {([["heightFrom","En kısa boy"],["heightTo","En uzun boy"]] as const).map(([key,label]) => <label className="min-w-0" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm"
             aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
             <option value="">Tümü</option>{Array.from({ length:111 },(_,i) => i+130).map((height) => <option key={height} value={height}>{height} cm</option>)}
           </select></label>)}
         </div>
+        {activeFilters > 0 && <Button size="sm" variant="ghost" onClick={() => setFilter(emptyFilters)}>Filtreleri temizle</Button>}
       </details>
-      {last && !store.matches[last.id] && <Button className="mb-4" variant="secondary" disabled={busy} onClick={() => void undo()}><RotateCcw /> Son kaydırmayı geri al</Button>}
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,440px)_1fr]">
-        <div className="relative">
+      {last && !store.matches[last.id] && <Button size="sm" variant="secondary" disabled={busy} onClick={() => void undo()}><RotateCcw /> Son kaydırmayı geri al</Button>}
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+        <div className="relative mx-auto w-full min-w-0 max-w-[28rem] lg:max-w-none">
           {current ? (
-              <article className="scene-panel relative" data-testid={`card-person-${current.p.id}`}>
+              <article className="scene-panel relative min-w-0" data-testid={`card-person-${current.p.id}`}>
                 <SwipeCard key={current.p.id} disabled={busy} labels={{ left: "Geç", right: "Beğen", up: "Süper beğeni" }}
                   onSwipe={(direction) => swipe(current.p, direction)} next={deck[1] && <PersonPhoto id={deck[1].p.id} name={deck[1].p.name} avatarPath={deck[1].p.avatar_path} className="h-full" />}>
-                <Link href={`/kullanici/${current.p.id}`} className="block overflow-hidden rounded-t-3xl" data-testid="link-current-profile">
-                  <div className="relative h-[clamp(15rem,49dvh,25rem)] sm:aspect-square sm:h-auto lg:aspect-[5/6]">
-                    <PersonPhoto id={current.p.id} name={current.p.name} avatarPath={current.p.avatar_path} className="h-full w-full" textClassName="text-[9rem] leading-none" />
-                    <div className="vignette absolute inset-0" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#201d29]/95 via-[#201d29]/20 to-transparent" />
-                    <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-card px-3 py-2 text-xs font-semibold text-brand-ink shadow-sm">
-                      <Sparkles size={15} />{current.score !== null && <span>%{current.score} uyum · </span>}<span data-testid="text-common-count">{current.c.length}</span> ortak favori
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 p-5">
-                      <ProfileIdentity person={current.p} />
-                      {(current.p.scene || current.p.bio) && <p className="mt-3 line-clamp-3 flex gap-2 text-sm text-white/90"><Quote size={14} className="mt-0.5 shrink-0 text-peach" />{current.p.scene || current.p.bio}</p>}
-                    </div>
-                  </div>
-                </Link>
+                  <DiscoverPortrait key={current.p.id} person={current.p} score={current.score} common={current.c.length} />
                 </SwipeCard>
-                <div className="p-4 sm:p-5">
-                  <div className="mb-4 flex items-center justify-center gap-2 sm:gap-4">
-                    <button onClick={() => void swipe(current.p, "left")} disabled={busy} aria-label="Geç" data-testid="button-pass" className="grid h-14 w-14 place-items-center rounded-full bg-muted ring-1 ring-border transition hover:bg-border active:scale-90"><X size={24} /></button>
-                    <motion.button whileTap={{ scale: 0.85 }} onClick={() => void swipe(current.p, "right")} disabled={busy} aria-label="Beğen" data-testid="button-like" className="grid h-16 w-16 place-items-center rounded-full scene-gradient text-primary-foreground shadow-[0_10px_22px_#ff536d55]"><Heart size={28} fill="currentColor" /></motion.button>
-                    <Button variant="secondary" size="icon" aria-label="Süper beğeni" disabled={busy} onClick={() => void swipe(current.p, "up")}><Star /></Button>
-                    <Link href={`/kullanici/${current.p.id}`} data-testid="link-view-profile" className="grid h-14 place-items-center rounded-full bg-muted px-5 text-sm ring-1 ring-border hover:bg-border">Profil</Link>
+                <div className="min-w-0 px-3 pb-3 sm:px-4">
+                  <div className="mb-3 flex items-center justify-center gap-3 sm:gap-5">
+                    <button type="button" onClick={() => void swipe(current.p, "left")} disabled={busy} aria-label="Geç" data-testid="button-pass" className="grid size-16 shrink-0 place-items-center rounded-full border bg-card text-brand-ink transition hover:bg-secondary active:scale-95 disabled:opacity-50"><X size={30} /></button>
+                    <motion.button type="button" whileTap={{ scale: 0.85 }} onClick={() => void swipe(current.p, "right")} disabled={busy} aria-label="Beğen" data-testid="button-like" className="scene-gradient grid size-[4.5rem] shrink-0 place-items-center rounded-full text-primary-foreground shadow-md disabled:opacity-50"><Heart size={32} fill="currentColor" /></motion.button>
+                    <button type="button" onClick={() => void swipe(current.p, "up")} disabled={busy} aria-label="Süper beğeni" className="grid size-16 shrink-0 place-items-center rounded-full border bg-secondary text-brand-ink transition hover:bg-muted active:scale-95 disabled:opacity-50"><Star size={28} /></button>
                   </div>
                   <div className="mb-2 text-xs font-semibold text-muted-foreground">{current.c.length ? "Ortak favoriler" : "Henüz ortak favori yok"}</div>
-                  <div className="flex gap-2 overflow-x-auto scrollbar-none">
-                    {(current.c.length ? current.c : current.p.favorites).map((id) => {
+                  <div data-testid="common-posters" aria-label="Ortak film ve dizi afişleri" role="region" tabIndex={0} className="flex w-full min-w-0 max-w-full snap-x gap-2 overflow-x-auto overscroll-x-contain px-1 py-1 scrollbar-none">
+                    {[...new Set(current.c)].map((id) => {
                       const t = store.titleById(id, current.p.id); if (!t) return null;
                       return (
-                        <button key={id} onClick={() => setSelectedTitle(t)} data-testid={`button-title-${id}`} className={`relative h-24 w-16 shrink-0 overflow-hidden rounded-lg ${current.c.includes(id) ? "ring-2 ring-primary" : "opacity-50"}`}>
+                        <button key={id} onClick={() => setSelectedTitle(t)} data-testid={`button-title-${id}`} className={`relative h-24 w-16 shrink-0 snap-start overflow-hidden rounded-lg ${current.c.includes(id) ? "ring-2 ring-primary" : "opacity-50"}`}>
                           {t.poster ? (
-                            <img src={t.poster} alt={t.title} className="h-full w-full object-cover" />
+                            <img src={t.poster} alt={t.title} loading="lazy" className="h-full w-full object-cover" />
                           ) : (
                             <span className="line-clamp-4 px-1 text-xs font-semibold">{t.title}</span>
                           )}
@@ -185,7 +209,7 @@ export default function Discover() {
                 </div>
               </article>
             ) : (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="scene-panel grid min-h-72 place-items-center p-8 text-center">
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="scene-panel grid min-h-52 place-items-center p-5 text-center">
                 <div>
                   <Sparkles className="mx-auto mb-3 text-brand-ink" /><h2 className="font-display text-2xl font-bold">Şimdilik bu kadar</h2>
                   <p className="mt-3 text-sm text-muted-foreground">{cast.length === 0 ? "Henüz keşfedebileceğin bir profil yok." : "Şimdilik herkesi gördün. Yeni kullanıcılar kayıt oldukça burada görünecek."}</p>
@@ -196,14 +220,21 @@ export default function Discover() {
           {deck.length > 1 && <div className="mt-3 text-center font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Sırada {deck.length - 1} kişi daha</div>}
         </div>
 
-        <section>
+        <div className="min-w-0 space-y-4">
+          {daily.length > 0 && <section className="scene-panel min-w-0 p-3">
+            <h2 className="mb-2 font-semibold">Bugünkü önerilerin</h2>
+            <ul className="flex min-w-0 flex-wrap gap-2">{daily.map(({ p, score }) => <li className="min-w-0 max-w-full" key={p.id}>
+              <Link className="block rounded-full bg-secondary px-3 py-2 text-sm font-semibold text-brand-ink [overflow-wrap:anywhere]" href={`/kullanici/${p.id}`}>{p.name} · %{score}</Link>
+            </li>)}</ul>
+          </section>}
+        <section className="min-w-0">
           <div className="mb-3 flex items-baseline justify-between">
             <h3 className="font-display text-2xl font-bold tracking-tight">SCENE üyeleri</h3>
-            <span className="font-mono text-[11px] text-muted-foreground">{cast.length} kişi</span>
+            <span className="font-mono text-[11px] text-muted-foreground">{members.length} kişi</span>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {cast.length === 0 && <p className="col-span-full rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Kadro henüz boş. İlk kullanıcılardan birisin.</p>}
-            {cast.slice(0, visibleCount).map((p, i) => {
+            {members.length === 0 && <p className="col-span-full rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Bu bölümde başka profil yok.</p>}
+            {members.slice(0, visibleCount).map((p, i) => {
               const c = p.favorites.filter((id) => mine.includes(id)).length;
               const status = store.matches[p.id] ? "Eşleşme" : store.liked.includes(p.id) ? "Beğendin" : null;
               return (
@@ -213,7 +244,7 @@ export default function Discover() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
                     {status && <span className="absolute left-2 top-2 rounded-sm bg-card px-2 py-1 text-[10px] font-semibold text-brand-ink">{status}</span>}
                     <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
-                      <div>
+                      <div className="min-w-0">
                         <ProfileIdentity person={p} as="div" size="text-xl sm:text-2xl" />
                       </div>
                       <div className="text-right"><div className="font-display text-2xl font-bold leading-none text-peach">{c}</div><div className="text-[9px] text-white">ortak</div></div>
@@ -223,8 +254,9 @@ export default function Discover() {
               );
             })}
           </div>
-          {visibleCount < cast.length && <Button className="mt-4" variant="secondary" onClick={() => setVisibleCount((count) => count + 24)}>Daha fazla profil göster</Button>}
+          {visibleCount < members.length && <Button className="mt-4" variant="secondary" onClick={() => setVisibleCount((count) => count + 24)}>Daha fazla profil göster</Button>}
         </section>
+        </div>
       </div>
 
       <MatchOverlay pid={matchPid} onClose={() => setMatchPid(null)} />
