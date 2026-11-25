@@ -55,7 +55,7 @@ export function PhotoCropDialog({ file, onClose, onSave }: {
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
-      <DialogContent className="max-h-[90dvh] w-[calc(100%_-_2rem)] overflow-y-auto rounded-xl border-white/10 bg-card p-4 sm:p-6">
+      <DialogContent className="max-h-[90dvh] w-[calc(100%_-_2rem)] overflow-y-auto rounded-xl border-border bg-card p-4 sm:p-6">
         <DialogTitle>Fotoğrafı kırp</DialogTitle>
         <DialogDescription>Kaydırıcılarla kadrajı ayarla. Fotoğraf burada gördüğün gibi kaydolur.</DialogDescription>
         <canvas ref={canvas} width={512} height={512} aria-label="Kırpma önizlemesi" className="mx-auto aspect-square w-full max-w-[min(100%,40dvh,19rem)] rounded-lg bg-black" />
@@ -74,7 +74,7 @@ export function PhotoCropDialog({ file, onClose, onSave }: {
             ))}
           </div>
         )}
-        {error && <p role="alert" className="text-sm text-primary">{error}</p>}
+        {error && <p role="alert" className="text-sm text-brand-ink">{error}</p>}
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose} disabled={busy}>Vazgeç</Button>
           <Button onClick={() => void save()} disabled={!image || busy}>{busy ? "Kaydediliyor…" : "Kırp ve kaydet"}</Button>

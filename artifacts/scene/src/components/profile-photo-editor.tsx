@@ -62,9 +62,9 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
   };
 
   return (
-    <section aria-labelledby="profile-photos-heading" className="mt-8 rounded-xl border border-white/10 bg-card p-4">
+    <section aria-labelledby="profile-photos-heading" className="scene-panel mt-6 p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="profile-photos-heading" className="font-display text-2xl font-bold uppercase">Fotoğraflar <span className="text-base text-muted-foreground">{paths.length}/{MAX_PROFILE_PHOTOS}</span></h2>
+        <h2 id="profile-photos-heading" className="font-display text-2xl font-extrabold tracking-tight">Fotoğraflar <span className="text-base text-muted-foreground">{paths.length}/{MAX_PROFILE_PHOTOS}</span></h2>
         <Button variant="secondary" onClick={() => setPreview(true)}><Eye size={16} />Profil önizleme</Button>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">İlk fotoğraf profil kartında görünür. Oklarla sıralamayı değiştirebilirsin.</p>
@@ -81,8 +81,8 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
       {paths.length > 0 && (
         <ol className="mt-4 grid gap-2 md:grid-cols-2">
           {paths.map((path, index) => (
-            <li key={path} className="flex items-center gap-2 rounded-lg border border-white/10 p-2">
-              <PersonPhoto id={person.id} name={person.name} avatarPath={path} className="size-16 shrink-0 rounded-md" />
+            <li key={path} className="flex items-center gap-2 rounded-2xl border border-border bg-background p-2">
+              <PersonPhoto id={person.id} name={person.name} avatarPath={path} className="size-16 shrink-0 rounded-xl" />
               <div className="min-w-0 flex-1">
                 <div className="px-1 text-sm font-semibold">{index === 0 ? "Ana fotoğraf" : `Fotoğraf ${index + 1}`}</div>
                 <div className="flex flex-wrap items-center">
@@ -93,7 +93,7 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
                   <Button variant="ghost" className="px-2 text-xs" disabled={busy} aria-label={`${index + 1}. fotoğrafı değiştir`} onClick={() => pick(index)}>Değiştir</Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild><Button variant="ghost" className="px-2 text-xs" aria-label={`${index + 1}. fotoğrafı sil`} disabled={busy}>Sil</Button></AlertDialogTrigger>
-                    <AlertDialogContent className="w-[calc(100%_-_2rem)] rounded-xl border-white/10 bg-card">
+                    <AlertDialogContent className="w-[calc(100%_-_2rem)] rounded-xl border-border bg-card">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Fotoğraf silinsin mi?</AlertDialogTitle>
                         <AlertDialogDescription>Fotoğraf profil galerinden kaldırılır.</AlertDialogDescription>
@@ -119,7 +119,7 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
         }} />
       )}
       <Dialog open={preview} onOpenChange={setPreview}>
-        <DialogContent className="max-h-[90dvh] w-[calc(100%_-_2rem)] overflow-y-auto rounded-xl border-white/10 bg-card p-0">
+        <DialogContent className="max-h-[90dvh] w-[calc(100%_-_2rem)] overflow-y-auto rounded-xl border-border bg-card p-0">
           <div className="px-4 pb-2 pt-4">
             <DialogTitle>Profil önizleme</DialogTitle>
             <DialogDescription>Profilinin diğer üyelere nasıl göründüğüne bak.</DialogDescription>
