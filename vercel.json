@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": { "deploymentEnabled": { "feat/scene-8-3-kvkk": false } },
   "routes": [
     { "handle": "filesystem" },
     { "src": "/(giris|kayit|sifremi-unuttum|sifre-yenile|profil|eslesmeler|begeniler|arama|sinema|mesajlar|kullanici|bildirimler|yonetim|kurallar)(/.*)?", "dest": "/index.html" }
