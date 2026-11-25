@@ -228,7 +228,7 @@ export default function Discover() {
           </section>}
         <section className="min-w-0">
           <div className="mb-3 flex items-baseline justify-between">
-            <h3 className="font-display text-2xl font-bold tracking-tight">SCENE üyeleri</h3>
+            <h3 className="font-display text-2xl font-bold tracking-tight">Movia üyeleri</h3>
             <span className="font-mono text-[11px] text-muted-foreground">{members.length} kişi</span>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

@@ -23,7 +23,7 @@ export function CompleteIdentity({ person }: { person: Person }) {
       <form className="scene-panel w-full space-y-5 p-5 sm:p-8" onSubmit={async (event) => {
         event.preventDefault();
         if (!isProvince(province) || (needsBirthDate && (!birthDate || birthDate > latest))) {
-          setError("Geçerli bir il seç. SCENE’i kullanmak için en az 18 yaşında olmalısın.");
+          setError("Geçerli bir il seç. Movia’yı kullanmak için en az 18 yaşında olmalısın.");
           return;
         }
         setError("");
@@ -37,7 +37,7 @@ export function CompleteIdentity({ person }: { person: Person }) {
         }
       }}>
         <h1 className="scene-title">Profilini tamamla</h1>
-        <p className="text-sm text-muted-foreground">SCENE 18 yaş ve üzeri üyeler içindir. Profilinde yaşın ve seçtiğin il görünür. Doğum tarihin gizli kalır.</p>
+        <p className="text-sm text-muted-foreground">Movia 18 yaş ve üzeri üyeler içindir. Profilinde yaşın ve seçtiğin il görünür. Doğum tarihin gizli kalır.</p>
         {needsBirthDate && (
           <div className="space-y-1.5">
             <Label htmlFor="birth-date">Doğum tarihi</Label>

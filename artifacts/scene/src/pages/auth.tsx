@@ -4,8 +4,9 @@ import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
-import { CinemaCollage, SceneBrand, ThemeToggle } from "@/components/scene-brand";
+import { CinemaCollage, MoviaMark, SceneBrand, ThemeToggle } from "@/components/scene-brand";
 import { latestAdultBirthDate } from "@/lib/provinces";
+import { brand } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
 import { turkishError } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -52,9 +53,12 @@ export function WelcomePage() {
 return <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-col px-6 text-center">
 <div className="flex justify-end pt-[max(1rem,env(safe-area-inset-top))]"><ThemeToggle /></div>
 <div className="my-auto flex flex-col items-center py-8">
-<div className="flex flex-col items-center gap-3"><div aria-hidden="true" className="relative flex h-36 w-56 items-center justify-center"><div className="absolute inset-0 rounded-full bg-[#e9b9a5]/30 blur-2xl"/><div className="relative -rotate-12 rounded-xl border border-[#d5b57c] bg-[#fff8e9] p-3 shadow-lg"><div className="grid h-20 w-14 place-items-center rounded-lg bg-gradient-to-br from-[#b52d50] to-[#690b27] text-4xl text-[#ffe5bd]">♥</div><div className="mt-2 text-[9px] font-bold tracking-widest text-[#790e25]">ADMIT ONE</div></div><div className="relative -ml-3 rotate-12 rounded-xl border border-[#d5b57c] bg-[#fff8e9] p-3 shadow-lg"><div className="grid h-20 w-14 place-items-center rounded-lg bg-gradient-to-br from-[#e7b978] to-[#b67b39] text-4xl text-[#790e25]">♥</div><div className="mt-2 text-[9px] font-bold tracking-widest text-[#790e25]">ADMIT ONE</div></div><span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full border border-[#e7c58d] bg-[#810e28] px-4 py-1 text-[10px] font-bold tracking-widest text-white shadow-md">IT'S A MATCH!</span></div><span className="font-serif text-[clamp(3rem,13vw,4.8rem)] font-bold leading-none tracking-[.04em] text-[#790e25]">SCENE</span></div>
+<div className="flex flex-col items-center gap-3">
+<MoviaMark className="size-28 rounded-[2rem] shadow-xl" />
+<span className="font-serif text-[clamp(3rem,13vw,4.8rem)] font-bold leading-none tracking-[.04em] text-[#790e25]">{brand.name}</span>
+</div>
 <p className="mt-6 text-xs font-semibold uppercase tracking-[.24em] text-[#a47a40]">Sinema • Arkadaşlık • Flört</p>
-<h1 className="mt-4 font-serif text-[clamp(2rem,8vw,3rem)] font-bold leading-tight text-[#790e25]">Her aşk bir<br/>sahneyle başlar.</h1>
+<h1 className="mt-4 font-serif text-[clamp(2rem,8vw,3rem)] font-bold leading-tight text-[#790e25]">{brand.slogan}</h1>
 <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#653a36]">Favori filmlerini paylaş. Seninle aynı hikâyeleri seven insanlarla tanış.</p>
 <div className="mt-8 w-full rounded-2xl border border-[#d5b57c] bg-[#fffaf0] p-5 shadow-sm">
 <div className="text-3xl text-[#810e28]">♡</div>
@@ -70,7 +74,7 @@ return <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-
 </main>;
 }
 
-function Frame({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+export function Frame({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-7">
       <AuthHeader />
@@ -109,6 +113,7 @@ export function LoginPage() {
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5"><Label htmlFor="email">E-posta</Label><Input id="email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 text-base" data-testid="input-login-email" /></div>
         <div className="space-y-1.5"><Label htmlFor="password">Şifre</Label><Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 text-base" data-testid="input-login-password" /></div>
+        <Link href="/sifremi-unuttum" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-ink underline">Şifremi unuttum</Link>
         {error && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm" data-testid="text-login-error">{error}</p>}
         <Button type="submit" disabled={busy} className="h-12 w-full text-base" data-testid="button-login">{busy ? <Loader2 className="animate-spin" size={18} /> : "Giriş yap"}</Button>
       </form>
@@ -160,7 +165,7 @@ export function RegisterPage() {
   }
 
   return (
-    <Frame title="SCENE’e katıl" description="Favori filmlerini paylaş, ortak hikâyeleri keşfet.">
+    <Frame title="Movia’ya katıl" description="Favori filmlerini paylaş, ortak hikâyeleri keşfet.">
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5"><Label htmlFor="name">İsim</Label><Input id="name" autoComplete="given-name" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} className="h-12 text-base" data-testid="input-register-name" /></div>
         <div className="space-y-1.5"><Label htmlFor="r-email">E-posta</Label><Input id="r-email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 text-base" data-testid="input-register-email" /></div>
@@ -169,7 +174,7 @@ export function RegisterPage() {
           <Label htmlFor="register-birth-date">Doğum tarihi</Label>
           <Input id="register-birth-date" type="date" autoComplete="bday" required max={latest}
             value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-12 text-base" />
-          <p className="text-xs text-muted-foreground">SCENE 18 yaş ve üzeri içindir. Profilde yalnızca yaşın gösterilir.</p>
+          <p className="text-xs text-muted-foreground">Movia 18 yaş ve üzeri içindir. Profilde yalnızca yaşın gösterilir.</p>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-brand-ink">
           <Link className="underline" href="/kurallar?belge=aydinlatma" target="_blank" rel="noopener">KVKK Aydınlatma Metni</Link>

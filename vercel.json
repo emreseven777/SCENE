@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "routes": [
     { "handle": "filesystem" },
-    { "src": "/(giris|kayit|profil|eslesmeler|begeniler|arama|sinema|mesajlar|kullanici|bildirimler|yonetim|kurallar)(/.*)?", "dest": "/index.html" }
+    { "src": "/(giris|kayit|sifremi-unuttum|sifre-yenile|profil|eslesmeler|begeniler|arama|sinema|mesajlar|kullanici|bildirimler|yonetim|kurallar)(/.*)?", "dest": "/index.html" }
   ]
 }

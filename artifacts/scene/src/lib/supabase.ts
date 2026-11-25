@@ -53,3 +53,16 @@ export function turkishError(e: unknown): string {
   if (/relation .* does not exist|schema cache/i.test(msg)) return "Veritabanı henüz hazır değil. Kurulum tamamlanınca tekrar dene.";
   return msg || "Bir şeyler ters gitti.";
 }
+
+export function createRecoveryClient(): SupabaseClient {
+  if (!url || !anonKey) throw new Error("Supabase yapılandırılmadı.");
+  // Keep the recovery session separate from any normal signed-in browser session.
+  return createClient(url, anonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: "movia-recovery",
+    },
+  });
+}

@@ -12,6 +12,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 
 const basePath = process.env.BASE_PATH || '/';
+process.env.VITE_MOVIA_LEGACY_REDIRECT = process.env.VITE_MOVIA_LEGACY_REDIRECT === 'true' ? 'true' : 'false';
 
 export default defineConfig({
   base: basePath,

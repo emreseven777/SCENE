@@ -78,7 +78,7 @@ export function PrivacySettings({ user, photos }: { user: string; photos: readon
         <Button variant="secondary" disabled={busy} onClick={() => void run(async () => {
           const { data, error } = await requireSupabase().rpc("scene_privacy_export");
           if (error) throw error;
-          saveFile(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), "scene-kisisel-veriler.json");
+          saveFile(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), "movia-kisisel-veriler.json");
           const chat = (data.sent_messages as { media_path?: string | null }[])
             .flatMap(({ media_path }) => media_path ? [{ path: media_path, bucket: "scene-chat" }] : []);
           setMedia([...photos.map((path) => ({ path, bucket: "scene-avatars" })), ...chat]);
@@ -87,7 +87,7 @@ export function PrivacySettings({ user, photos }: { user: string; photos: readon
         {media.length > 0 && <ul className="space-y-1">{media.map(({ path, bucket }, index) =>
           <li key={`${bucket}/${path}`}><Button size="sm" variant="ghost" disabled={busy} onClick={() => void run(async () => {
             const file = await downloadPrivateObject(bucket, path, AbortSignal.timeout(30_000));
-            saveFile(file, path.split("/").at(-1) ?? "scene-medya");
+            saveFile(file, path.split("/").at(-1) ?? "movia-medya");
           })}>{bucket === "scene-avatars" ? "Profil fotoğrafı" : "Sohbet eki"} {index + 1} · İndir</Button></li>
         )}</ul>}
       </div>

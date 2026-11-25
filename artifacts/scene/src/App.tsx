@@ -22,6 +22,8 @@ import Notifications from '@/pages/notifications';
 import { DatingFields } from '@/components/dating-profile';
 import { LoginPage, RegisterPage, WelcomePage } from '@/pages/auth';
 
+const ForgotPassword = lazy(() => import("@/pages/password-recovery").then((module) => ({ default: module.ForgotPassword })));
+const ResetPassword = lazy(() => import("@/pages/password-recovery").then((module) => ({ default: module.ResetPassword })));
 const Chat = lazy(() => import('@/pages/messages').then((module) => ({ default: module.Chat })));
 const MessagesIndex = lazy(() => import('@/pages/messages').then((module) => ({ default: module.MessagesIndex })));
 const CinemaActivities = lazy(() => import('@/pages/cinema-activities'));
@@ -118,6 +120,8 @@ function Router() {
       </FullScreen>
     );
   }
+  if (location === '/sifremi-unuttum') return <Suspense fallback={<Loading />}><ForgotPassword /></Suspense>;
+  if (location === '/sifre-yenile') return <Suspense fallback={<Loading />}><ResetPassword /></Suspense>;
   if (loading) return <Loading />;
   if (!session) {
     return (

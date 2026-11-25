@@ -12,10 +12,10 @@ export default function Legal() {
 
   return <main className="scene-page mx-auto max-w-3xl space-y-5 pb-8">
     <nav className="flex flex-wrap gap-4 text-sm text-brand-ink underline" aria-label="Hukuki sayfalar">
-      <Link href="/">SCENE ana sayfa</Link>
+      <Link href="/">Movia ana sayfa</Link>
       {selected && <Link href="/kurallar">Tüm belgeler</Link>}
     </nav>
-    <h1 className="scene-title">{document?.title ?? "SCENE hukuki belgeleri"}</h1>
+    <h1 className="scene-title">{document?.title ?? "Movia hukuki belgeleri"}</h1>
     <p role="note" className="scene-panel border-primary/30 p-4 text-sm">Uzman incelemesi bekleyen taslak · {LEGAL_VERSION}. Köşeli parantezli alanlar yayın öncesi doldurulacak.</p>
     {!document && <ul className="scene-panel divide-y">{legalDocuments.map((item) =>
       <li key={item.id}><Link href={`/kurallar?belge=${item.id}`} className="block p-4 font-semibold text-brand-ink underline">{item.title}</Link></li>)}</ul>}

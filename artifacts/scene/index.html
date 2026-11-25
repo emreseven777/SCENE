@@ -2,23 +2,31 @@
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      if ("%VITE_MOVIA_LEGACY_REDIRECT%" === "true" &&
+          location.origin === "https://joinscene.vercel.app" &&
+          location.pathname === "/" && !location.search && !location.hash) {
+        location.replace("https://joinmovia.vercel.app/");
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>SCENE — Seninle aynı sahnede.</title>
+    <title>Movia Dating | Bu kez aşkı sadece izleme.</title>
     <meta name="theme-color" content="#FFF7F3" />
-    <meta name="description" content="SCENE — aynı unutulmaz sahneyi sevenlerin buluştuğu film ve dizi sosyal alanı." />
+    <meta name="description" content="Movia Dating ile favori filmlerini paylaş ve seninle aynı hikâyeleri seven insanlarla tanış." />
     <meta name="robots" content="index, follow" />
-    <meta property="og:title" content="SCENE" />
-    <meta property="og:description" content="SCENE — aynı unutulmaz sahneyi sevenlerin buluştuğu film ve dizi sosyal alanı." />
+    <meta property="og:title" content="Movia Dating" />
+    <meta property="og:description" content="Movia Dating ile favori filmlerini paylaş ve seninle aynı hikâyeleri seven insanlarla tanış." />
+    <meta property="og:image" content="https://joinmovia.vercel.app/scene-icon-512.png" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://joinscene.vercel.app/" />
-    <link rel="canonical" href="https://joinscene.vercel.app/" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="SCENE" />
-    <meta name="twitter:description" content="SCENE — aynı unutulmaz sahneyi sevenlerin buluştuğu film ve dizi sosyal alanı." />
+    <meta property="og:url" content="https://joinmovia.vercel.app/" />
+    <link rel="canonical" href="https://joinmovia.vercel.app/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Movia Dating" />
+    <meta name="twitter:description" content="Movia Dating ile favori filmlerini paylaş ve seninle aynı hikâyeleri seven insanlarla tanış." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/scene.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="SCENE" />
+    <meta name="apple-mobile-web-app-title" content="Movia Dating" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="apple-touch-icon" href="/scene-icon-192.png" />
   </head>

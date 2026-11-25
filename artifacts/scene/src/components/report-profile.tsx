@@ -5,8 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 import { requireSupabase, turkishError } from "@/lib/supabase";
 
 export const reportCategories = {
-  impersonation: "Sahte profil veya kimliğe bürünme", spam: "Spam veya dolandırıcılık",
-  harassment: "Taciz veya tehdit", underage: "18 yaş altında olma şüphesi", other: "Diğer",
+  impersonation: "Sahte profil veya kimliğe bürünme",
+  harassment: "Taciz veya tehdit",
+  insult: "Hakaret",
+  inappropriate_photo: "Uygunsuz fotoğraf",
+  fraud: "Dolandırıcılık",
+  spam: "Spam",
+  underage: "18 yaş altında olma şüphesi",
+  other: "Diğer",
 } as const;
 
 export function ReportProfile({ person, message, onClose }: { person: string; message?: string; onClose: () => void }) {

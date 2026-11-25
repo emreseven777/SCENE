@@ -1,7 +1,7 @@
 self.addEventListener("push", (event) => {
   let tag = "scene-message";
   try { tag = event.data?.json()?.tag || tag; } catch {}
-  event.waitUntil(self.registration.showNotification("SCENE", {
+  event.waitUntil(self.registration.showNotification("Movia", {
     body: "Yeni bir mesajın var.",
     icon: new URL("scene-icon-192.png", self.registration.scope).href,
     tag,

@@ -1,3 +1,5 @@
+import { brand, dataController } from "./brand";
+
 export const LEGAL_VERSION = "8.3-draft.1";
 
 export const legalDocuments = [
@@ -5,7 +7,7 @@ export const legalDocuments = [
     id: "aydinlatma",
     title: "KVKK Aydınlatma Metni",
     sections: [
-      ["Veri sorumlusu", "SCENE’i işleten gerçek kişi [ad ve soyad]. Tebligat adresi [adres], başvuru e-postası [adres], varsa KEP [adres]. Bu alanlar yayından önce doldurulacaktır."],
+      ["Veri sorumlusu", `Veri sorumlusu ${dataController.name}, ${brand.name} hizmetini işleten ${dataController.operatorType}dir. İletişim e-postası ${dataController.contactEmail}. Web sitesi ${brand.website}. Tebligat adresi ve hesap dışı resmî başvuru kanalları yayın öncesi teyit edilecektir.`],
       ["Toplama yöntemi ve amaçlar", "Hesap ve profil bilgileri kayıt ve profil formlarından, içerik ve tercihler uygulama işlemlerinden, cihaz ve bağlantı bilgileri teknik kayıtlar üzerinden elektronik olarak toplanır. Hesap oluşturma, yaş sınırı, profil, eşleştirme, mesajlaşma, topluluk, güvenlik ve ilgili kişi başvuruları için işlenir."],
       ["İşleme sebepleri", "Üyelik ve hizmet için zorunlu veriler, sözleşmenin kurulması veya ifasıyla doğrudan bağlantılı olduğu ölçüde KVKK m.5/2(c) uyarınca değerlendirilir. Yasal yükümlülük ve ilgili kişi talepleri için m.5/2(ç), uyuşmazlık için m.5/2(e), güvenlik ve kötüye kullanım önleme için dengeleme testiyle m.5/2(f) değerlendirilir. İsteğe bağlı cihaz bildirimi için ayrı açık rıza öngörülür. Özel nitelikli olabilecek veriler için m.6 değerlendirmesi yayından önce tamamlanacaktır."],
       ["Alıcılar ve aktarım", "Görünür profil alanları seçtiğin ayarlara göre üyelere, özel mesajlar eşleştiğin üyeye, oda gönderileri oda üyelerine açılır. Barındırma, kimlik doğrulama, katalog, e-posta ve cihaz bildirimi için ilgili sağlayıcılar görevleriyle sınırlı veri alabilir. Yetkili makamlara kanuni yükümlülük kapsamında aktarım yapılabilir. Sağlayıcı, ülke ve KVKK m.9 dayanağı eşleştirmesi yayından önce tamamlanacaktır."],
@@ -26,7 +28,7 @@ export const legalDocuments = [
     id: "kosullar",
     title: "Kullanım Koşulları",
     sections: [
-      ["Hizmet ve üyelik", "İşletmeci [ad soyad ve iletişim]. SCENE 18 yaşını dolduran kişilere açık sinema temalı tanışma hizmetidir. Doğru bilgi ver, hesabını ve oturum bilgilerini koru. Eşleşme ve karşılıklı yanıt garantisi verilmez."],
+      ["Hizmet ve üyelik", `İşletmeci ${dataController.name}. İletişim e-postası ${dataController.contactEmail}. ${brand.name}, 18 yaşını dolduran kişilere açık sinema temalı tanışma hizmetidir. Doğru bilgi ver, hesabını ve oturum bilgilerini koru.`],
       ["İçerik ve önlemler", "Yalnızca paylaşmaya yetkili olduğun içeriği yükle. Hizmetin sunulması için içeriğin ilgili üyelere ve gerekli teknik hizmet sağlayıcılarına iletilmesi gerekir. Topluluk kuralları ihlalinde gerekçeye uygun içerik kaldırma, askıya alma ve hesap kısıtlaması uygulanabilir."],
       ["Sona erme ve haklar", "Profil üzerinden hesabı kapatabilirsin. Uygulanabilir zorunlu haklar saklıdır. Değişikliklerin duyuru şekli ve uyuşmazlık iletişim kanalı [yayın öncesi tamamlanacak]."],
     ],
@@ -35,7 +37,7 @@ export const legalDocuments = [
     id: "bildirim-rizasi",
     title: "Açık Rıza Metni · Cihaz bildirimleri",
     sections: [
-      ["İsteğe bağlı bildirim", "SCENE, yeni mesajlar için cihazına bildirim iletmek amacıyla tarayıcının bildirim aboneliğini, cihaz uç noktasını ve teslim için gereken teknik anahtarları işler. Bildirim sağlayıcısı abonelik isteğini ve asgari bildirim bilgisini alır. İşletim sistemi ve tarayıcı sağlayıcısı cihazına göre değişebilir."],
+      ["İsteğe bağlı bildirim", "Movia, yeni mesajlar için cihazına bildirim iletmek amacıyla tarayıcının bildirim aboneliğini, cihaz uç noktasını ve teslim için gereken teknik anahtarları işler. Bildirim sağlayıcısı abonelik isteğini ve asgari bildirim bilgisini alır. İşletim sistemi ve tarayıcı sağlayıcısı cihazına göre değişebilir."],
       ["Tercihini değiştirme", "Bu seçenek üyelik ve mesajlaşma için zorunlu değildir. Profil ayarlarından tüm cihazlar için rızanı geri çekebilirsin. Geri çekme, önceki işlemenin hukuka uygunluğunu etkilemez. Yurt dışı aktarımı için gerekli güvence ayrıca kurulmalıdır."],
     ],
   },
@@ -43,7 +45,7 @@ export const legalDocuments = [
     id: "cerezler",
     title: "Çerez Politikası",
     sections: [
-      ["SCENE tarayıcı depolaması", "Oturum bilgileri girişin devam etmesi, tema tercihi ise görünümün korunması için tarayıcının yerel depolamasında tutulur. Service worker çevrimdışı karşılama ve isteğe bağlı cihaz bildirimleri için kullanılabilir. Bunlar tarayıcı ayarlarından silinebilir."],
+      ["Movia tarayıcı depolaması", "Oturum bilgileri girişin devam etmesi, tema tercihi ise görünümün korunması için tarayıcının yerel depolamasında tutulur. Service worker çevrimdışı karşılama ve isteğe bağlı cihaz bildirimleri için kullanılabilir. Bunlar tarayıcı ayarlarından silinebilir."],
       ["Sağlayıcılar ve isteğe bağlı teknolojiler", "Uygulama kaynak kodunda reklam veya analiz çerezi entegrasyonu tespit edilmedi. Barındırma, güvenlik katmanı ve harici görsel sunucuları için canlı HTTP ve depolama envanteri [tamamlanacak]. İsteğe bağlı analiz veya reklam eklenirse önceden işaretlenmemiş tercihler, geri çekme ve amaca göre ayrım sağlanacaktır."],
     ],
   },

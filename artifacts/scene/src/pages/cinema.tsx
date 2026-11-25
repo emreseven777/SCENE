@@ -143,7 +143,7 @@ export default function Cinema() {
         <label>Sıralama<select disabled={usingArchive} className="mt-1 w-full rounded-lg border bg-card p-2" value={usingArchive ? "archive" : sort} onChange={(e) => setSort(e.target.value)}>{usingArchive && <option value="archive">Arşiv sırası</option>}<option value="popularity.desc">Popüler</option><option value="vote_average.desc">En yüksek puan</option></select></label>
       </div>
       {usingArchive && <p role="status" className="mb-3 text-sm text-muted-foreground">
-        TMDB şu anda kullanılamıyor. SCENE arşivi gösteriliyor.{" "}
+        TMDB şu anda kullanılamıyor. Movia arşivi gösteriliyor.{" "}
         <button type="button" className="underline" disabled={catalog.isFetching} onClick={() => void catalog.refetch()}>TMDB’yi tekrar dene</button>
       </p>}
       {archive.isPending || catalog.isPending ? <p role="status">Katalog yükleniyor…</p> : archive.isSuccess && top ? <>

@@ -64,7 +64,13 @@ begin
   if not exists (select 1 from public.scene_shared_watchlist where title_id='inception') then raise exception 'Watchlist hidden from match'; end if;
 end;
 $$;
-insert into public.scene_reports(reported_id,reason) values ('39000000-0000-0000-0000-000000000001','Test safety report');
+insert into public.scene_reports(reported_id,reason,category)
+select '39000000-0000-0000-0000-000000000001','Test safety report',category
+from unnest(array['fraud','insult','inappropriate_photo']) as category;
+insert into public.scene_reports(reported_id,message_id,reason,category)
+select sender_id,id,'Test message report','harassment' from public.messages where body='Test message';
+insert into public.scene_reports(reported_id,reason,category)
+values ('39000000-0000-0000-0000-000000000003','Test report privacy','spam');
 insert into public.scene_blocks(blocked_id) values ('39000000-0000-0000-0000-000000000001');
 do $$
 begin
@@ -76,6 +82,20 @@ delete from public.scene_blocks where blocker_id=auth.uid();
 
 select set_config('request.jwt.claims','{"sub":"39000000-0000-0000-0000-000000000003"}',true);
 select public.complete_profile_identity((current_date-interval '24 years')::date,'İstanbul');
+do $$
+begin
+  begin
+    perform reporter_id from public.scene_reports where reported_id=auth.uid();
+    raise exception 'Reported member read reporter identity';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.scene_moderation_queue('reports',0);
+    raise exception 'Non-admin read the report queue';
+  exception when insufficient_privilege then null;
+  end;
+end;
+$$;
 do $$
 begin
   if exists (select 1 from public.messages where body='Test message') then raise exception 'Nonparticipant read the message'; end if;
@@ -92,6 +112,22 @@ begin
 end;
 $$;
 update public.profiles set account_hidden=false where id=auth.uid();
+do $$
+declare
+  reports jsonb := public.scene_moderation_queue('reports',0);
+begin
+  if (select count(*) from jsonb_array_elements(reports) as report
+      where report->>'category' in ('fraud','insult','inappropriate_photo')) <> 3 then
+    raise exception 'New report categories missing from moderation queue';
+  end if;
+  if not exists (select 1 from jsonb_array_elements(reports) as report where report->>'reported_message' = 'Test message') then
+    raise exception 'Message report missing from moderation queue';
+  end if;
+  if exists (select 1 from jsonb_array_elements(reports) as report where report ? 'reporter_id') then
+    raise exception 'Reporter identity exposed in moderation queue';
+  end if;
+end;
+$$;
 select public.scene_moderate('reject_verification','39000000-0000-0000-0000-000000000002','Verification test decision');
 select public.scene_moderate('suspend','39000000-0000-0000-0000-000000000002','Moderation test decision');
 do $$
@@ -99,6 +135,16 @@ begin
   if exists (select 1 from public.matches) then raise exception 'Suspended match still visible'; end if;
   if not exists (select 1 from jsonb_array_elements(public.scene_moderation_queue('log',0)) as x where x->>'action'='suspend') then
     raise exception 'Missing moderation audit';
+  end if;
+end;
+$$;
+select public.scene_moderate('restore','39000000-0000-0000-0000-000000000002','Test restriction lifted');
+select public.scene_moderate('ban','39000000-0000-0000-0000-000000000002','Test permanent ban');
+do $$
+begin
+  if exists (select 1 from public.matches) then raise exception 'Banned match still visible'; end if;
+  if not exists (select 1 from jsonb_array_elements(public.scene_moderation_queue('log',0)) as x where x->>'action'='ban') then
+    raise exception 'Missing ban audit';
   end if;
 end;
 $$;
