@@ -79,8 +79,8 @@
   --font-mono: var(--app-font-mono);
   --font-display: 'Plus Jakarta Sans', sans-serif;
   --color-brand-ink: var(--brand-ink);
-  --color-peach: #ff914d;
-  --color-violet: #9061f9;
+  --color-peach: #d3a04e;
+  --color-violet: #a61c35;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -90,25 +90,25 @@
 
 :root {
   color-scheme: light;
-  --background: 20.00000 100.00000% 97.64706%;
-  --foreground: 255.00000 17.14286% 13.72549%;
-  --border: 0.00000 23.07692% 89.80392%;
-  --card: 20.00000 100.00000% 99.41176%;
-  --muted: 10.00000 35.29412% 93.33333%;
-  --secondary: 327.69231 37.14286% 93.13725%;
-  --primary: 350.93023 100.00000% 66.27451%;
-  --input: 336.66667 18.36735% 80.78431%;
-  --ring: 345.42857 61.94690% 44.31373%;
-  --accent: 259.20000 100.00000% 95.09804%;
+  --background: 39 65% 95%;
+  --foreground: 350 38% 15%;
+  --border: 34 35% 81%;
+  --card: 40 80% 98%;
+  --muted: 35 42% 90%;
+  --secondary: 35 48% 91%;
+  --primary: 350 83% 30%;
+  --input: 34 30% 74%;
+  --ring: 350 75% 35%;
+  --accent: 42 66% 86%;
   --destructive: 344.68966 68.72038% 41.37255%;
-  --muted-foreground: 280.00000 9.09091% 38.82353%;
+  --muted-foreground: 350 15% 38%;
   --chart-1: 350.93023 100.00000% 66.27451%;
   --chart-2: 22.92135 100.00000% 65.09804%;
   --chart-3: 258.55263 92.68293% 67.84314%;
   --chart-4: 243.00000 27.02703% 56.47059%;
   --chart-5: 338.82353 64.55696% 53.52941%;
-  --brand-ink: #a92649;
-  --scene-shadow: 0 14px 42px #6b315312;
+  --brand-ink: #810e28;
+  --scene-shadow: 0 14px 42px #80512218;
   --elevate-1: #201d2908;
   --elevate-2: #201d2914;
 }
@@ -148,7 +148,7 @@
   --popover: var(--card);
   --popover-foreground: var(--foreground);
   --popover-border: var(--border);
-  --primary-foreground: 257 17.14% 13.73%;
+  --primary-foreground: 0 0% 100%;
   --secondary-foreground: var(--foreground);
   --accent-foreground: var(--foreground);
   --destructive-foreground: 0 0% 100%;
@@ -320,7 +320,7 @@ button:focus-visible, a:focus-visible, select:focus-visible {
 }
 
 @utility scene-gradient {
-  background: linear-gradient(125deg, #ff914d 0%, #ff536d 53%, #9061f9 100%);
+  background: linear-gradient(125deg, #a61c35 0%, #810e28 55%, #570b1d 100%);
 }
 
 @utility scene-title {
@@ -347,3 +347,8 @@ button:focus-visible, a:focus-visible, select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
+
+/* Ivory Cinema */
+:root:not(.dark) body { background-image: radial-gradient(ellipse at top, #fffaf0, transparent 65%); }
+:root:not(.dark) .scene-title { color: #810e28; }
+.dark { --primary: 350 70% 42%; }
