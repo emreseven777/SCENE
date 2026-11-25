@@ -51,6 +51,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { needsConfirmation: !data.session };
     },
     signOut: async () => {
+      if (session?.user.id && "serviceWorker" in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL);
+          const subscription = await registration?.pushManager.getSubscription();
+          if (subscription) {
+            await subscription.unsubscribe();
+            await supabase!.from("scene_push_subscriptions").delete().eq("user_id", session.user.id).eq("endpoint", subscription.endpoint);
+          }
+        } catch { /* Unsupported browsers can still sign out. */ }
+      }
       const { error } = await supabase!.auth.signOut();
       if (error) throw error;
     },

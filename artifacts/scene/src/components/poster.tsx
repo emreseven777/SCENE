@@ -16,7 +16,7 @@ export function Poster({ t, className, onClick, badge }: { t: Title; className?:
         {!t.poster || broken ? (
           <div className="flex h-full flex-col justify-between overflow-hidden bg-gradient-to-br from-[#472b63] to-[#201d29] text-white p-3">
             <span className="font-mono text-[10px] uppercase tracking-widest text-peach">{t.type === "film" ? "Film" : "Dizi"}{t.year ? ` / ${t.year}` : ""}</span>
-            <span className="line-clamp-3 font-display text-xl font-extrabold leading-tight">{t.title}</span>
+            <span className="line-clamp-3 font-display text-xl font-bold leading-tight">{t.title}</span>
           </div>
         ) : (
           <img src={t.poster} alt="" loading="lazy" onError={() => setBroken(true)} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />

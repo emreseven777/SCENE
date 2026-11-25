@@ -86,7 +86,7 @@ export default function SearchPage() {
       )}
       {results.length === 0 && !waiting && !remote.isError ? (
         <div className="scene-panel mt-6 p-8 text-center">
-          <div className="font-display text-2xl font-extrabold">Sonuç bulunamadı</div>
+          <div className="font-display text-2xl font-bold">Sonuç bulunamadı</div>
           <p className="mt-2 text-sm text-muted-foreground">"{q}" için sonuç yok. Başka bir başlık ya da tür dene.</p>
         </div>
       ) : (

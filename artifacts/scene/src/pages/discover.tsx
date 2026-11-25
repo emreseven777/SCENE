@@ -1,10 +1,12 @@
 import type { Title } from "@/lib/catalog";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import { AnimatePresence, motion } from "framer-motion";
-import { Heart, RotateCcw, X, Quote, Film, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { Heart, RotateCcw, Star, X, Quote, Film, Sparkles } from "lucide-react";
 import { useStore, type Person } from "@/lib/store";
-import { isProvince } from "@/lib/provinces";
+import { SwipeCard, type SwipeDirection } from "@/components/swipe-card";
+import { cinemaFit, GENDERS, GOALS } from "@/lib/dating";
+import { PROVINCES, isProvince } from "@/lib/provinces";
 import { ProfileIdentity } from "@/components/profile-identity";
 import { PersonPhoto } from "@/components/person-photo";
 import { useToast } from "@/hooks/use-toast";
@@ -17,11 +19,20 @@ export default function Discover() {
   const { toast } = useToast();
   const [matchPid, setMatchPid] = useState<string | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
-  const [dir, setDir] = useState(1);
+  const [last, setLast] = useState<{ id: string; direction: SwipeDirection } | null>(null);
+  const [filter, setFilter] = useState({ city: "", gender: "", goal: "", from: "", to: "", fit: "" });
 
+  const allows = (preference: string | null | undefined, gender: string | null) =>
+    !preference || preference === "everyone" || (preference === "women" && gender === "woman") || (preference === "men" && gender === "man");
   const mine = store.me?.favorites ?? [];
   const commonOf = (p: Person) => p.favorites.filter((f) => mine.includes(f));
-  const cast = useMemo(() => store.people.filter((p) => p.onboarded && p.age !== null && isProvince(p.city)), [store.people]);
+  const cast = useMemo(() => store.people.filter((p) => p.onboarded && p.age !== null && isProvince(p.city) && !p.discovery_hidden && p.gender && p.looking_for && p.dating_goal
+    && allows(store.me?.looking_for, p.gender) && allows(p.looking_for, store.me?.gender ?? null)
+    && (!filter.city || p.city === filter.city) && (!filter.gender || p.gender === filter.gender)
+    && (!filter.goal || p.dating_goal === filter.goal) && p.age >= Number(filter.from || 18)
+    && (!filter.to || p.age <= Number(filter.to))
+    && (!filter.fit || (cinemaFit(mine,p.favorites) ?? -1) >= Number(filter.fit))),
+    [store.people, store.me?.looking_for, store.me?.gender, filter, mine]);
   const deck = useMemo(
     () => cast.filter((p) => !store.liked.includes(p.id) && !store.passed.includes(p.id) && !store.matches[p.id])
       .map((p) => ({ p, c: p.favorites.filter((f) => mine.includes(f)) }))
@@ -31,15 +42,31 @@ export default function Discover() {
   const current = deck[0];
   const [busy, setBusy] = useState(false);
 
-  const doLike = async (p: Person) => {
+  const swipe = async (p: Person, direction: SwipeDirection) => {
     if (busy) return;
-    setBusy(true); setDir(1);
-    const mutual = await store.like(p.id);
-    setBusy(false);
-    if (mutual) setTimeout(() => setMatchPid(p.id), 250);
-    else if (mutual === false) toast({ title: `${p.name} beğenildi`, description: "O da seni beğenirse eşleşirsiniz." });
+    setBusy(true);
+    try {
+      if (direction === "left") {
+        if (await store.pass(p.id)) setLast({ id: p.id, direction });
+        return;
+      }
+      const mutual = await store.like(p.id, direction === "up" ? "super" : "like");
+      if (mutual) { setLast(null); setMatchPid(p.id); }
+      else if (mutual === false) {
+        setLast({ id: p.id, direction });
+        toast({ title: direction === "up" ? "Süper beğeni gönderildi" : `${p.name} beğenildi` });
+      }
+    } finally { setBusy(false); }
   };
-  const doPass = (p: Person) => { setDir(-1); void store.pass(p.id); };
+
+  const undo = async () => {
+    if (!last || busy || store.matches[last.id]) return;
+    setBusy(true);
+    try {
+      const restored = await store.undoSwipe(last.id, last.direction === "left");
+      if (restored) setLast(null);
+    } finally { setBusy(false); }
+  };
 
   return (
     <div className="scene-page">
@@ -51,22 +78,24 @@ export default function Discover() {
         <Button asChild variant="secondary"><Link href="/arama"><Film />Favori yapımlarını ekle</Link></Button>
       </header>
 
+      <details className="scene-panel mb-5 p-4">
+        <summary className="cursor-pointer font-semibold">Keşfet filtreleri</summary>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+          {([
+            ["city", "İl", Object.fromEntries(PROVINCES.map((name) => [name, name]))],
+            ["gender", "Cinsiyet", GENDERS], ["goal", "Tanışma amacı", GOALS],
+          ] as const).map(([key, label, options]) => <label key={key}>{label}<select className="mt-1 w-full rounded-lg border bg-card p-2" value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}><option value="">Tümü</option>{Object.entries(options).map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>)}
+          {([["from", "En düşük yaş", 18], ["to", "En yüksek yaş", 18], ["fit", "En düşük uyum (%)", 0]] as const).map(([key, label, min]) => <label key={key}>{label}<input className="mt-1 w-full rounded-lg border bg-card p-2" type="number" min={min} max={key === "fit" ? 100 : undefined} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} /></label>)}
+        </div>
+      </details>
+      {last && !store.matches[last.id] && <Button className="mb-4" variant="secondary" disabled={busy} onClick={() => void undo()}><RotateCcw /> Son kaydırmayı geri al</Button>}
       <div className="grid gap-8 lg:grid-cols-[minmax(0,440px)_1fr]">
         <div className="relative">
-          <AnimatePresence mode="popLayout" custom={dir}>
-            {current ? (
-              <motion.article
-                key={current.p.id}
-                custom={dir}
-                initial={{ opacity: 0, scale: 0.94, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
-                variants={{ out: (d: number) => ({ opacity: 0, x: d * 260, rotate: d * 10, transition: { duration: 0.35 } }) }}
-                exit="out"
-                transition={{ type: "spring", stiffness: 260, damping: 26 }}
-                className="scene-panel relative overflow-hidden"
-                data-testid={`card-person-${current.p.id}`}
-              >
-                <Link href={`/kullanici/${current.p.id}`} className="block" data-testid="link-current-profile">
+          {current ? (
+              <article className="scene-panel relative" data-testid={`card-person-${current.p.id}`}>
+                <SwipeCard key={current.p.id} disabled={busy} labels={{ left: "Geç", right: "Beğen", up: "Süper beğeni" }}
+                  onSwipe={(direction) => swipe(current.p, direction)} next={deck[1] && <PersonPhoto id={deck[1].p.id} name={deck[1].p.name} avatarPath={deck[1].p.avatar_path} className="h-full" />}>
+                <Link href={`/kullanici/${current.p.id}`} className="block overflow-hidden rounded-t-3xl" data-testid="link-current-profile">
                   <div className="relative h-[clamp(15rem,49dvh,25rem)] sm:aspect-square sm:h-auto lg:aspect-[5/6]">
                     <PersonPhoto id={current.p.id} name={current.p.name} avatarPath={current.p.avatar_path} className="h-full w-full" textClassName="text-[9rem] leading-none" />
                     <div className="vignette absolute inset-0" />
@@ -80,10 +109,12 @@ export default function Discover() {
                     </div>
                   </div>
                 </Link>
+                </SwipeCard>
                 <div className="p-4 sm:p-5">
-                  <div className="mb-4 flex items-center justify-center gap-5">
-                    <button onClick={() => doPass(current.p)} aria-label="Geç" data-testid="button-pass" className="grid h-14 w-14 place-items-center rounded-full bg-muted ring-1 ring-border transition hover:bg-border active:scale-90"><X size={24} /></button>
-                    <motion.button whileTap={{ scale: 0.85 }} onClick={() => void doLike(current.p)} disabled={busy} aria-label="Beğen" data-testid="button-like" className="grid h-16 w-16 place-items-center rounded-full scene-gradient text-primary-foreground shadow-[0_10px_22px_#ff536d55]"><Heart size={28} fill="currentColor" /></motion.button>
+                  <div className="mb-4 flex items-center justify-center gap-2 sm:gap-4">
+                    <button onClick={() => void swipe(current.p, "left")} disabled={busy} aria-label="Geç" data-testid="button-pass" className="grid h-14 w-14 place-items-center rounded-full bg-muted ring-1 ring-border transition hover:bg-border active:scale-90"><X size={24} /></button>
+                    <motion.button whileTap={{ scale: 0.85 }} onClick={() => void swipe(current.p, "right")} disabled={busy} aria-label="Beğen" data-testid="button-like" className="grid h-16 w-16 place-items-center rounded-full scene-gradient text-primary-foreground shadow-[0_10px_22px_#ff536d55]"><Heart size={28} fill="currentColor" /></motion.button>
+                    <Button variant="secondary" size="icon" aria-label="Süper beğeni" disabled={busy} onClick={() => void swipe(current.p, "up")}><Star /></Button>
                     <Link href={`/kullanici/${current.p.id}`} data-testid="link-view-profile" className="grid h-14 place-items-center rounded-full bg-muted px-5 text-sm ring-1 ring-border hover:bg-border">Profil</Link>
                   </div>
                   <div className="mb-2 text-xs font-semibold text-muted-foreground">{current.c.length ? "Ortak favoriler" : "Henüz ortak favori yok"}</div>
@@ -103,23 +134,22 @@ export default function Discover() {
                   </div>
 
                 </div>
-              </motion.article>
+              </article>
             ) : (
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="scene-panel grid min-h-72 place-items-center p-8 text-center">
                 <div>
-                  <Sparkles className="mx-auto mb-3 text-brand-ink" /><h2 className="font-display text-2xl font-extrabold">Şimdilik bu kadar</h2>
+                  <Sparkles className="mx-auto mb-3 text-brand-ink" /><h2 className="font-display text-2xl font-bold">Şimdilik bu kadar</h2>
                   <p className="mt-3 text-sm text-muted-foreground">{cast.length === 0 ? "Henüz keşfedebileceğin bir profil yok." : "Şimdilik herkesi gördün. Yeni kullanıcılar kayıt oldukça burada görünecek."}</p>
                   {store.passed.length > 0 && <Button className="mt-5" onClick={() => void store.resetDeck()} data-testid="button-reset-deck"><RotateCcw size={16} className="mr-2" />Geçtiklerini yeniden gör</Button>}
                 </div>
               </motion.div>
             )}
-          </AnimatePresence>
           {deck.length > 1 && <div className="mt-3 text-center font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Sırada {deck.length - 1} kişi daha</div>}
         </div>
 
         <section>
           <div className="mb-3 flex items-baseline justify-between">
-            <h3 className="font-display text-2xl font-extrabold tracking-tight">SCENE üyeleri</h3>
+            <h3 className="font-display text-2xl font-bold tracking-tight">SCENE üyeleri</h3>
             <span className="font-mono text-[11px] text-muted-foreground">{cast.length} kişi</span>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -137,7 +167,7 @@ export default function Discover() {
                       <div>
                         <ProfileIdentity person={p} as="div" size="text-xl sm:text-2xl" />
                       </div>
-                      <div className="text-right"><div className="font-display text-2xl font-extrabold leading-none text-peach">{c}</div><div className="text-[9px] text-white">ortak</div></div>
+                      <div className="text-right"><div className="font-display text-2xl font-bold leading-none text-peach">{c}</div><div className="text-[9px] text-white">ortak</div></div>
                     </div>
                   </Link>
                 </motion.div>
