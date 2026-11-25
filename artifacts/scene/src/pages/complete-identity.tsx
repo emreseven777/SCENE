@@ -20,7 +20,7 @@ export function CompleteIdentity({ person }: { person: Person }) {
 
   return (
     <main className="mx-auto flex min-h-[100dvh] max-w-md items-center px-5 py-8">
-      <form className="w-full space-y-5 rounded-xl border border-white/10 bg-card p-5 sm:p-8" onSubmit={async (event) => {
+      <form className="scene-panel w-full space-y-5 p-5 sm:p-8" onSubmit={async (event) => {
         event.preventDefault();
         if (!isProvince(province) || (needsBirthDate && (!birthDate || birthDate > latest))) {
           setError("Geçerli bir il seç. SCENE’i kullanmak için en az 18 yaşında olmalısın.");
@@ -36,7 +36,7 @@ export function CompleteIdentity({ person }: { person: Person }) {
           setBusy(false);
         }
       }}>
-        <h1 className="font-display text-4xl font-black uppercase leading-none">Profilini tamamla</h1>
+        <h1 className="scene-title">Profilini tamamla</h1>
         <p className="text-sm text-muted-foreground">SCENE 18 yaş ve üzeri üyeler içindir. Profilinde yaşın ve seçtiğin il görünür. Doğum tarihin gizli kalır.</p>
         {needsBirthDate && (
           <div className="space-y-1.5">
@@ -46,7 +46,7 @@ export function CompleteIdentity({ person }: { person: Person }) {
           </div>
         )}
         <ProvinceSelect id="identity-city" value={province} onChange={setProvince} />
-        {error && <p role="alert" className="text-sm text-primary">{error}</p>}
+        {error && <p role="alert" className="text-sm text-brand-ink">{error}</p>}
         <div className="flex flex-wrap items-center gap-2">
           <Button type="submit" disabled={busy}>{busy ? "Kaydediliyor…" : "Kaydet ve devam et"}</Button>
           <Button type="button" variant="ghost" disabled={busy} onClick={() => void signOut().catch((error) => setError(turkishError(error)))}>Çıkış yap</Button>

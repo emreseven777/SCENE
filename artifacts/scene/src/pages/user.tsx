@@ -33,18 +33,18 @@ function UserView({ pid }: { pid: string }) {
   const [busy, setBusy] = useState(false);
 
   return (
-    <div>
-      <div className="relative">
+    <div className="scene-page max-w-5xl">
+      <div className="scene-panel relative overflow-hidden">
         <ProfilePortrait key={p.id} person={p} />
         <Link href="/" aria-label="Keşfet’e dön" data-testid="link-back" className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/70"><ArrowLeft size={18} /></Link>
       </div>
 
-      <div className="mx-auto max-w-5xl space-y-10 px-4 lg:px-10">
+      <div className="mt-6 space-y-8">
         <div className="flex flex-wrap items-center gap-3">
           {matched ? (
-            <Link href={`/mesajlar/${p.id}`} data-testid="link-chat" className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold"><MessageCircle size={17} />Mesaj gönder</Link>
+            <Link href={`/mesajlar/${p.id}`} data-testid="link-chat" className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"><MessageCircle size={17} />Mesaj gönder</Link>
           ) : liked ? (
-            <Button variant="secondary" disabled={busy} onClick={async () => { setBusy(true); const ok = await store.unlike(p.id); setBusy(false); if (ok) toast({ title: "Beğeni geri alındı" }); }} data-testid="button-unlike"><Heart size={16} className="mr-2 fill-primary text-primary" />Beğendin — geri al</Button>
+            <Button variant="secondary" disabled={busy} onClick={async () => { setBusy(true); const ok = await store.unlike(p.id); setBusy(false); if (ok) toast({ title: "Beğeni geri alındı" }); }} data-testid="button-unlike"><Heart size={16} className="mr-2 fill-primary text-brand-ink" />Beğendin — geri al</Button>
           ) : (
             <motion.div whileTap={{ scale: 0.92 }}>
               <Button className="h-11 px-6" disabled={busy} onClick={async () => {
@@ -55,25 +55,25 @@ function UserView({ pid }: { pid: string }) {
               }} data-testid="button-like-user"><Heart size={17} className="mr-2" fill="currentColor" />Beğen</Button>
             </motion.div>
           )}
-          <div className="rounded-md border border-primary/30 px-4 py-2.5"><span className="font-display text-2xl font-black text-primary" data-testid="text-user-common">{common.length}</span> <span className="text-sm text-muted-foreground">ortak film ve dizi</span></div>
+          <div className="rounded-md border border-primary/30 px-4 py-2.5"><span className="font-display text-2xl font-black text-brand-ink" data-testid="text-user-common">{common.length}</span> <span className="text-sm text-muted-foreground">ortak film ve dizi</span></div>
         </div>
 
         <ProfileAbout person={p} />
 
         <section>
-          <h2 className="mb-4 font-display text-3xl font-extrabold uppercase">Ortak <span className="text-primary">favoriler</span></h2>
+          <h2 className="mb-4 font-display text-2xl font-extrabold tracking-tight">Ortak <span className="text-brand-ink">favoriler</span></h2>
           {common.length ? (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
               {common.map((id) => { const t = store.titleById(id, p.id); return t && <Poster key={id} t={t} onClick={() => setSelectedTitle(t)} className="ring-2 ring-primary/70" />; })}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-white/15 p-6 text-sm text-muted-foreground">Henüz ortak favoriniz yok. Aşağıdaki listeden birini favorilerine eklersen sayı anında güncellenir.</div>
+            <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Henüz ortak favoriniz yok. Aşağıdaki listeden birini favorilerine eklersen sayı anında güncellenir.</div>
           )}
         </section>
 
         {others.length > 0 && (
           <section>
-            <h2 className="mb-4 font-display text-2xl font-extrabold uppercase text-foreground/80">{p.name} ayrıca seviyor</h2>
+            <h2 className="mb-4 font-display text-2xl font-extrabold tracking-tight text-foreground/80">{p.name} ayrıca seviyor</h2>
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
               {others.map((id) => { const t = store.titleById(id, p.id); return t && <Poster key={id} t={t} onClick={() => setSelectedTitle(t)} />; })}
             </div>

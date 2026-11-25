@@ -1,3 +1,5 @@
+import { MotionConfig } from 'framer-motion';
+import { ThemeProvider } from 'next-themes';
 import { type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -20,7 +22,7 @@ import { CompleteIdentity } from '@/pages/complete-identity';
 import { isProvince } from '@/lib/provinces';
 import SearchPage from '@/pages/search';
 import UserPage from '@/pages/user';
-import { LoginPage, RegisterPage } from '@/pages/auth';
+import { LoginPage, RegisterPage, WelcomePage } from '@/pages/auth';
 
 const queryClient = new QueryClient();
 
@@ -49,7 +51,7 @@ function SignedInApp() {
     return (
       <FullScreen>
         <div className="max-w-sm" data-testid="status-load-error">
-          <div className="font-display text-4xl font-black uppercase">Bağlantı <span className="text-primary">kesildi.</span></div>
+          <div className="scene-title">Bağlantı <span className="text-brand-ink">kesildi.</span></div>
           <p className="mt-3 text-sm text-muted-foreground">{store.loadError ?? 'Profilin bulunamadı.'}</p>
           <div className="mt-6 flex justify-center gap-2">
             <Button onClick={() => void store.refresh()} data-testid="button-retry">Tekrar dene</Button>
@@ -89,7 +91,7 @@ function Router() {
     return (
       <FullScreen>
         <div className="max-w-sm">
-          <div className="font-display text-4xl font-black uppercase">Kurulum <span className="text-primary">eksik.</span></div>
+          <div className="scene-title">Kurulum <span className="text-brand-ink">eksik.</span></div>
           <p className="mt-3 text-sm text-muted-foreground">Supabase bağlantı bilgileri bulunamadı. Uygulama şu an hiçbir veritabanına bağlı değil.</p>
         </div>
       </FullScreen>
@@ -101,7 +103,8 @@ function Router() {
       <Switch>
         <Route path="/giris" component={LoginPage} />
         <Route path="/kayit" component={RegisterPage} />
-        <Route><Redirect to="/giris" /></Route>
+        <Route path="/" component={WelcomePage} />
+        <Route><Redirect to="/" /></Route>
       </Switch>
     );
   }
@@ -115,18 +118,22 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <StoreProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-              <Router />
-            </WouterRouter>
-            <Toaster />
-          </StoreProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="scene-theme">
+      <MotionConfig reducedMotion="user">
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <AuthProvider>
+              <StoreProvider>
+                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+                  <Router />
+                </WouterRouter>
+                <Toaster />
+              </StoreProvider>
+            </AuthProvider>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </MotionConfig>
+    </ThemeProvider>
   );
 }
 

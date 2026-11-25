@@ -44,8 +44,8 @@ export function ProfilePortrait({ person }: { person: Person }) {
   return (
     <div className="relative aspect-square overflow-hidden bg-card sm:max-h-[65svh] sm:aspect-[4/3]">
       <ProfileGallery person={person} />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-5 pb-5 pt-14 text-white sm:px-8">
-        <ProfileIdentity person={person} as="h1" size="text-5xl lg:text-7xl" testId="text-user-name" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#201d29] via-[#201d29]/65 to-transparent px-5 pb-5 pt-14 text-white sm:px-8">
+        <ProfileIdentity person={person} as="h1" size="text-4xl lg:text-6xl" testId="text-user-name" />
       </div>
     </div>
   );
@@ -57,8 +57,8 @@ export function ProfileAbout({ person }: { person: Person }) {
       <p className="whitespace-pre-wrap break-words text-lg leading-relaxed text-foreground/85">{person.bio || "Henüz kendinden bahsetmemiş."}</p>
       {person.scene && (
         <blockquote className="border-l-2 border-primary pl-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Unutamadığı sahne</div>
-          <p className="mt-2 flex gap-2 break-words font-display text-2xl font-bold leading-tight"><Quote size={16} className="mt-1 shrink-0 text-primary" />{person.scene}</p>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-brand-ink">Unutamadığı sahne</div>
+          <p className="mt-2 flex gap-2 break-words font-display text-2xl font-bold leading-tight"><Quote size={16} className="mt-1 shrink-0 text-brand-ink" />{person.scene}</p>
         </blockquote>
       )}
     </div>

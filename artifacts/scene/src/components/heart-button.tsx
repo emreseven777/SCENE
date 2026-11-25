@@ -17,7 +17,7 @@ export function HeartButton({ active, onToggle, size = "md", label, testId }: { 
       data-testid={testId}
       onClick={(e) => { e.stopPropagation(); if (!active) setBurst((b) => b + 1); onToggle(); }}
       className={cn("relative grid place-items-center rounded-full transition-colors", dims,
-        active ? "bg-primary text-primary-foreground" : "bg-black/60 text-foreground ring-1 ring-white/15 backdrop-blur hover:bg-black/80")}
+        active ? "bg-primary text-primary-foreground" : "bg-[#201d29]/75 text-white ring-1 ring-white/15 backdrop-blur hover:bg-black/80")}
     >
       <motion.span key={`${active}`} initial={{ scale: active ? 0.3 : 1 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 14 }}>
         <Heart size={icon} fill={active ? "currentColor" : "none"} strokeWidth={2.2} />

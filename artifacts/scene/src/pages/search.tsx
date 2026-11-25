@@ -1,3 +1,4 @@
+import { SceneHeading } from "@/components/scene-brand";
 import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -56,21 +57,19 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-5 lg:px-10 lg:pt-10">
-      <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-primary">Arşiv / Ara</div>
-      <h1 className="mt-1 font-display text-5xl font-black uppercase leading-[0.85] lg:text-7xl">Film ve <span className="text-primary">dizi</span> arşivi</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Favorilerin, kimlerle ortak noktan olduğunu belirler.</p>
+    <div className="scene-page">
+      <SceneHeading title="Film ve dizi arşivi" description="Sevdiğin yapımları kaydet. Ortak favoriler, yeni tanışmaların başlangıcı olsun." />
 
-      <div className="sticky top-[61px] z-30 -mx-4 mt-6 bg-background/85 px-4 py-3 backdrop-blur-xl lg:top-0">
+      <div className="scene-toolbar sticky top-[calc(4rem+env(safe-area-inset-top))] z-30 rounded-3xl border p-3 shadow-sm lg:top-2">
         <div className="relative">
           <SearchIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Film veya dizi adı ara…" aria-label="Film veya dizi adı ara" maxLength={120} data-testid="input-search" className="h-12 w-full rounded-full bg-white/[0.06] pl-11 pr-10 text-sm outline-none ring-1 ring-white/10 placeholder:text-muted-foreground focus:ring-primary" />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Film veya dizi adı ara…" aria-label="Film veya dizi adı ara" maxLength={120} data-testid="input-search" className="h-12 w-full rounded-full bg-background pl-11 pr-10 text-base outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-primary" />
           {q && <button onClick={() => setQ("")} aria-label="Temizle" data-testid="button-clear-search" className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X size={16} /></button>}
         </div>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
           {([["all", "Tümü"], ["film", "Filmler"], ["dizi", "Diziler"]] as const).map(([v, l]) => (
-            <button key={v} onClick={() => setType(v)} data-testid={`filter-${v}`} className={cn("relative rounded-full px-4 py-1.5 text-xs font-semibold transition-colors", type === v ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
-              {type === v && <motion.span layoutId="filter" className="absolute inset-0 rounded-full bg-primary" />}
+            <button key={v} onClick={() => setType(v)} data-testid={`filter-${v}`} className={cn("relative rounded-full min-h-9 px-3 text-xs font-semibold transition-colors", type === v ? "text-brand-ink" : "text-muted-foreground hover:text-foreground")}>
+              {type === v && <motion.span layoutId="filter" className="absolute inset-0 rounded-full bg-secondary" />}
               <span className="relative">{l}</span>
             </button>
           ))}
@@ -82,21 +81,21 @@ export default function SearchPage() {
       {!waiting && remote.isError && !remote.isFetchNextPageError && (
         <p role="status" className="mt-3 text-sm text-muted-foreground">
           TMDB kataloğuna ulaşılamadı. Yerel katalog açık.{" "}
-          <button className="text-primary underline" onClick={() => void remote.refetch()}>Tekrar dene</button>
+          <button className="text-brand-ink underline" onClick={() => void remote.refetch()}>Tekrar dene</button>
         </p>
       )}
       {results.length === 0 && !waiting && !remote.isError ? (
-        <div className="mt-10 rounded-xl border border-dashed border-white/15 p-10 text-center">
-          <div className="font-display text-4xl font-black uppercase">Bu sahne kurgudan çıkmış.</div>
+        <div className="scene-panel mt-6 p-8 text-center">
+          <div className="font-display text-2xl font-extrabold">Sonuç bulunamadı</div>
           <p className="mt-2 text-sm text-muted-foreground">"{q}" için sonuç yok. Başka bir başlık ya da tür dene.</p>
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+        <div className="mt-5 grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {results.map((t, i) => (
             <motion.div key={t.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.3) }}>
               <Poster t={t} onClick={() => setSelected(t)} className={store.isFav(t.id) ? "ring-2 ring-primary" : ""}
                 badge={<HeartButton size="sm" active={store.isFav(t.id)} onToggle={() => fav(t)} testId={`button-fav-${t.id}`} />} />
-              <div className="mt-1.5 truncate text-xs font-semibold">{t.title}</div>
+              <div className="mt-2 truncate text-xs font-bold sm:text-sm">{t.title}</div>
               <div className="font-mono text-[10px] uppercase text-muted-foreground">{t.type === "film" ? "Film" : "Dizi"} / {t.year || "—"}</div>
             </motion.div>
           ))}
@@ -109,7 +108,7 @@ export default function SearchPage() {
           </Button>
         </div>
       )}
-      <footer className="mt-6 flex flex-wrap items-center gap-3 border-t border-white/10 py-4 text-xs text-muted-foreground">
+      <footer className="mt-6 flex flex-wrap items-center gap-3 border-t border-border py-4 text-xs text-muted-foreground">
         <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">
           <img className="w-24" src={`${import.meta.env.BASE_URL}tmdb-logo.svg`} alt="The Movie Database (TMDB)" />
         </a>

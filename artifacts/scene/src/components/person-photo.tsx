@@ -31,16 +31,16 @@ export function PersonPhoto({ id, name, avatarPath, className, textClassName }: 
     refetchInterval: 240_000,
     retry: false,
   });
-  const tint = hueFor(id) % 40;
+  const tint = hueFor(id) % 60;
   return (
     <div
       role="img"
       aria-label={name}
       className={cn("relative grid place-items-center overflow-hidden font-display font-black uppercase", className)}
-      style={{ background: `radial-gradient(120% 90% at 30% 15%, hsl(${357 - tint / 4} 80% ${38 + tint / 4}%) 0%, hsl(357 60% 14%) 55%, hsl(0 8% 5%) 100%)` }}
+      style={{ background: `linear-gradient(145deg, #ff914d 0%, hsl(${330 + tint / 2} 85% 62%) 52%, #6d42bb 100%)` }}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent_0_3px,hsl(0_0%_0%/0.18)_3px_4px)]" />
-      <span className={cn("relative text-white/90", textClassName)}>{initials(name)}</span>
+
+      <span className={cn("relative text-white drop-shadow-md", textClassName)}>{initials(name)}</span>
       {url && url !== brokenUrl && (
         <img alt="" src={url} loading="lazy" onError={() => setBrokenUrl(url)} className="absolute inset-0 h-full w-full object-cover" />
       )}
