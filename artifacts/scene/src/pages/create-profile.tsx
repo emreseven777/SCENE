@@ -18,7 +18,7 @@ export default function CreateProfile() {
   const { toast } = useToast();
   const [, go] = useLocation();
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState({ name: store.me?.name ?? "", city: store.me?.city ?? "", bio: store.me?.bio ?? "" });
+  const [form, setForm] = useState({ name: store.me?.name ?? "", bio: store.me?.bio ?? "" });
   const [favs, setFavs] = useState<string[]>(store.me?.favorites ?? []);
   const [saving, setSaving] = useState(false);
   const firstTime = !store.me?.onboarded;
@@ -27,7 +27,7 @@ export default function CreateProfile() {
   const finish = async () => {
     setSaving(true);
     try {
-      await store.completeOnboarding({ name: form.name.trim(), city: form.city.trim(), bio: form.bio.trim(), favorites: favs });
+      await store.completeOnboarding({ name: form.name.trim(), bio: form.bio.trim(), favorites: favs });
       toast({ title: "Sahne senin", description: "Profilin kaydedildi." });
       go("/");
     } catch { /* error toast already shown */ } finally { setSaving(false); }
@@ -42,10 +42,9 @@ export default function CreateProfile() {
         {step === 0 ? (
           <motion.div key="s0" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="mt-6 max-w-lg">
             <h1 className="font-display text-5xl font-black uppercase leading-[0.85]">Jenerikte<br /><span className="text-primary">adın</span> ne yazsın?</h1>
-            <p className="mt-3 text-sm text-muted-foreground">Diğer kullanıcılar ismini, şehrini, yazdıklarını ve favorilerini görür. E-posta adresin gizli kalır.</p>
+            <p className="mt-3 text-sm text-muted-foreground">Diğer kullanıcılar ismini, ilini, yazdıklarını ve favorilerini görür. E-posta adresin gizli kalır.</p>
             <div className="mt-6 space-y-4">
               <div className="space-y-1.5"><Label htmlFor="c-name">İsim</Label><Input id="c-name" autoFocus maxLength={40} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Örn. Zeynep" data-testid="input-create-name" /></div>
-              <div className="space-y-1.5"><Label htmlFor="c-city">Şehir</Label><Input id="c-city" maxLength={40} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Örn. Bursa" data-testid="input-create-city" /></div>
               <div className="space-y-1.5"><Label htmlFor="c-bio">Kendini bir sahneyle anlat</Label><Textarea id="c-bio" maxLength={240} rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Yağmurda şarkı söyleyen değil, şemsiyeyi tutan benim." data-testid="input-create-bio" /></div>
             </div>
             <div className="mt-6 flex gap-2">

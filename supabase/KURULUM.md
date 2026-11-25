@@ -14,6 +14,8 @@ Supabase'de aynı projenin **SQL Editor → New query** ekranını aç. Bu dalda
 
 Galerili sürümü hazırlarken, aynı SQL Editor'da `supabase/migrations/20261125043326_profile_photo_gallery.sql` dosyasını da çalıştır ve başarı mesajını bekle. Bu dosya mevcut fotoğrafı galerinin ilk sırasına taşır, yeni yükleme gerektirmez ve aynı özel depolama alanını kullanır. Galerili web sürümünü ancak bu iki migration ve katalog işlevi doğrulandıktan sonra yayımla.
 
+Yaş ve il bilgisi olan sürümü hazırlarken galeri migration’ından sonra `supabase/migrations/20261125044629_profile_age_and_province.sql` dosyasını çalıştır. Bu sürümde mevcut üyeler ilk girişlerinde eksik bilgilerini tamamlar. Doğum tarihi özel tabloda tutulur. **Bu migration sosyal işlemler için yaş şartını devreye sokar.** Canlıda uygulamadan önce yeni web sürümünü yayına hazırla ve ikisini aynı yayın aralığında devreye al.
+
 ## 3. Katalog işlevini yayımla
 
 1. Supabase'de **Edge Functions → Deploy a new function → Via Editor** seçeneğini aç.

@@ -2,8 +2,10 @@ import type { Title } from "@/lib/catalog";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, RotateCcw, X, Quote, MapPin } from "lucide-react";
+import { Heart, RotateCcw, X, Quote } from "lucide-react";
 import { useStore, type Person } from "@/lib/store";
+import { isProvince } from "@/lib/provinces";
+import { ProfileIdentity } from "@/components/profile-identity";
 import { PersonPhoto } from "@/components/person-photo";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -19,7 +21,7 @@ export default function Discover() {
 
   const mine = store.me?.favorites ?? [];
   const commonOf = (p: Person) => p.favorites.filter((f) => mine.includes(f));
-  const cast = useMemo(() => store.people.filter((p) => p.onboarded), [store.people]);
+  const cast = useMemo(() => store.people.filter((p) => p.onboarded && p.age !== null && isProvince(p.city)), [store.people]);
   const deck = useMemo(
     () => cast.filter((p) => !store.liked.includes(p.id) && !store.passed.includes(p.id) && !store.matches[p.id])
       .map((p) => ({ p, c: p.favorites.filter((f) => mine.includes(f)) }))
@@ -74,8 +76,7 @@ export default function Discover() {
                       <div className="font-mono text-[10px] uppercase tracking-widest">ortak</div>
                     </div>
                     <div className="absolute inset-x-0 bottom-0 p-5">
-                      <h2 className="font-display text-5xl font-black uppercase leading-none">{current.p.name}</h2>
-                      <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin size={12} />{current.p.city || "Şehir belirtilmemiş"}</div>
+                      <ProfileIdentity person={current.p} />
                       {(current.p.scene || current.p.bio) && <p className="mt-3 line-clamp-3 flex gap-2 text-sm italic text-foreground/85"><Quote size={14} className="mt-0.5 shrink-0 text-primary" />{current.p.scene || current.p.bio}</p>}
                     </div>
                   </div>
@@ -134,8 +135,7 @@ export default function Discover() {
                     {status && <span className="absolute left-2 top-2 rounded-sm bg-primary px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest">{status}</span>}
                     <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
                       <div>
-                        <div className="font-display text-2xl font-extrabold uppercase leading-none">{p.name}</div>
-                        <div className="text-[11px] text-foreground/60">{p.city || "—"}</div>
+                        <ProfileIdentity person={p} as="div" size="text-2xl" />
                       </div>
                       <div className="text-right"><div className="font-display text-3xl font-black leading-none text-primary">{c}</div><div className="font-mono text-[9px] uppercase">ortak</div></div>
                     </div>
