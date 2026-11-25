@@ -4,30 +4,42 @@ import { Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useStore, type Person } from "@/lib/store";
 import { GENDERS, GOALS, LOOKING_FOR } from "@/lib/dating";
-import { defaultPreferences, detailLabels, useScenePreferences } from "@/lib/scene-preferences";
+import { defaultPreferences, detailLabels, useScenePreferences, useVisibleProfileDetails } from "@/lib/scene-preferences";
 import { requireSupabase, turkishError } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { ProfileChoiceFields } from "./profile-choice-fields";
+import { CHOICES, TMDB_FIELDS, UNDISCLOSED, UNDISCLOSED_LABEL, profileLabel, type ProfileValue } from "@/lib/profile-choices";
 import { ReportProfile } from "./report-profile";
+
+const structuredFields = new Set(["height","occupation","sign","interests","genres",...Object.keys(CHOICES),...Object.keys(TMDB_FIELDS)]);
 
 const required = [
   ["gender", "Cinsiyet", GENDERS], ["looking_for", "Kimlerle tanışmak istiyorsun?", LOOKING_FOR], ["dating_goal", "Tanışma amacı", GOALS],
 ] as const;
 
 export function DatingFields({ person, requiredOnly = false }: { person: Person; requiredOnly?: boolean }) {
-  const { updateMe } = useStore();
+  const { updateMe, refresh } = useStore();
   const { signOut } = useAuth();
   const { toast } = useToast();
   const client = useQueryClient();
   const preferences = useScenePreferences(requiredOnly ? undefined : person.id);
+  const own = useVisibleProfileDetails(requiredOnly ? undefined : person.id, person.id);
   const [name, setName] = useState(person.name);
   const [fields, setFields] = useState({ gender: person.gender ?? "", looking_for: person.looking_for ?? "", dating_goal: person.dating_goal ?? "" });
   const [draft, setDraft] = useState<typeof defaultPreferences | null>(null);
   const [busy, setBusy] = useState(false);
   const options = draft ?? preferences.data ?? defaultPreferences;
   const setOptions = (patch: Partial<typeof defaultPreferences>) => setDraft({ ...options, ...patch });
+
+  const setDetail = (key: string, value: ProfileValue) => {
+    const details = { ...options.details };
+    if (value === "") delete details[key];
+    else details[key] = value;
+    setOptions({ details });
+  };
 
   const submit = async () => {
     if (busy || !name.trim() || !fields.gender || !fields.looking_for || !fields.dating_goal) return;
@@ -46,6 +58,7 @@ export function DatingFields({ person, requiredOnly = false }: { person: Person;
         await client.invalidateQueries({ queryKey: ["visible-profile-details"] });
       }
       await updateMe({ ...fields, ...(requiredOnly ? { name: name.trim() } : {}) });
+      if (draft) await refresh();
       toast({ title: "Profil tercihleri kaydedildi" });
     } catch (error) {
       toast({ title: "Profil tercihleri kaydedilemedi", description: turkishError(error), variant: "destructive" });
@@ -66,10 +79,26 @@ export function DatingFields({ person, requiredOnly = false }: { person: Person;
       <summary className="cursor-pointer font-semibold">İsteğe bağlı bilgiler ve gizlilik</summary>
       {preferences.isError && <p role="alert">Gizlilik ayarları yüklenemedi.</p>}
       {preferences.isSuccess && <div className="mt-3 grid gap-3">
-        {Object.entries(detailLabels).map(([key, label]) => <label key={key} className="text-sm">{label}
-          <Input className="mt-1" value={options.details[key] ?? ""} maxLength={100} onChange={(event) => setOptions({ details: { ...options.details, [key]: event.target.value } })} />
-        </label>)}
-        <label className="text-sm">Instagram kullanıcı adı<Input className="mt-1" value={options.instagram ?? ""} maxLength={31} onChange={(event) => setOptions({ instagram: event.target.value })} /></label>
+        <ProfileChoiceFields details={options.details} onChange={setDetail}
+          zodiac={typeof own.data?.details.sign === "string" ? own.data.details.sign : undefined} />
+        {Object.entries(detailLabels).filter(([key]) => !structuredFields.has(key)).map(([key, label]) => {
+          const value = options.details[key];
+          return <div key={key} className="min-w-0">
+            <label className="block text-sm">{label}
+              <Input className="mt-1" value={typeof value === "string" && value !== UNDISCLOSED ? value : ""} maxLength={100}
+                onChange={(event) => setDetail(key, event.target.value)} />
+            </label>
+            <Button type="button" size="sm" variant={value === UNDISCLOSED ? "default" : "ghost"}
+              aria-pressed={value === UNDISCLOSED} onClick={() => setDetail(key, value === UNDISCLOSED ? "" : UNDISCLOSED)}>{UNDISCLOSED_LABEL}</Button>
+          </div>;
+        })}
+        <div>
+          <label className="block text-sm">Instagram kullanıcı adı
+            <Input className="mt-1" value={options.instagram ?? ""} maxLength={31} onChange={(event) => setOptions({ instagram: event.target.value })} />
+          </label>
+          <Button type="button" size="sm" variant="ghost"
+            onClick={() => setOptions({ instagram: null, show_instagram: false })}>{UNDISCLOSED_LABEL}</Button>
+        </div>
         {([
           ["public_details", "İsteğe bağlı bilgileri profilimde göster"], ["show_instagram", "Instagram bağlantımı göster"],
           ["show_seen", "Görüldü bilgisini paylaş"], ["show_presence", "Çevrimiçi ve son görülme bilgisini paylaş"],
@@ -89,19 +118,16 @@ export function DatingFields({ person, requiredOnly = false }: { person: Person;
 export function ProfileDetails({ person, publicPreview = false }: { person: Person; publicPreview?: boolean }) {
   const viewer = useStore().me?.id;
   const preferences = useScenePreferences(publicPreview ? viewer : undefined);
-  const details = useQuery({
-    queryKey: ["visible-profile-details", viewer, person.id], enabled: !!viewer,
-    queryFn: async () => {
-      const { data, error } = await requireSupabase().rpc("visible_profile_details", { person: person.id });
-      if (error) throw error;
-      return (data?.[0] ?? null) as { details: Record<string, string>; instagram: string | null } | null;
-    },
-  });
+  const details = useVisibleProfileDetails(viewer, person.id);
   const fields = [
     ["Cinsiyet", GENDERS[person.gender as keyof typeof GENDERS]],
     ["Tanışmak istediği", LOOKING_FOR[person.looking_for as keyof typeof LOOKING_FOR]],
     ["Tanışma amacı", GOALS[person.dating_goal as keyof typeof GOALS]],
-    ...Object.entries(detailLabels).map(([key, label]) => [label, (!publicPreview || preferences.data?.public_details) ? details.data?.details[key] : undefined]),
+    ...Object.entries(detailLabels).map(([key, label]) => [
+      label,
+      (!publicPreview || (preferences.data?.public_details && (key !== "sign" || preferences.data?.details.sign === "automatic")))
+        ? profileLabel(key, details.data?.details[key]) : undefined,
+    ]),
   ].filter(([, value]) => typeof value === "string" && value.trim());
   const instagram = (!publicPreview || preferences.data?.show_instagram) ? details.data?.instagram : null;
   return (fields.length || instagram) ? <section className="scene-panel p-4 sm:p-6">

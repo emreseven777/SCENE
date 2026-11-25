@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import { Heart, RotateCcw, Star, X, Quote, Film, Sparkles } from "lucide-react";
 import { useStore, type Person } from "@/lib/store";
 import { SwipeCard, type SwipeDirection } from "@/components/swipe-card";
-import { cinemaFit, GENDERS, GOALS } from "@/lib/dating";
+import { cinemaFit, GENDERS, GOALS, profileCinemaSignals, profileGenres, selectedTrait } from "@/lib/dating";
+import { CHOICES, GENRES, INTERESTS, OCCUPATIONS } from "@/lib/profile-choices";
 import { PROVINCES, isProvince } from "@/lib/provinces";
 import { ProfileIdentity } from "@/components/profile-identity";
 import { PersonPhoto } from "@/components/person-photo";
@@ -22,31 +23,43 @@ export default function Discover() {
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [last, setLast] = useState<{ id: string; direction: SwipeDirection } | null>(null);
   const [visibleCount, setVisibleCount] = useState(24);
-  const [filter, setFilter] = useState({ city: "", gender: "", goal: "", from: "", to: "", fit: "" });
+  const [filter, setFilter] = useState({ city: "", gender: "", goal: "", from: "", to: "", fit: "", heightFrom: "", heightTo: "", education: "", smoking: "", alcohol: "", relationship: "", children: "", sport: "", genre: "", interest: "", occupation: "" });
 
   const allows = (preference: string | null | undefined, gender: string | null) =>
     !preference || preference === "everyone" || (preference === "women" && gender === "woman") || (preference === "men" && gender === "man");
   const mine = store.me?.favorites ?? [];
+  const ownDetails = store.me?.discovery_details;
   const fits = useMemo(() => {
-    const mineGenres = mine.flatMap((id) => store.titleById(id)?.genres ?? []);
-    return new Map(store.people.map((person) => [
-      person.id,
-      cinemaFit(mine, person.favorites, mineGenres, person.favorites.flatMap((id) => store.titleById(id, person.id)?.genres ?? [])),
-    ]));
-  }, [mine, store.people, store.titleById]);
+    const own = profileCinemaSignals(mine, ownDetails, (id) => store.titleById(id));
+    return new Map(store.people.map((person) => {
+      const other = profileCinemaSignals(person.favorites, person.discovery_details, (id) => store.titleById(id,person.id));
+      return [person.id, cinemaFit(own.titles, other.titles, own.genres, other.genres)];
+    }));
+  }, [mine, ownDetails, store.people, store.titleById]);
   const cast = useMemo(() => store.people.filter((p) => p.onboarded && p.age !== null && isProvince(p.city) && !p.discovery_hidden && p.gender && p.looking_for && p.dating_goal
     && allows(store.me?.looking_for, p.gender) && allows(p.looking_for, store.me?.gender ?? null)
     && (!filter.city || p.city === filter.city) && (!filter.gender || p.gender === filter.gender)
     && (!filter.goal || p.dating_goal === filter.goal) && p.age >= Number(filter.from || 18)
     && (!filter.to || p.age <= Number(filter.to))
+    && (!filter.occupation || selectedTrait(p.discovery_details,"occupation") === filter.occupation)
+    && (!filter.interest || (Array.isArray(p.discovery_details?.interests) && p.discovery_details.interests.includes(filter.interest)))
+    && (!filter.genre || profileGenres(p.discovery_details).includes(filter.genre))
+    && (!filter.heightFrom || Number(selectedTrait(p.discovery_details,"height")) >= Number(filter.heightFrom))
+    && (!filter.heightTo || (Number(selectedTrait(p.discovery_details,"height")) >= 130 && Number(selectedTrait(p.discovery_details,"height")) <= Number(filter.heightTo)))
+    && Object.keys(CHOICES).every((field) => {
+      const wanted = filter[field as keyof typeof CHOICES];
+      return !wanted || selectedTrait(p.discovery_details,field) === wanted;
+    })
     && (!movieMatch || (fits.get(p.id) ?? 0) > 0)
     && (!filter.fit || (fits.get(p.id) ?? -1) >= Number(filter.fit))),
     [store.people, store.me?.looking_for, store.me?.gender, filter, fits, movieMatch]);
   const deck = useMemo(
     () => cast.filter((p) => !store.liked.includes(p.id) && !store.passed.includes(p.id) && !store.matches[p.id])
-      .map((p) => ({ p, c: p.favorites.filter((f) => mine.includes(f)), score: fits.get(p.id) ?? null }))
-      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.c.length - a.c.length || a.p.id.localeCompare(b.p.id)),
-    [cast, store.liked, store.passed, store.matches, mine, fits],
+      .map((p) => ({ p, c: p.favorites.filter((f) => mine.includes(f)), score: fits.get(p.id) ?? null,
+        sharedExpectation: !!selectedTrait(ownDetails,"relationship") &&
+          selectedTrait(ownDetails,"relationship") === selectedTrait(p.discovery_details,"relationship") }))
+      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || Number(b.sharedExpectation) - Number(a.sharedExpectation) || b.c.length - a.c.length || a.p.id.localeCompare(b.p.id)),
+    [cast, store.liked, store.passed, store.matches, mine, fits, ownDetails],
   );
   const current = deck[0];
   const calendarDay = new Intl.DateTimeFormat("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric" }).format();
@@ -108,6 +121,20 @@ export default function Discover() {
             ["gender", "Cinsiyet", GENDERS], ["goal", "Tanışma amacı", GOALS],
           ] as const).map(([key, label, options]) => <label key={key}>{label}<select className="mt-1 w-full rounded-lg border bg-card p-2" value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}><option value="">Tümü</option>{Object.entries(options).map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>)}
           {([["from", "En düşük yaş", 18], ["to", "En yüksek yaş", 18], ["fit", "En düşük uyum (%)", 0]] as const).map(([key, label, min]) => <label key={key}>{label}<input className="mt-1 w-full rounded-lg border bg-card p-2" type="number" min={min} max={key === "fit" ? 100 : undefined} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} /></label>)}
+          {([
+            ["education","Eğitim",CHOICES.education], ["smoking","Sigara",CHOICES.smoking], ["alcohol","Alkol",CHOICES.alcohol],
+            ["relationship","İlişki beklentisi",CHOICES.relationship], ["children","Çocuk",CHOICES.children], ["sport","Spor",CHOICES.sport],
+            ["genre","Favori tür",Object.fromEntries(GENRES.map((genre) => [genre,genre]))],
+            ["interest","İlgi alanı",Object.fromEntries(INTERESTS.map((name) => [name,name]))],
+            ["occupation","Meslek",Object.fromEntries(OCCUPATIONS.map((name) => [name,name]))],
+          ] as const).map(([key,label,options]) => <label key={key}>{label}<select className="mt-1 w-full rounded-lg border bg-card p-2"
+            aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
+            <option value="">Tümü</option>{Object.entries(options).map(([value,name]) => <option key={value} value={value}>{name}</option>)}
+          </select></label>)}
+          {([["heightFrom","En kısa boy"],["heightTo","En uzun boy"]] as const).map(([key,label]) => <label key={key}>{label}<select className="mt-1 w-full rounded-lg border bg-card p-2"
+            aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
+            <option value="">Tümü</option>{Array.from({ length:111 },(_,i) => i+130).map((height) => <option key={height} value={height}>{height} cm</option>)}
+          </select></label>)}
         </div>
       </details>
       {last && !store.matches[last.id] && <Button className="mb-4" variant="secondary" disabled={busy} onClick={() => void undo()}><RotateCcw /> Son kaydırmayı geri al</Button>}

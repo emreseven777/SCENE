@@ -15,6 +15,7 @@ interface TmdbResult {
   adult?: boolean;
   title?: string;
   name?: string;
+  known_for_department?: string;
   original_title?: string;
   original_name?: string;
   release_date?: string;
@@ -58,6 +59,28 @@ Deno.serve(async (request) => {
 
   const body = await request.json().catch(() => null);
   const token = Deno.env.get("TMDB_READ_ACCESS_TOKEN");
+
+  if (body?.mode === "profile-search") {
+    const field = body.field;
+    const phrase = typeof body.query === "string" ? body.query.trim() : "";
+    const page = body.page;
+    if (!["movie", "series", "actor", "director"].includes(field) || phrase.length < 2 || phrase.length > 100
+      || !Number.isInteger(page) || page < 1 || page > 500) return json({ error: "Invalid profile search" }, 400);
+    if (!token) return json({ error: "Catalog unavailable" }, 503);
+    const kind = field === "movie" ? "movie" : field === "series" ? "tv" : "person";
+    try {
+      const params = new URLSearchParams({ language: "tr-TR", include_adult: "false", query: phrase, page: String(page) });
+      const response = await tmdb(`search/${kind}`, params, token) as { results: TmdbResult[]; total_pages: number };
+      const results = response.results.flatMap((item) => {
+        const name = (item.title || item.name || item.original_title || item.original_name)?.trim();
+        if (!name || item.adult || !/^[1-9][0-9]{0,9}$/.test(String(item.id))) return [];
+        if (kind === "person" && item.known_for_department !== (field === "director" ? "Directing" : "Acting")) return [];
+        const year = Number((item.release_date || item.first_air_date || "").slice(0,4));
+        return [{ id: `tmdb-${kind}-${item.id}`, name: name.slice(0,180), ...(year >= 1870 && year <= 2100 ? { year } : {}) }];
+      });
+      return json({ results, nextPage: page < Math.min(500,response.total_pages) ? page+1 : null });
+    } catch { return json({ error: "Profile search unavailable" }, 502); }
+  }
 
   if (body?.mode === "details") {
     const match = typeof body.id === "string" && body.id.match(/^tmdb-(movie|tv)-([1-9][0-9]{0,9})$/);

@@ -31,7 +31,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: me.name, city: me.city, bio: me.bio, scene: me.scene });
   const [titleId, setTitleId] = useState<string | null>(null);
-  const profileSteps = [{label:"İsim",done:!!me.name.trim()},{label:"Profil fotoğrafı",done:!!me.avatar_path},{label:"Hakkında",done:!!me.bio.trim()},{label:"Unutamadığın sahne",done:!!me.scene.trim()},{label:"En az 5 favori yapım",done:me.favorites.length >= 5},{label:"İlişki beklentisi",done:!!me.dating_goal}];
+  const profileSteps = [{label:"İsim",done:!!me.name.trim()},{label:"Profil fotoğrafı",done:!!me.avatar_path},{label:"Hakkında",done:!!me.bio.trim()},{label:"Unutamadığın sahne",done:!!me.scene.trim()},{label:"En az 5 favori yapım",done:me.favorites.length >= 5},{label:"Tanışma amacı",done:!!me.dating_goal}];
   const completion = Math.round(profileSteps.filter(s => s.done).length / profileSteps.length * 100);
   const genreCounts = new Map<string, number>();
   for (const id of me.favorites) for (const genre of new Set(store.titleById(id)?.genres ?? [])) genreCounts.set(genre, (genreCounts.get(genre) ?? 0) + 1);

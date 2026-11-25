@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         options: {
           data: { name: name.trim() },
-          emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+          emailRedirectTo: new URL(import.meta.env.BASE_URL, window.location.origin).href,
         },
       });
       if (error) throw error;
