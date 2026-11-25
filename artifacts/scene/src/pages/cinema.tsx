@@ -7,7 +7,7 @@ import { SwipeCard, type SwipeDirection } from "@/components/swipe-card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { fetchCinema, fetchCinemaDetails } from "@/lib/tmdb";
-import { byId, savedTmdbTitle, tmdbIdFor, type Title, type TitleType } from "@/lib/catalog";
+import { CATALOG, byId, savedTmdbTitle, tmdbIdFor, type Title, type TitleType } from "@/lib/catalog";
 import { requireSupabase } from "@/lib/supabase";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
@@ -60,7 +60,14 @@ export default function Cinema() {
   });
   const excluded = new Set([...(archive.data ?? []).map((item) => item.title_id), ...user.favorites]);
   const unique = new Map((catalog.data?.pages ?? []).flatMap((page) => page.titles.map((title) => [title.id, title] as const)));
-  const deck = [...unique.values()].filter((title) => !excluded.has(title.id));
+  const usingArchive = catalog.isError && !catalog.data;
+  const selectedGenre = genres.find(([id]) => String(id) === genre)?.[1];
+  const availableTitles = usingArchive
+    ? CATALOG.filter((title) => title.type === type
+      && (!selectedGenre || title.genres.includes(selectedGenre))
+      && (!year || String(title.year) === year))
+    : [...unique.values()];
+  const deck = availableTitles.filter((title) => !excluded.has(title.id));
   const top = deck[0];
   const prefetchKey = [type, genre, year, sort, catalog.data?.pages.length].join("/");
   useEffect(() => {
@@ -133,8 +140,12 @@ export default function Cinema() {
         <label>Yapım<select className="mt-1 w-full rounded-lg border bg-card p-2" value={type} onChange={(e) => setType(e.target.value as TitleType)}><option value="film">Film</option><option value="dizi">Dizi</option></select></label>
         <label>Tür<select className="mt-1 w-full rounded-lg border bg-card p-2" value={genre} onChange={(e) => setGenre(e.target.value)}><option value="">Tümü</option>{genres.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
         <label>Yıl<select className="mt-1 w-full rounded-lg border bg-card p-2" value={year} onChange={(e) => setYear(e.target.value)}><option value="">Tümü</option>{Array.from({ length: new Date().getFullYear() - 1887 }, (_, i) => new Date().getFullYear() - i).map((y) => <option key={y}>{y}</option>)}</select></label>
-        <label>Sıralama<select className="mt-1 w-full rounded-lg border bg-card p-2" value={sort} onChange={(e) => setSort(e.target.value)}><option value="popularity.desc">Popüler</option><option value="vote_average.desc">En yüksek puan</option></select></label>
+        <label>Sıralama<select disabled={usingArchive} className="mt-1 w-full rounded-lg border bg-card p-2" value={usingArchive ? "archive" : sort} onChange={(e) => setSort(e.target.value)}>{usingArchive && <option value="archive">Arşiv sırası</option>}<option value="popularity.desc">Popüler</option><option value="vote_average.desc">En yüksek puan</option></select></label>
       </div>
+      {usingArchive && <p role="status" className="mb-3 text-sm text-muted-foreground">
+        TMDB şu anda kullanılamıyor. SCENE arşivi gösteriliyor.{" "}
+        <button type="button" className="underline" disabled={catalog.isFetching} onClick={() => void catalog.refetch()}>TMDB’yi tekrar dene</button>
+      </p>}
       {archive.isPending || catalog.isPending ? <p role="status">Katalog yükleniyor…</p> : archive.isSuccess && top ? <>
         <SwipeCard key={top.id} labels={swipeLabels} disabled={busy} onSwipe={swipe}
           next={deck[1]?.poster && <img src={deck[1].poster} alt="" className="size-full object-cover" />}>
@@ -153,7 +164,7 @@ export default function Cinema() {
           <Button variant="secondary" disabled={busy} onClick={() => void swipe("up")}><Bookmark /> İzleme listesi</Button>
           <Button variant="ghost" disabled={busy} onClick={() => void change(top, "unseen")}>İzlemedim</Button>
         </div>
-      </> : catalog.isError ? <p role="alert">TMDB kataloğu yüklenemedi. <button className="underline" onClick={() => void catalog.refetch()}>Tekrar dene</button></p>
+      </> : catalog.isError && !usingArchive ? <p role="alert">TMDB kataloğu yüklenemedi. <button className="underline" onClick={() => void catalog.refetch()}>Tekrar dene</button></p>
         : <p className="p-4 text-sm text-muted-foreground">Bu sayfada yeni bir yapım yok.</p>}
       {catalog.hasNextPage && (!deck.length || catalog.isFetchNextPageError) && <Button disabled={catalog.isFetchingNextPage} variant="secondary" onClick={() => void catalog.fetchNextPage()}>Daha fazla yapım</Button>}
     </> : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
