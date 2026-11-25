@@ -1,3 +1,5 @@
+import appStoreLogo from "@/assets/appstore.svg";
+import googlePlayLogo from "@/assets/googleplay.svg";
 import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
@@ -18,6 +20,33 @@ function AuthHeader() {
   );
 }
 
+const upcomingStores = [
+  { name: "App Store", logo: appStoreLogo },
+  { name: "Google Play", logo: googlePlayLogo },
+];
+
+function ComingSoonStores() {
+  return (
+    <section aria-labelledby="coming-soon-heading" className="mt-7 w-full min-w-0 border-t border-[#d5b57c]/55 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <h2 id="coming-soon-heading" className="text-xl font-bold tracking-tight text-[#790e25]">Çok yakında cebinde</h2>
+      <ul className="mt-3 grid grid-cols-2 gap-2.5 sm:gap-3" aria-label="Uygulama mağazaları">
+        {upcomingStores.map(({ name, logo }) => (
+          <li key={name} className="flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d5b57c]/80 bg-linear-to-br from-[#fffdf7] to-[#fff3df] px-2 py-3 text-left shadow-sm sm:gap-3 sm:px-4">
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#810e28]/8 sm:size-10">
+              <img alt="" src={logo} className="size-[1.125rem] sm:size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs leading-tight font-bold text-[#790e25] sm:text-sm">{name}</p>
+              <p className="mt-0.5 text-[11px] leading-tight font-medium text-[#653a36]">Yakında</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-xs text-[#653a36]">iOS ve Android için hazırlanıyor.</p>
+    </section>
+  );
+}
+
 export function WelcomePage() {
 return <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-col px-6 text-center">
 <div className="flex justify-end pt-[max(1rem,env(safe-area-inset-top))]"><ThemeToggle /></div>
@@ -32,10 +61,12 @@ return <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-
 <p className="mt-2 text-xs leading-relaxed text-[#653a36]">Ortak filmler · Yeni eşleşmeler · Sinema randevuları</p>
 </div>
 </div>
-<div className="grid gap-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+<div className="grid gap-3">
 <Button asChild size="lg" className="h-14 w-full rounded-full bg-[#810e28] text-white shadow-lg"><Link href="/kayit">Keşfetmeye Başla <ArrowRight /></Link></Button>
 <Button asChild variant="outline" size="lg" className="h-12 w-full rounded-full border-[#810e28] bg-transparent text-[#810e28]"><Link href="/giris">Giriş Yap</Link></Button>
-</div></main>;
+</div>
+<ComingSoonStores />
+</main>;
 }
 
 function Frame({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
