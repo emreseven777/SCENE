@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [user]);
   const count = Object.keys(matches).length;
   return (
-    <div className="min-h-[100dvh] lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)]">
+    <div className="w-full min-w-0 min-h-[100dvh] lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)]">
       <aside className="sticky top-0 hidden h-[100dvh] flex-col border-r bg-card px-5 py-8 lg:flex">
         <SceneBrand className="ml-2" />
         <nav aria-label="Ana menü" className="mt-10 space-y-2">
@@ -61,11 +61,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mt-auto flex items-center gap-2"><ThemeToggle withLabel /><Link href="/bildirimler" aria-label="Bildirimler" className="grid size-11 place-items-center rounded-full border"><Bell size={17} /></Link></div>
       </aside>
       <div className="min-w-0">
-        <header className="scene-toolbar sticky top-0 z-40 flex items-center justify-between border-b px-4 pb-2.5 pt-[calc(.625rem+env(safe-area-inset-top))] lg:hidden">
-          <SceneBrand />
-          <div className="flex items-center gap-2">
+        <header className="scene-toolbar sticky top-0 z-40 flex items-center justify-between gap-2 border-b pl-[max(.625rem,env(safe-area-inset-left))] pr-[max(.625rem,env(safe-area-inset-right))] pb-2.5 pt-[calc(.625rem+env(safe-area-inset-top))] lg:hidden">
+          <SceneBrand className="min-w-0 shrink gap-1.5 [&>span:last-child]:text-base min-[375px]:[&>span:last-child]:text-xl" />
+          <div className="flex shrink-0 items-center gap-1.5">
             <Link href="/arama" aria-label="Ara" data-testid="link-search-mobile" aria-current={loc === "/arama" ? "page" : undefined} className={cn("grid size-11 place-items-center rounded-full border bg-card hover:bg-secondary", loc === "/arama" && "bg-secondary text-brand-ink")}><Search size={18} /></Link>
-            <Link href="/bildirimler" aria-label="Bildirimler" className="grid size-10 place-items-center rounded-full border bg-card"><Bell size={17} /></Link>
+            <Link href="/bildirimler" aria-label="Bildirimler" className="grid size-11 place-items-center rounded-full border bg-card"><Bell size={17} /></Link>
             <ThemeToggle />
           </div>
         </header>
@@ -73,19 +73,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </motion.main>
       </div>
-      <nav aria-label="Ana menü" className="scene-toolbar fixed inset-x-0 bottom-0 z-50 border-t px-2 pb-[env(safe-area-inset-bottom)] lg:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-5">
+      <nav aria-label="Ana menü" className="scene-toolbar fixed inset-x-0 bottom-0 z-50 border-t pl-[max(.25rem,env(safe-area-inset-left))] pr-[max(.25rem,env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] lg:hidden">
+        <div className="mx-auto grid w-full max-w-lg grid-cols-5">
           {NAV.map(({ href, label, icon: Icon }) => {
             const on = isActive(loc, href);
             return (
               <Link key={href} href={href} aria-current={on ? "page" : undefined} data-testid={`nav-${label}`} className={cn("relative flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-1.5 text-center text-[10px] font-semibold", on ? "text-brand-ink" : "text-muted-foreground")}>
-                <span className="relative grid h-8 w-12 place-items-center">
+                <span className="relative grid h-8 w-full max-w-12 place-items-center">
                   {on && <motion.span layoutId="tab" className="absolute inset-0 rounded-full bg-secondary" />}
                   <Icon size={19} className="relative" />
                   {href === "/mesajlar" && unread > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1 text-[9px] text-primary-foreground">{Math.min(unread, 99)}</span>}
                   {href === "/begeniler" && count > 0 && <span className="absolute right-2 top-1 size-2 rounded-full bg-primary ring-2 ring-card" />}
                 </span>
-                {label}
+                <span className="max-w-full truncate">{label}</span>
               </Link>
             );
           })}

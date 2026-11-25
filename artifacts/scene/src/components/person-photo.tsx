@@ -15,7 +15,7 @@ function hueFor(id: string) {
   return h;
 }
 
-export function PersonPhoto({ id, name, avatarPath, className, textClassName }: { id: string; name: string; avatarPath: string | null; className?: string; textClassName?: string }) {
+export function PersonPhoto({ id, name, avatarPath, className, textClassName, contain = false }: { id: string; name: string; avatarPath: string | null; className?: string; textClassName?: string; contain?: boolean }) {
   const { userId } = useAuth();
   const [brokenUrl, setBrokenUrl] = useState("");
   const { data: url } = useQuery({
@@ -31,18 +31,19 @@ export function PersonPhoto({ id, name, avatarPath, className, textClassName }: 
     refetchInterval: 240_000,
     retry: false,
   });
+  const visible = !!url && url !== brokenUrl;
   const tint = hueFor(id) % 60;
   return (
     <div
       role="img"
       aria-label={name}
       className={cn("relative grid place-items-center overflow-hidden font-display font-bold uppercase", className)}
-      style={{ background: `linear-gradient(145deg, #ff914d 0%, hsl(${330 + tint / 2} 85% 62%) 52%, #6d42bb 100%)` }}
+      style={!contain || !visible ? { background: `linear-gradient(145deg, #ff914d 0%, hsl(${330 + tint / 2} 85% 62%) 52%, #6d42bb 100%)` } : undefined}
     >
 
-      <span className={cn("relative text-white drop-shadow-md", textClassName)}>{initials(name)}</span>
-      {url && url !== brokenUrl && (
-        <img alt="" src={url} loading="lazy" onError={() => setBrokenUrl(url)} className="absolute inset-0 h-full w-full object-cover" />
+      {!visible && <span className={cn("relative text-white drop-shadow-md", textClassName)}>{initials(name)}</span>}
+      {visible && url && (
+        <img alt="" src={url} loading="lazy" onError={() => setBrokenUrl(url)} className={cn("absolute inset-0 h-full w-full", contain ? "object-contain object-top" : "object-cover")} />
       )}
     </div>
   );
