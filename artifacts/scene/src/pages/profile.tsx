@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "wouter";
 import { LogOut, Mail, MapPin, Pencil, Plus, Quote } from "lucide-react";
-import { byId } from "@/lib/catalog";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { turkishError } from "@/lib/supabase";
@@ -15,13 +14,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Poster } from "@/components/poster";
 import { HeartButton } from "@/components/heart-button";
 import { TitleDetail } from "@/components/title-detail";
-import { initials } from "@/components/person-photo";
+import { PersonPhoto } from "@/components/person-photo";
 
 export default function Profile() {
   const store = useStore();
   const me = store.me!;
   const { email, signOut } = useAuth();
   const { toast } = useToast();
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: me.name, city: me.city, bio: me.bio, scene: me.scene });
@@ -38,6 +39,21 @@ export default function Profile() {
     } catch { /* error toast already shown */ } finally { setSaving(false); }
   };
 
+  const changePhoto = async (file: File | null) => {
+    setPhotoBusy(true);
+    try {
+      const cleaned = await store.changeAvatar(file);
+      toast({
+        title: file ? "Profil fotoğrafı güncellendi" : "Profil fotoğrafı kaldırıldı",
+        description: cleaned ? undefined : "Önceki dosya depodan silinemedi.",
+      });
+    } catch (error) {
+      toast({ title: "Fotoğraf işlemi tamamlanamadı", description: turkishError(error), variant: "destructive" });
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
   const logout = async () => {
     try { await signOut(); } catch (e) { toast({ title: "Çıkış yapılamadı", description: turkishError(e), variant: "destructive" }); }
   };
@@ -48,7 +64,43 @@ export default function Profile() {
 
 
       <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-end">
-        <div className="grid h-32 w-32 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-[hsl(357_60%_16%)] font-display text-6xl font-black" data-testid="img-my-avatar">{initials(me.name)}</div>
+        <div className="shrink-0 space-y-2">
+          <div data-testid="img-my-avatar">
+            <PersonPhoto id={me.id} name={me.name} avatarPath={me.avatar_path} className="h-32 w-32 rounded-xl" textClassName="text-6xl" />
+          </div>
+          <input
+            ref={photoInput}
+            type="file"
+            accept="image/*,.heic,.heif"
+            className="hidden"
+            aria-label="Galeriden profil fotoğrafı seç"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) void changePhoto(file);
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" size="sm" disabled={photoBusy} onClick={() => photoInput.current?.click()}>
+              {photoBusy ? "İşleniyor…" : me.avatar_path ? "Fotoğrafı değiştir" : "Fotoğraf yükle"}
+            </Button>
+            {me.avatar_path && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild><Button variant="ghost" size="sm" disabled={photoBusy}>Fotoğrafı sil</Button></AlertDialogTrigger>
+                <AlertDialogContent className="border-white/10 bg-card">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Profil fotoğrafın silinsin mi?</AlertDialogTitle>
+                    <AlertDialogDescription>Profilinde adının baş harfleri görünür.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => void changePhoto(null)}>Fotoğrafı sil</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+        </div>
         <div className="flex-1">
           <h1 className="font-display text-6xl font-black uppercase leading-[0.85]" data-testid="text-my-name">{me.name}</h1>
           <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground"><MapPin size={14} /><span data-testid="text-my-city">{me.city || "Şehir yok"}</span></div>
@@ -75,7 +127,7 @@ export default function Profile() {
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             {me.favorites.map((id) => {
-              const t = byId(id); if (!t) return null;
+              const t = store.titleById(id); if (!t) return null;
               return <Poster key={id} t={t} onClick={() => setTitleId(id)} badge={<HeartButton size="sm" active onToggle={() => { store.toggleFavorite(id); toast({ title: "Favorilerden çıkarıldı", description: t.title }); }} testId={`button-remove-fav-${id}`} />} />;
             })}
           </div>

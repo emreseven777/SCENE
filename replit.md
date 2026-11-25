@@ -24,7 +24,9 @@ SCENE is a Turkish-language, mobile-first social networking prototype that conne
 
 - `artifacts/scene` — the SCENE web app (React + Vite). Talks directly to Supabase from the browser.
 - `supabase/migrations/0001_scene_schema.sql` — source of truth for SCENE's database tables and Row Level Security policies (profiles, favorites, likes, passes, matches, messages).
-- `artifacts/scene/src/lib/catalog.ts` — fixed list of 30 films/series; favorites store these string ids.
+- `artifacts/scene/src/lib/catalog.ts` — built-in catalog and stable mapping between legacy and TMDB favorite IDs.
+- `supabase/functions/tmdb-catalog` — authenticated TMDB catalog search.
+- `supabase/migrations/0002_catalog_and_avatars.sql` — catalog metadata and private profile photo storage. See [iPhone setup](supabase/KURULUM.md).
 
 ## Architecture decisions
 

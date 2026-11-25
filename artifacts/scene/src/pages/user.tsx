@@ -1,8 +1,8 @@
+import type { Title } from "@/lib/catalog";
 import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { ArrowLeft, Heart, MapPin, MessageCircle, Quote } from "lucide-react";
 import { motion } from "framer-motion";
-import { byId } from "@/lib/catalog";
 import { useCommon, useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ function UserView({ pid }: { pid: string }) {
   const { toast } = useToast();
   const common = useCommon(p.favorites);
   const others = p.favorites.filter((f) => !common.includes(f));
-  const [titleId, setTitleId] = useState<string | null>(null);
+  const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [matchPid, setMatchPid] = useState<string | null>(null);
   const matched = !!store.matches[p.id];
   const liked = store.liked.includes(p.id);
@@ -36,7 +36,7 @@ function UserView({ pid }: { pid: string }) {
     <div>
       <div className="relative h-[62vh] min-h-[420px] overflow-hidden lg:h-[70vh]">
         <motion.div className="h-full w-full" initial={{ scale: 1.12 }} animate={{ scale: 1 }} transition={{ duration: 1.4, ease: "easeOut" }}>
-          <PersonPhoto id={p.id} name={p.name} className="h-full w-full" textClassName="text-[12rem] leading-none opacity-60" />
+          <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-full w-full" textClassName="text-[12rem] leading-none opacity-60" />
         </motion.div>
         <div className="vignette absolute inset-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
@@ -80,7 +80,7 @@ function UserView({ pid }: { pid: string }) {
           <h2 className="mb-4 font-display text-3xl font-extrabold uppercase">Ortak <span className="text-primary">favoriler</span></h2>
           {common.length ? (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-              {common.map((id) => { const t = byId(id); return t && <Poster key={id} t={t} onClick={() => setTitleId(id)} className="ring-2 ring-primary/70" />; })}
+              {common.map((id) => { const t = store.titleById(id, p.id); return t && <Poster key={id} t={t} onClick={() => setSelectedTitle(t)} className="ring-2 ring-primary/70" />; })}
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-white/15 p-6 text-sm text-muted-foreground">Henüz ortak favoriniz yok. Aşağıdaki listeden birini favorilerine eklersen sayı anında güncellenir.</div>
@@ -91,12 +91,12 @@ function UserView({ pid }: { pid: string }) {
           <section>
             <h2 className="mb-4 font-display text-2xl font-extrabold uppercase text-foreground/80">{p.name} ayrıca seviyor</h2>
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-              {others.map((id) => { const t = byId(id); return t && <Poster key={id} t={t} onClick={() => setTitleId(id)} />; })}
+              {others.map((id) => { const t = store.titleById(id, p.id); return t && <Poster key={id} t={t} onClick={() => setSelectedTitle(t)} />; })}
             </div>
           </section>
         )}
       </div>
-      <TitleDetail id={titleId} onClose={() => setTitleId(null)} />
+      <TitleDetail title={selectedTitle} onClose={() => setSelectedTitle(null)} />
       <MatchOverlay pid={matchPid} onClose={() => setMatchPid(null)} />
     </div>
   );

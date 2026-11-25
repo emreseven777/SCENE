@@ -48,3 +48,58 @@ export const CATALOG: Title[] = [
 ];
 
 export const byId = (id: string) => CATALOG.find((t) => t.id === id);
+
+// Keep the original IDs so existing favorites and shared counts use the same keys.
+const legacyTmdbIds: Record<string, string> = {
+  "tmdb-movie-238": "godfather",
+  "tmdb-movie-680": "pulp",
+  "tmdb-movie-550": "fightclub",
+  "tmdb-movie-27205": "inception",
+  "tmdb-movie-157336": "interstellar",
+  "tmdb-movie-155": "darkknight",
+  "tmdb-movie-496243": "parasite",
+  "tmdb-movie-129": "spirited",
+  "tmdb-movie-278": "shawshank",
+  "tmdb-movie-244786": "whiplash",
+  "tmdb-movie-313369": "lalaland",
+  "tmdb-movie-475557": "joker",
+  "tmdb-movie-603": "matrix",
+  "tmdb-movie-152601": "her",
+  "tmdb-movie-38": "eternal",
+  "tmdb-movie-843": "moodlove",
+  "tmdb-movie-76": "sunrise",
+  "tmdb-movie-103": "taxi",
+  "tmdb-movie-194": "amelie",
+  "tmdb-tv-1396": "breakingbad",
+  "tmdb-tv-1399": "got",
+  "tmdb-tv-66732": "stranger",
+  "tmdb-tv-70523": "dark",
+  "tmdb-tv-87108": "chernobyl",
+  "tmdb-tv-76331": "succession",
+  "tmdb-tv-136315": "bear",
+  "tmdb-tv-95396": "severance",
+  "tmdb-tv-46648": "truedetective",
+  "tmdb-tv-67070": "fleabag",
+  "tmdb-tv-2316": "office",
+};
+
+export function canonicalTitle(title: Title): Title {
+  return byId(legacyTmdbIds[title.id] ?? title.id) ?? title;
+}
+
+export function savedTmdbTitle(id: string, value: unknown): Title | undefined {
+  if (!/^tmdb-(movie|tv)-[1-9][0-9]*$/.test(id) || !value || typeof value !== "object") return;
+  const title = value as Partial<Title>;
+  if (title.id !== id || typeof title.title !== "string" || !title.title.trim()) return;
+  return {
+    id,
+    type: id.startsWith("tmdb-movie-") ? "film" : "dizi",
+    title: title.title.slice(0, 300),
+    original: typeof title.original === "string" ? title.original.slice(0, 300) : undefined,
+    year: typeof title.year === "number" && Number.isInteger(title.year) && title.year >= 0 && title.year < 10000 ? title.year : 0,
+    poster: typeof title.poster === "string" && /^https:\/\/image\.tmdb\.org\/t\/p\/w500\/[\w-]+\.(jpg|png|webp)$/i.test(title.poster) ? title.poster : "",
+    genres: [],
+    by: "",
+    overview: typeof title.overview === "string" ? title.overview.slice(0, 3000) : "",
+  };
+}
