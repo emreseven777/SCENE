@@ -22,7 +22,7 @@ export function WelcomePage() {
 return <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-col px-6 text-center">
 <div className="flex justify-end pt-[max(1rem,env(safe-area-inset-top))]"><ThemeToggle /></div>
 <div className="my-auto flex flex-col items-center py-8">
-<div className="ivory-hero-brand"><SceneBrand /></div>
+<div className="flex flex-col items-center gap-2"><a href="https://commons.wikimedia.org/wiki/File:A_Traditional_Wooden_Slate_Clapperboard.jpg" target="_blank" rel="noreferrer" aria-label="Sinema klaketi fotoğrafı, MrGandy"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/A_Traditional_Wooden_Slate_Clapperboard.jpg?width=480" alt="Gerçek sinema klaketi" className="h-28 w-36 rounded-2xl border-2 border-[#d5b57c] object-cover shadow-lg" onError={(e)=>{e.currentTarget.onerror=null;e.currentTarget.src=import.meta.env.BASE_URL+"cinema/la-la-land.jpg";}} /></a><span className="font-serif text-[clamp(3rem,13vw,4.8rem)] font-bold leading-none tracking-[.04em] text-[#790e25]">SCENE</span></div>
 <p className="mt-6 text-xs font-semibold uppercase tracking-[.24em] text-[#a47a40]">Sinema • Arkadaşlık • Flört</p>
 <h1 className="mt-4 font-serif text-[clamp(2rem,8vw,3rem)] font-bold leading-tight text-[#790e25]">Her aşk bir<br/>sahneyle başlar.</h1>
 <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#653a36]">Favori filmlerini paylaş. Seninle aynı hikâyeleri seven insanlarla tanış.</p>
