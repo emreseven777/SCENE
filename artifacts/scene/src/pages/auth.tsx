@@ -19,22 +19,23 @@ function AuthHeader() {
 }
 
 export function WelcomePage() {
-  return (
-    <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-col overflow-hidden text-center">
-      <div className="relative flex justify-end px-4 pt-[max(1rem,env(safe-area-inset-top))]"><ThemeToggle /></div>
-      <div className="relative z-10 flex flex-col items-center px-5 pt-2">
-        <div className="ivory-hero-brand"><SceneBrand /></div>
-        <h1 className="mt-4 font-serif text-[clamp(1.5rem,6vw,2.2rem)] font-bold italic leading-tight text-[#790e25]">Her aşk bir sahneyle başlar.</h1>
-        <p className="mt-3 text-sm text-[#653a36]">Film ve dizi tutkunları için tanışma uygulaması.</p>
-        <div className="mt-5 flex w-full justify-center gap-3 text-xs font-semibold text-[#790e25]"><span>🎬 Aynı filmler</span><span>♡ Ortak tutkular</span><span>📺 Aynı diziler</span></div>
-      </div>
-      <CinemaCollage className="ivory-welcome-art mt-3 min-h-64 flex-1" />
-      <div className="relative z-10 grid gap-3 px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
-        <Button asChild size="lg" className="h-14 w-full rounded-full bg-[#810e28] text-white shadow-lg"><Link href="/kayit">Keşfetmeye Başla <ArrowRight /></Link></Button>
-        <Button asChild variant="outline" size="lg" className="h-12 w-full rounded-full border-[#810e28] bg-transparent text-[#810e28]"><Link href="/giris">Giriş Yap</Link></Button>
-      </div>
-    </main>
-  );
+return <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-col px-6 text-center">
+<div className="flex justify-end pt-[max(1rem,env(safe-area-inset-top))]"><ThemeToggle /></div>
+<div className="my-auto flex flex-col items-center py-8">
+<div className="ivory-hero-brand"><SceneBrand /></div>
+<p className="mt-6 text-xs font-semibold uppercase tracking-[.24em] text-[#a47a40]">Sinema • Arkadaşlık • Flört</p>
+<h1 className="mt-4 font-serif text-[clamp(2rem,8vw,3rem)] font-bold leading-tight text-[#790e25]">Her aşk bir<br/>sahneyle başlar.</h1>
+<p className="mt-4 max-w-xs text-sm leading-relaxed text-[#653a36]">Favori filmlerini paylaş. Seninle aynı hikâyeleri seven insanlarla tanış.</p>
+<div className="mt-8 w-full rounded-2xl border border-[#d5b57c] bg-[#fffaf0] p-5 shadow-sm">
+<div className="text-3xl text-[#810e28]">♡</div>
+<p className="mt-2 font-serif text-xl font-bold text-[#790e25]">İki kişilik bir hikâye</p>
+<p className="mt-2 text-xs leading-relaxed text-[#653a36]">Ortak filmler · Yeni eşleşmeler · Sinema randevuları</p>
+</div>
+</div>
+<div className="grid gap-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+<Button asChild size="lg" className="h-14 w-full rounded-full bg-[#810e28] text-white shadow-lg"><Link href="/kayit">Keşfetmeye Başla <ArrowRight /></Link></Button>
+<Button asChild variant="outline" size="lg" className="h-12 w-full rounded-full border-[#810e28] bg-transparent text-[#810e28]"><Link href="/giris">Giriş Yap</Link></Button>
+</div></main>;
 }
 
 function Frame({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
