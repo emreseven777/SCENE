@@ -29,6 +29,15 @@ begin
   if exists (select 1 from auth.users where id='83000000-0000-0000-0000-000000000001' and raw_user_meta_data ? 'scene_registration') then
     raise exception 'Registration payload persisted in metadata';
   end if;
+  -- GoTrue can write the original payload back while processing signup.
+  update auth.users
+  set raw_user_meta_data = raw_user_meta_data ||
+    '{"name":"Updated QA","scene_registration":{"birth_date":"2000-01-01","terms_accepted":false}}'::jsonb
+  where id='83000000-0000-0000-0000-000000000001';
+  if not exists (select 1 from auth.users where id='83000000-0000-0000-0000-000000000001'
+      and raw_user_meta_data->>'name'='Updated QA' and not (raw_user_meta_data ? 'scene_registration')) then
+    raise exception 'Auth update did not scrub only the registration payload';
+  end if;
   if not exists (select 1 from scene_private.registration_evidence where user_id='83000000-0000-0000-0000-000000000001'
         and terms_version='8.3-draft.1' and accepted_at is not null and pending_birth_date is null) then
     raise exception 'Signup evidence not recorded or date duplicated';

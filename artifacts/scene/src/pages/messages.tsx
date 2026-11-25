@@ -279,7 +279,7 @@ export function Chat() {
         </div>}
         <div className="border-t px-3 pt-1">
           {reply && <div className="flex items-center justify-between gap-2 text-xs"><span className="truncate">Yanıt: {msgs.find((item) => item.id === reply)?.text}</span><Button size="sm" variant="ghost" onClick={() => setReply(null)}>Vazgeç</Button></div>}
-          {!text.trim() && !media && <details className="mb-2 text-xs"><summary className="cursor-pointer py-2 text-brand-ink">Scene Quiz · Sohbet kartları</summary><div className="flex flex-wrap gap-2">{["Hayatın bir film olsaydı adı ne olurdu?","Birlikte hangi filmi izlemek isterdin?","En sevdiğin film karakteri kim?","Bir filmin finalini değiştirebilseydin hangisi olurdu?"].map(question => <button key={question} type="button" className="rounded-xl border bg-card p-2 text-left" onClick={() => publishTyping(question)}>{question}</button>)}</div></details>}
+          {!text.trim() && !media && <details className="mb-2 text-xs"><summary className="cursor-pointer py-2 text-brand-ink">Movia Quiz · Sohbet kartları</summary><div className="flex flex-wrap gap-2">{["Hayatın bir film olsaydı adı ne olurdu?","Birlikte hangi filmi izlemek isterdin?","En sevdiğin film karakteri kim?","Bir filmin finalini değiştirebilseydin hangisi olurdu?"].map(question => <button key={question} type="button" className="rounded-xl border bg-card p-2 text-left" onClick={() => publishTyping(question)}>{question}</button>)}</div></details>}
           {media && <AttachmentPreview media={media} onRemove={() => setMedia(null)} />}
           <div className="flex flex-wrap items-start gap-2">
             <AttachmentControls disabled={sending || !!media} onPick={setMedia} />

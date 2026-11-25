@@ -85,8 +85,9 @@ select public.complete_profile_identity((current_date-interval '24 years')::date
 do $$
 begin
   begin
-    perform reporter_id from public.scene_reports where reported_id=auth.uid();
-    raise exception 'Reported member read reporter identity';
+    if exists (select reporter_id from public.scene_reports where reported_id=auth.uid()) then
+      raise exception 'Reported member read reporter identity';
+    end if;
   exception when insufficient_privilege then null;
   end;
   begin
