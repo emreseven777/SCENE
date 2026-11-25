@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Quote } from "lucide-react";
+import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
+import { ProfileIdentity } from "@/components/profile-identity";
 import { PersonPhoto } from "@/components/person-photo";
 import type { Person } from "@/lib/store";
 
@@ -44,8 +45,7 @@ export function ProfilePortrait({ person }: { person: Person }) {
     <div className="relative aspect-square overflow-hidden bg-card sm:max-h-[65svh] sm:aspect-[4/3]">
       <ProfileGallery person={person} />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-5 pb-5 pt-14 text-white sm:px-8">
-        <h1 data-testid="text-user-name" className="break-words font-display text-5xl font-black uppercase leading-[0.9] lg:text-7xl">{person.name}</h1>
-        <div className="mt-2 flex items-center gap-1 text-sm"><MapPin size={14} />{person.city || "Şehir belirtilmemiş"}</div>
+        <ProfileIdentity person={person} as="h1" size="text-5xl lg:text-7xl" testId="text-user-name" />
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Poster } from "@/components/poster";
 import { HeartButton } from "@/components/heart-button";
 import { TitleDetail } from "@/components/title-detail";
+import { ProvinceSelect } from "@/components/province-select";
 import { PersonPhoto } from "@/components/person-photo";
 import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
 
@@ -53,7 +54,7 @@ export default function Profile() {
         </div>
         <div className="flex-1">
           <h1 className="font-display text-6xl font-black uppercase leading-[0.85]" data-testid="text-my-name">{me.name}</h1>
-          <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground"><MapPin size={14} /><span data-testid="text-my-city">{me.city || "Şehir yok"}</span></div>
+          <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground"><MapPin size={14} /><span data-testid="text-my-city">{me.city || "İl belirtilmemiş"}</span></div>
           <p className="mt-3 max-w-xl text-foreground/80" data-testid="text-my-bio">{me.bio || "Henüz bir şey yazmadın."}</p>
           {me.scene && <p className="mt-2 flex max-w-xl gap-2 text-sm italic text-foreground/70" data-testid="text-my-scene"><Quote size={14} className="mt-0.5 shrink-0 text-primary" />{me.scene}</p>}
         </div>
@@ -112,7 +113,7 @@ export default function Profile() {
           <DialogHeader><DialogTitle className="font-display text-3xl font-extrabold uppercase">Profili düzenle</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5"><Label htmlFor="name">İsim</Label><Input id="name" maxLength={40} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="input-name" /></div>
-            <div className="space-y-1.5"><Label htmlFor="city">Şehir</Label><Input id="city" maxLength={40} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} data-testid="input-city" /></div>
+            <ProvinceSelect id="city" value={form.city} onChange={(city) => setForm({ ...form, city })} />
             <div className="space-y-1.5"><Label htmlFor="bio">Hakkında</Label><Textarea id="bio" maxLength={240} rows={4} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} data-testid="input-bio" /><div className="text-right font-mono text-[10px] text-muted-foreground">{form.bio.length}/240</div></div>
             <div className="space-y-1.5"><Label htmlFor="scene">Unutamadığın sahne</Label><Input id="scene" maxLength={200} value={form.scene} onChange={(e) => setForm({ ...form, scene: e.target.value })} placeholder="Örn. Spinning top dönmeye devam ederken ekran kararır." data-testid="input-scene" /></div>
           </div>

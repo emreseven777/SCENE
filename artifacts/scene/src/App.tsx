@@ -16,6 +16,8 @@ import Matches from '@/pages/matches';
 import { Chat, MessagesIndex } from '@/pages/messages';
 import Profile from '@/pages/profile';
 import CreateProfile from '@/pages/create-profile';
+import { CompleteIdentity } from '@/pages/complete-identity';
+import { isProvince } from '@/lib/provinces';
 import SearchPage from '@/pages/search';
 import UserPage from '@/pages/user';
 import { LoginPage, RegisterPage } from '@/pages/auth';
@@ -57,6 +59,7 @@ function SignedInApp() {
       </FullScreen>
     );
   }
+  if (store.me.age === null || !isProvince(store.me.city)) return <CompleteIdentity key={store.me.id} person={store.me} />;
   if (!store.me.onboarded && loc !== '/profil/olustur') return <Redirect to="/profil/olustur" />;
 
   return (

@@ -9,6 +9,7 @@ export interface Person {
   id: string;
   name: string;
   city: string;
+  age: number | null;
   bio: string;
   scene: string;
   onboarded: boolean;
@@ -32,7 +33,7 @@ interface Data {
 
 const EMPTY: Data = { me: null, people: [], titles: {}, liked: [], passed: [], matches: {}, messages: {} };
 
-interface ProfileRow { id: string; name: string; city: string; bio: string; scene: string; onboarded: boolean; avatar_path: string | null; avatar_paths: string[] }
+interface ProfileRow { id: string; name: string; city: string; age: number | null; bio: string; scene: string; onboarded: boolean; avatar_path: string | null; avatar_paths: string[] }
 interface MatchRow { id: string; user_a: string; user_b: string; created_at: string }
 interface MessageRow { id: number; match_id: string; sender_id: string; body: string; created_at: string }
 
@@ -52,7 +53,8 @@ interface Ctx extends Data {
   unmatch: (pid: string) => Promise<boolean>;
   send: (pid: string, text: string) => Promise<void>;
   updateMe: (patch: ProfilePatch) => Promise<void>;
-  completeOnboarding: (p: { name: string; city: string; bio: string; favorites: string[] }) => Promise<void>;
+  saveIdentity: (birthDate: string | null, province: string) => Promise<void>;
+  completeOnboarding: (p: { name: string; bio: string; favorites: string[] }) => Promise<void>;
   resetDeck: () => Promise<void>;
 }
 
@@ -78,7 +80,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const sb = requireSupabase();
     try {
       const [profiles, favorites, likes, passes, matches, messages] = await Promise.all([
-        sb.from("profiles").select("id,name,city,bio,scene,onboarded,avatar_path,avatar_paths"),
+        sb.from("scene_profiles").select("id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths"),
         sb.from("favorites").select("user_id,title_id,created_at,title_metadata").order("created_at"),
         sb.from("likes").select("liked_id"),
         sb.from("passes").select("passed_id"),
@@ -295,10 +297,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return !!cleanup && !cleanup.error;
   }, [userId, refresh]);
 
-  const completeOnboarding = useCallback(async (p: { name: string; city: string; bio: string; favorites: string[] }) => {
+  const saveIdentity = useCallback(async (birthDate: string | null, province: string) => {
+    const { error } = await requireSupabase().rpc("complete_profile_identity", {
+      new_birth_date: birthDate, new_province: province,
+    });
+    if (error) throw error;
+    await refresh();
+  }, [refresh]);
+
+  const completeOnboarding = useCallback(async (p: { name: string; bio: string; favorites: string[] }) => {
     const sb = requireSupabase();
     try {
-      const up = await sb.from("profiles").update({ name: p.name, city: p.city, bio: p.bio, onboarded: true }).eq("id", userId!);
+      const up = await sb.from("profiles").update({ name: p.name, bio: p.bio, onboarded: true }).eq("id", userId!);
       if (up.error) throw up.error;
       const del = await sb.from("favorites").delete().eq("user_id", userId!);
       if (del.error) throw del.error;
@@ -321,8 +331,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     personById: (id) => data.people.find((p) => p.id === id),
     isFav: (id) => !!data.me?.favorites.includes(id),
     titleById: (id, ownerId = data.me?.id) => byId(id) ?? (ownerId ? data.titles[ownerId]?.[id] : undefined),
-    toggleFavorite, savePhotos, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck,
-  }), [data, ready, loadError, refresh, toggleFavorite, savePhotos, like, unlike, pass, unmatch, send, updateMe, completeOnboarding, resetDeck]);
+    toggleFavorite, savePhotos, like, unlike, pass, unmatch, send, updateMe, saveIdentity, completeOnboarding, resetDeck,
+  }), [data, ready, loadError, refresh, toggleFavorite, savePhotos, like, unlike, pass, unmatch, send, updateMe, saveIdentity, completeOnboarding, resetDeck]);
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
