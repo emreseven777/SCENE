@@ -24,10 +24,10 @@ export function WelcomePage() {
       <AuthHeader />
       <main className="scene-panel my-auto grid overflow-hidden md:grid-cols-[1fr_1.05fr]">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col justify-center p-6 sm:p-12 lg:p-16">
-          <h1 className="scene-title">Seninle aynı <span className="text-brand-ink">sahnede.</span></h1>
-          <p className="mt-4 max-w-xs text-base leading-relaxed text-muted-foreground">Aynı filmler. Ortak tutkular. Yeni hikâyeler.</p>
+          <h1 className="scene-title">Her aşk bir <span className="text-brand-ink">sahneyle başlar.</span></h1>
+          <p className="mt-4 max-w-xs text-base leading-relaxed text-muted-foreground">Film ve dizi tutkunları için tanışma uygulaması.</p>
           <div className="mt-7 flex flex-wrap items-center gap-2">
-            <Button asChild size="lg"><Link href="/kayit">Keşfetmeye başla <ArrowRight /></Link></Button>
+            <Button asChild size="lg"><Link href="/kayit">Hemen başla <ArrowRight /></Link></Button>
             <Button asChild variant="ghost" size="lg"><Link href="/giris">Giriş yap</Link></Button>
           </div>
         </motion.div>
