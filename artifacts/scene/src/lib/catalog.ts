@@ -10,6 +10,8 @@ export interface Title {
   genres: string[];
   by: string;
   overview: string;
+  rating?: number | null;
+  tmdbId?: string;
 }
 
 const T = (p: string) => `https://image.tmdb.org/t/p/w500${p}`;
@@ -83,6 +85,10 @@ const legacyTmdbIds: Record<string, string> = {
   "tmdb-tv-2316": "office",
 };
 
+export function tmdbIdFor(id: string) {
+  return /^tmdb-(movie|tv)-[1-9][0-9]*$/.test(id) ? id : Object.keys(legacyTmdbIds).find((key) => legacyTmdbIds[key] === id);
+}
+
 export function canonicalTitle(title: Title): Title {
   return byId(legacyTmdbIds[title.id] ?? title.id) ?? title;
 }
@@ -98,7 +104,8 @@ export function savedTmdbTitle(id: string, value: unknown): Title | undefined {
     original: typeof title.original === "string" ? title.original.slice(0, 300) : undefined,
     year: typeof title.year === "number" && Number.isInteger(title.year) && title.year >= 0 && title.year < 10000 ? title.year : 0,
     poster: typeof title.poster === "string" && /^https:\/\/image\.tmdb\.org\/t\/p\/w500\/[\w-]+\.(jpg|png|webp)$/i.test(title.poster) ? title.poster : "",
-    genres: [],
+    genres: Array.isArray(title.genres) ? title.genres.filter((name) => typeof name === "string").slice(0, 12).map((name) => name.slice(0, 40)) : [],
+    rating: typeof title.rating === "number" && title.rating >= 0 && title.rating <= 10 ? title.rating : null,
     by: "",
     overview: typeof title.overview === "string" ? title.overview.slice(0, 3000) : "",
   };

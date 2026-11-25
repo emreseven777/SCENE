@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ProfileDetails } from "./dating-profile";
 import { PersonPhoto } from "./person-photo";
 import { ProfileAbout, ProfilePortrait } from "./profile-gallery";
 import { PhotoCropDialog } from "./photo-crop-dialog";
@@ -64,7 +65,7 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
   return (
     <section aria-labelledby="profile-photos-heading" className="scene-panel mt-6 p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="profile-photos-heading" className="font-display text-2xl font-extrabold tracking-tight">Fotoğraflar <span className="text-base text-muted-foreground">{paths.length}/{MAX_PROFILE_PHOTOS}</span></h2>
+        <h2 id="profile-photos-heading" className="font-display text-2xl font-bold tracking-tight">Fotoğraflar <span className="text-base text-muted-foreground">{paths.length}/{MAX_PROFILE_PHOTOS}</span></h2>
         <Button variant="secondary" onClick={() => setPreview(true)}><Eye size={16} />Profil önizleme</Button>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">İlk fotoğraf profil kartında görünür. Oklarla sıralamayı değiştirebilirsin.</p>
@@ -125,7 +126,7 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
             <DialogDescription>Profilinin diğer üyelere nasıl göründüğüne bak.</DialogDescription>
           </div>
           <ProfilePortrait person={person} />
-          <div className="px-4 pb-5"><ProfileAbout person={person} /></div>
+          <div className="space-y-3 px-4 pb-5"><ProfileAbout person={person} /><ProfileDetails person={person} publicPreview /></div>
         </DialogContent>
       </Dialog>
     </section>

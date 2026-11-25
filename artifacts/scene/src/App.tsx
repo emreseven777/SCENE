@@ -20,6 +20,9 @@ import Profile from '@/pages/profile';
 import CreateProfile from '@/pages/create-profile';
 import { CompleteIdentity } from '@/pages/complete-identity';
 import { isProvince } from '@/lib/provinces';
+import Notifications from '@/pages/notifications';
+import { DatingFields } from '@/components/dating-profile';
+import Cinema from '@/pages/cinema';
 import SearchPage from '@/pages/search';
 import UserPage from '@/pages/user';
 import { LoginPage, RegisterPage, WelcomePage } from '@/pages/auth';
@@ -62,6 +65,9 @@ function SignedInApp() {
     );
   }
   if (store.me.age === null || !isProvince(store.me.city)) return <CompleteIdentity key={store.me.id} person={store.me} />;
+  if (!store.me.name.trim() || !store.me.gender || !store.me.looking_for || !store.me.dating_goal) {
+    return <main className="scene-page max-w-lg pb-safe"><DatingFields key={store.me.id} person={store.me} requiredOnly /></main>;
+  }
   if (!store.me.onboarded && loc !== '/profil/olustur') return <Redirect to="/profil/olustur" />;
 
   return (
@@ -69,7 +75,10 @@ function SignedInApp() {
       <RoutedErrorBoundary>
         <Switch>
           <Route path="/" component={Discover} />
-          <Route path="/eslesmeler" component={Matches} />
+          <Route path="/bildirimler" component={Notifications} />
+              <Route path="/sinema" component={Cinema} />
+              <Route path="/begeniler" component={Matches} />
+              <Route path="/eslesmeler" component={Matches} />
           <Route path="/mesajlar" component={MessagesIndex} />
           <Route path="/mesajlar/:id" component={Chat} />
           <Route path="/profil" component={Profile} />

@@ -1,3 +1,11 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AttachmentControls, AttachmentPreview, ChatAttachment, type PendingMedia } from "@/components/chat-experience";
+import { FilmDate } from "@/components/film-date";
+import { ReportProfile } from "@/components/report-profile";
+import { Button } from "@/components/ui/button";
+import { requireSupabase, turkishError } from "@/lib/supabase";
+import { useScenePreferences } from "@/lib/scene-preferences";
+import { useToast } from "@/hooks/use-toast";
 import { SceneHeading } from "@/components/scene-brand";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "wouter";
@@ -16,27 +24,30 @@ function ConversationList({ activeId }: { activeId?: string }) {
   if (!convos.length)
     return (
       <div className="scene-panel p-8 text-center">
-        <div className="font-display text-2xl font-extrabold">Henüz sohbet yok</div>
+        <div className="font-display text-2xl font-bold">Henüz sohbet yok</div>
         <p className="mt-2 text-sm text-muted-foreground">Sadece eşleştiğin kişilerle mesajlaşabilirsin.</p>
         <Link href="/" className="mt-4 inline-flex h-10 items-center rounded-full bg-primary text-primary-foreground px-5 text-sm font-semibold" data-testid="link-discover-empty">Keşfet</Link>
       </div>
     );
   return (
     <ul className="scene-panel divide-y divide-border p-2">
-      {convos.map(({ p, last }) => (
+      {convos.map(({ p, last }) => {
+        const unread = (store.messages[p.id] ?? []).filter((m) => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0)).length;
+        return (
         <li key={p.id}>
           <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-muted", activeId === p.id && "bg-muted")}>
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-12 w-12 shrink-0 rounded-full" textClassName="text-lg" />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-semibold">{p.name}</span>
+                {unread > 0 && <span aria-label={`${unread} okunmamış mesaj`} className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground">{unread}</span>}
                 {last && <span className="font-mono text-[10px] text-muted-foreground">{format(last.at, "HH:mm")}</span>}
               </div>
               <p className={cn("truncate text-sm", last?.from === "them" ? "text-foreground/80" : "text-muted-foreground")}>{last ? `${last.from === "me" ? "Sen: " : ""}${last.text}` : "Yeni eşleşme. Selam ver."}</p>
             </div>
           </Link>
         </li>
-      ))}
+      ); })}
     </ul>
   );
 }
@@ -57,6 +68,17 @@ export function Chat() {
   const p = store.personById(id ?? "");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [media, setMedia] = useState<PendingMedia | null>(null);
+  const [reply, setReply] = useState<string | null>(null);
+  const [report, setReport] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [clock, setClock] = useState(Date.now());
+  const lastTyping = useRef(0);
+  const client = useQueryClient();
+  const { toast } = useToast();
+  const user = store.me?.id;
+  const chat = id ? store.matches[id]?.id : undefined;
+  const preferences = useScenePreferences(user);
   const scrollRef = useRef<HTMLDivElement>(null);
   const msgs = p ? store.messages[p.id] ?? [] : [];
   const common = useCommon(p?.favorites ?? []);
@@ -66,12 +88,86 @@ export function Chat() {
     if (list) list.scrollTop = list.scrollHeight;
   }, [msgs.length]);
 
+  const latest = msgs.filter((m) => m.from === "them" && !m.deleted).at(-1);
+  const { acknowledge } = store;
+  const read = id ? store.readThrough[id] ?? 0 : 0;
+  useEffect(() => {
+    if (!id || !latest || Number(latest.id) <= read) return;
+    const seen = () => { if (document.visibilityState === "visible") void acknowledge(id, latest.id, true); };
+    seen();
+    document.addEventListener("visibilitychange", seen);
+    return () => document.removeEventListener("visibilitychange", seen);
+  }, [acknowledge, id, latest?.id, read]);
+
+  useEffect(() => {
+    setMedia(null); setReply(null); setText(""); setReport(null);
+    lastTyping.current = 0;
+  }, [id]);
+
+  const signalsKey = ["chat-signals", user, id, chat];
+  const reactionsKey = ["chat-reactions", user, chat, msgs.length];
+  const signals = useQuery({
+    queryKey: signalsKey, enabled: !!chat && !!id,
+    queryFn: async () => {
+      const { data, error } = await requireSupabase().from("scene_signals").select("scope,updated_at").eq("user_id", id!).in("scope", ["presence", chat!]);
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 8000,
+  });
+  const reactions = useQuery({
+    queryKey: reactionsKey, enabled: !!chat && !!msgs.length,
+    queryFn: async () => {
+      const ids = msgs.filter((m) => !m.deleted).slice(-150).map((m) => m.id);
+      if (!ids.length) return [];
+      const { data, error } = await requireSupabase().from("scene_reactions").select("message_id,user_id,emoji").in("message_id", ids);
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 12_000,
+  });
+  useEffect(() => {
+    const handle = setInterval(() => setClock(Date.now()), 3000);
+    return () => clearInterval(handle);
+  }, []);
+  useEffect(() => {
+    if (!chat || !id) return;
+    const sb = requireSupabase();
+    const channel = sb.channel(`conversation-experience-${chat}`)
+      .on("postgres_changes", { event:"*", schema:"public", table:"scene_signals", filter:`user_id=eq.${id}` },
+        () => { void client.invalidateQueries({ queryKey: ["chat-signals",user,id,chat] }); })
+      .on("postgres_changes", { event:"*", schema:"public", table:"scene_reactions" },
+        () => { void client.invalidateQueries({ queryKey: ["chat-reactions",user,chat] }); })
+      .subscribe();
+    return () => { void sb.removeChannel(channel); };
+  }, [chat, client, id, user]);
+
+  const presence = signals.data?.find((row) => row.scope === "presence");
+  const typing = signals.data?.find((row) => row.scope === chat);
+  const online = presence && clock - Date.parse(presence.updated_at) < 65_000;
+  const isTyping = typing && clock - Date.parse(typing.updated_at) < 7000;
+  const publishTyping = (value: string) => {
+    setText(value);
+    if (!chat || !user || !value.trim() || Date.now() - lastTyping.current < 3000) return;
+    lastTyping.current = Date.now();
+    void requireSupabase().from("scene_signals").upsert({ user_id: user, scope: chat }).then(() => undefined);
+  };
+  const reactTo = async (message: string, emoji: string) => {
+    const existing = reactions.data?.find((row) => String(row.message_id) === message && row.user_id === user);
+    const table = requireSupabase().from("scene_reactions");
+    const { error } = await (existing?.emoji === emoji
+      ? table.delete().eq("message_id", message).eq("user_id", user!)
+      : table.upsert({ message_id: message, user_id: user, emoji }));
+    if (error) toast({ title: "Tepki kaydedilemedi", description: turkishError(error), variant: "destructive" });
+    else await reactions.refetch();
+  };
+
   if (!p || !store.matches[p.id]) {
     return (
       <div className="mx-auto grid min-h-[60vh] max-w-md place-items-center px-6 text-center">
         <div>
           <Lock className="mx-auto text-brand-ink" />
-          <h1 className="mt-3 font-display text-4xl font-black uppercase">Kapalı set</h1>
+          <h1 className="mt-3 font-display text-4xl font-bold uppercase">Kapalı set</h1>
           <p className="mt-2 text-sm text-muted-foreground">Yalnızca eşleştiğin kişilerle sohbet edebilirsin.{p ? ` ${p.name} ile henüz eşleşmedin.` : ""}</p>
           <div className="mt-5 flex justify-center gap-2">
             {p && <Link href={`/kullanici/${p.id}`} className="inline-flex h-10 items-center rounded-full bg-primary text-primary-foreground px-4 text-sm font-semibold">Profili gör</Link>}
@@ -85,9 +181,9 @@ export function Chat() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const v = text.trim();
-    if (!v || sending) return;
+    if ((!v && !media) || sending) return;
     setSending(true);
-    try { await store.send(p.id, v); setText(""); } catch { /* error toast already shown; keep the text */ }
+    try { await store.send(p.id, v, { media: media ?? undefined, replyTo: reply ?? undefined }); setText(""); setMedia(null); setReply(null); } catch { /* error toast already shown; keep the text */ }
     finally { setSending(false); }
   };
 
@@ -101,24 +197,49 @@ export function Chat() {
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-10 w-10 rounded-full" textClassName="text-sm" />
             <div>
               <div className="font-semibold leading-tight">{p.name}</div>
-              <div className="text-[11px] text-muted-foreground">{common.length} ortak favori</div>
+              <div className="text-[11px] text-muted-foreground">{isTyping ? "Yazıyor…" : online ? "Çevrimiçi" : presence ? `Son görülme: ${new Date(presence.updated_at).toLocaleString("tr-TR")}` : `${common.length} ortak favori`}</div>
             </div>
           </Link>
+          {chat && user && <FilmDate chat={chat} user={user} titles={common.flatMap((title) => store.titleById(title)?.title ?? [])} />}
         </div>
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5">
           <div className="mx-auto max-w-xs text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Eşleştiniz. Bu sohbeti yalnızca ikiniz görebilirsiniz.</div>
+          {!msgs.length && common.length > 0 && <button type="button" className="mx-auto block rounded-xl border bg-muted p-2 text-xs" onClick={() => setText(`${store.titleById(common[0])?.title ?? "Ortak favorimiz"} için en sevdiğin sahne hangisi?`)}>Ortak bir favoriyle sohbet başlat</button>}
           <AnimatePresence initial={false}>
             {msgs.map((m) => (
               <motion.div key={m.id} layout initial={{ opacity: 0, y: 10, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={cn("flex flex-col", m.from === "me" ? "items-end" : "items-start")} data-testid={`msg-${m.id}`}>
-                <div className={cn("max-w-[82%] break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed", m.from === "me" ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm bg-muted")}>{m.text}</div>
-                <div className="mt-1 font-mono text-[10px] text-muted-foreground">{format(m.at, "HH:mm")}</div>
+                <div className={cn("max-w-[82%] break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed", m.from === "me" ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm bg-muted")}>
+                  {m.replyTo && !m.deleted && <blockquote className="mb-2 line-clamp-2 border-l-2 border-current pl-2 text-xs">{msgs.find((item) => item.id === m.replyTo)?.text ?? "Yanıtlanan mesaj"}</blockquote>}
+                  {m.mediaPath && !m.deleted && <ChatAttachment message={m} blur={preferences.data?.blur_photos ?? true} />}
+                  <p>{m.text}</p>
+                </div>
+                <div className="mt-1 font-mono text-[10px] text-muted-foreground">{format(m.at, "HH:mm")}{m.from === "me" && !m.deleted && <> · {m.seen ? "Görüldü" : m.delivered ? "İletildi" : "Gönderildi"}</>}</div>
+                {!m.deleted && <details className="mt-1 max-w-full text-xs">
+                  <summary className="cursor-pointer py-1">Mesaj işlemleri {reactions.data?.filter((row) => String(row.message_id) === m.id).map((row) => row.emoji).join(" ")}</summary>
+                  <div className="flex flex-wrap gap-1">
+                    {["❤️","😂","👍","😮"].map((emoji) => <button key={emoji} type="button" className="min-h-9 min-w-8 rounded-lg bg-muted" aria-label={`${emoji} tepki ver`} onClick={() => void reactTo(m.id, emoji)}>{emoji}</button>)}
+                    <button type="button" className="p-2 underline" onClick={() => setReply(m.id)}>Yanıtla</button>
+                    {m.from === "me" ? <button type="button" className="p-2 underline" onClick={() => setDeleteId(m.id)}>Sil</button>
+                      : <button type="button" className="p-2 underline" onClick={() => setReport(m.id)}>Şikâyet et</button>}
+                  </div>
+                </details>}
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
-        <form onSubmit={(e) => void submit(e)} className="flex gap-2 border-t border-border p-3">
-          <input value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} placeholder="Bir replik yaz..." data-testid="input-message" className="h-11 min-w-0 flex-1 rounded-full bg-muted px-4 text-base outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-primary" />
-          <motion.button whileTap={{ scale: 0.88 }} type="submit" disabled={!text.trim() || sending} aria-label="Gönder" data-testid="button-send" className="grid h-11 w-11 place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"><Send size={17} /></motion.button>
+        {report && <ReportProfile person={p.id} message={report} onClose={() => setReport(null)} />}
+        {deleteId && <div className="flex flex-wrap items-center gap-2 border-t p-2 text-sm">
+          <span>Mesaj silinsin mi?</span><Button size="sm" variant="secondary" onClick={() => setDeleteId(null)}>Vazgeç</Button>
+          <Button size="sm" variant="destructive" onClick={() => { void store.removeMessage(deleteId); setDeleteId(null); }}>Mesajı sil</Button>
+        </div>}
+        <div className="border-t px-3 pt-1">
+          {reply && <div className="flex items-center justify-between gap-2 text-xs"><span className="truncate">Yanıt: {msgs.find((item) => item.id === reply)?.text}</span><Button size="sm" variant="ghost" onClick={() => setReply(null)}>Vazgeç</Button></div>}
+          {media && <AttachmentPreview media={media} onRemove={() => setMedia(null)} />}
+          <AttachmentControls disabled={sending || !!media} onPick={setMedia} />
+        </div>
+        <form onSubmit={(e) => void submit(e)} className="flex gap-2 px-3 pb-3">
+          <input value={text} onChange={(e) => publishTyping(e.target.value)} maxLength={2000} placeholder="Bir replik yaz..." data-testid="input-message" className="h-11 min-w-0 flex-1 rounded-full bg-muted px-4 text-base outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-primary" />
+          <motion.button whileTap={{ scale: 0.88 }} type="submit" disabled={(!text.trim() && !media) || sending} aria-label="Gönder" data-testid="button-send" className="grid h-11 w-11 place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"><Send size={17} /></motion.button>
         </form>
       </div>
     </div>

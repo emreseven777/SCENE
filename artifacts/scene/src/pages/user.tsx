@@ -1,3 +1,5 @@
+import { ProfileDetails, ProfileSafety } from "@/components/dating-profile";
+import { cinemaFit } from "@/lib/dating";
 import type { Title } from "@/lib/catalog";
 import { useState } from "react";
 import { Link, useParams } from "wouter";
@@ -25,6 +27,9 @@ function UserView({ pid }: { pid: string }) {
   const p = store.personById(pid)!;
   const { toast } = useToast();
   const common = useCommon(p.favorites);
+  const fit = cinemaFit(store.me?.favorites ?? [], p.favorites);
+  const ownGenres = new Set((store.me?.favorites ?? []).flatMap((id) => store.titleById(id)?.genres ?? []));
+  const commonGenres = [...new Set(p.favorites.flatMap((id) => store.titleById(id, p.id)?.genres ?? []))].filter((genre) => ownGenres.has(genre));
   const others = p.favorites.filter((f) => !common.includes(f));
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [matchPid, setMatchPid] = useState<string | null>(null);
@@ -55,13 +60,21 @@ function UserView({ pid }: { pid: string }) {
               }} data-testid="button-like-user"><Heart size={17} className="mr-2" fill="currentColor" />Beğen</Button>
             </motion.div>
           )}
-          <div className="rounded-md border border-primary/30 px-4 py-2.5"><span className="font-display text-2xl font-black text-brand-ink" data-testid="text-user-common">{common.length}</span> <span className="text-sm text-muted-foreground">ortak film ve dizi</span></div>
+          <div className="rounded-md border border-primary/30 px-4 py-2.5"><span className="font-display text-2xl font-bold text-brand-ink" data-testid="text-user-common">{common.length}</span> <span className="text-sm text-muted-foreground">ortak film ve dizi</span></div>
         </div>
 
         <ProfileAbout person={p} />
+        <ProfileDetails person={p} />
+        <section className="scene-panel p-4 sm:p-6">
+          <h2 className="text-xl font-bold">Sinema uyumu</h2>
+          {fit === null ? <p className="mt-2 text-sm text-muted-foreground">Uyumu hesaplamak için ikinizin de en az üç favorisi gerekli.</p>
+            : <p className="mt-2 text-sm"><strong>%{fit}</strong> · ortak favoriler, iki listenin birleşimindeki benzersiz yapımlara bölünür.</p>}
+          {commonGenres.length > 0 && <p className="mt-2 text-sm">Ortak türler: {commonGenres.join(", ")}</p>}
+        </section>
+        <ProfileSafety person={p} />
 
         <section>
-          <h2 className="mb-4 font-display text-2xl font-extrabold tracking-tight">Ortak <span className="text-brand-ink">favoriler</span></h2>
+          <h2 className="mb-4 font-display text-2xl font-bold tracking-tight">Ortak <span className="text-brand-ink">favoriler</span></h2>
           {common.length ? (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
               {common.map((id) => { const t = store.titleById(id, p.id); return t && <Poster key={id} t={t} onClick={() => setSelectedTitle(t)} className="ring-2 ring-primary/70" />; })}
@@ -73,7 +86,7 @@ function UserView({ pid }: { pid: string }) {
 
         {others.length > 0 && (
           <section>
-            <h2 className="mb-4 font-display text-2xl font-extrabold tracking-tight text-foreground/80">{p.name} ayrıca seviyor</h2>
+            <h2 className="mb-4 font-display text-2xl font-bold tracking-tight text-foreground/80">{p.name} ayrıca seviyor</h2>
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
               {others.map((id) => { const t = store.titleById(id, p.id); return t && <Poster key={id} t={t} onClick={() => setSelectedTitle(t)} />; })}
             </div>

@@ -16,6 +16,8 @@ import { HeartButton } from "@/components/heart-button";
 import { TitleDetail } from "@/components/title-detail";
 import { ProvinceSelect } from "@/components/province-select";
 import { PersonPhoto } from "@/components/person-photo";
+import { DeleteAccount } from "@/components/delete-account";
+import { DatingFields, AccountVisibility } from "@/components/dating-profile";
 import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
 
 export default function Profile() {
@@ -50,7 +52,7 @@ export default function Profile() {
           <PersonPhoto id={me.id} name={me.name} avatarPath={me.avatar_path} className="size-20 rounded-3xl sm:size-28" textClassName="text-6xl" />
         </div>
         <div className="min-w-[10rem] flex-1">
-          <h1 className="break-words font-display text-3xl font-extrabold tracking-tight sm:text-5xl" data-testid="text-my-name">{me.name}{me.age !== null && <span className="font-semibold text-muted-foreground">, {me.age}</span>}</h1>
+          <h1 className="break-words font-display text-3xl font-bold tracking-tight sm:text-5xl" data-testid="text-my-name">{me.name}{me.age !== null && <span className="font-semibold text-muted-foreground">, {me.age}</span>}</h1>
           <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground"><MapPin size={14} /><span data-testid="text-my-city">{me.city || "İl belirtilmemiş"}</span></div>
           <p className="mt-3 max-w-xl text-foreground/80" data-testid="text-my-bio">{me.bio || "Henüz bir şey yazmadın."}</p>
           {me.scene && <p className="mt-2 flex max-w-xl gap-2 text-sm italic text-foreground/70" data-testid="text-my-scene"><Quote size={14} className="mt-0.5 shrink-0 text-brand-ink" />{me.scene}</p>}
@@ -59,17 +61,19 @@ export default function Profile() {
       </div>
 
       <ProfilePhotoEditor person={me} />
+      <div className="mt-6"><DatingFields person={me} /></div>
+      <div className="mt-6"><AccountVisibility person={me} /></div>
 
       <div className="scene-panel mt-6 grid grid-cols-3 divide-x divide-border overflow-hidden">
         {[[me.favorites.length, "Favori"], [Object.keys(store.matches).length, "Eşleşme"], [store.liked.length, "Beğeni"]].map(([v, l]) => (
-          <div key={l} className="bg-card p-4 text-center"><div className="font-display text-3xl font-extrabold text-brand-ink">{v}</div><div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{l}</div></div>
+          <div key={l} className="bg-card p-4 text-center"><div className="font-display text-3xl font-bold text-brand-ink">{v}</div><div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{l}</div></div>
         ))}
       </div>
       {best && best.c > 0 && <p className="mt-3 text-sm text-muted-foreground">En çok ortak noktan: <Link href={`/kullanici/${best.p.id}`} className="text-foreground underline decoration-primary underline-offset-4">{best.p.name}</Link> ({best.c} yapım)</p>}
 
       <section className="mt-10">
         <div className="mb-4 flex items-baseline justify-between">
-          <h2 className="font-display text-2xl font-extrabold tracking-tight">Favorilerin</h2>
+          <h2 className="font-display text-2xl font-bold tracking-tight">Favorilerin</h2>
           <Link href="/arama" data-testid="link-add-favorites" className="inline-flex items-center gap-1 text-sm text-brand-ink hover:underline"><Plus size={15} />Ekle</Link>
         </div>
         {me.favorites.length === 0 ? (
@@ -89,6 +93,7 @@ export default function Profile() {
         <div className="mt-2 flex items-center gap-2 text-sm text-foreground/80" data-testid="text-my-email"><Mail size={14} className="text-brand-ink" />{email}</div>
         <p className="mt-1 text-xs text-muted-foreground">E-posta adresin yalnızca sana görünür.</p>
         <div className="mt-5 flex flex-wrap gap-3">
+          <DeleteAccount />
           <AlertDialog>
             <AlertDialogTrigger asChild><Button variant="secondary" data-testid="button-logout"><LogOut size={15} className="mr-2" />Çıkış yap</Button></AlertDialogTrigger>
             <AlertDialogContent className="border-border bg-card">
@@ -107,7 +112,7 @@ export default function Profile() {
 
       <Dialog open={editing} onOpenChange={setEditing}>
         <DialogContent className="border-border bg-card">
-          <DialogHeader><DialogTitle className="font-display text-2xl font-extrabold tracking-tight">Profili düzenle</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-display text-2xl font-bold tracking-tight">Profili düzenle</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5"><Label htmlFor="name">İsim</Label><Input id="name" maxLength={40} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="input-name" /></div>
             <ProvinceSelect id="city" value={form.city} onChange={(city) => setForm({ ...form, city })} />

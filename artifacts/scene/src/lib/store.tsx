@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { requireSupabase, turkishError } from "./supabase";
+import { CHAT_BUCKET, uploadChatMedia } from "./chat-media";
 import { AVATAR_BUCKET, MAX_PROFILE_PHOTOS } from "./avatars";
 import { byId, savedTmdbTitle, type Title } from "./catalog";
 import { useAuth } from "./auth";
@@ -16,26 +17,36 @@ export interface Person {
   favorites: string[];
   avatar_path: string | null;
   avatar_paths: string[];
+  gender: string | null;
+  looking_for: string | null;
+  dating_goal: string | null;
+  discovery_hidden: boolean;
 }
-export interface Msg { id: string; from: "me" | "them"; text: string; at: number }
+export interface Msg {
+  id: string; from: "me" | "them"; text: string; at: number;
+  mediaPath: string | null; mediaKind: "photo" | "audio" | null;
+  replyTo: string | null; deleted: boolean; delivered: boolean; seen: boolean;
+}
 export interface MatchInfo { id: string; at: number }
-export interface ProfilePatch { name?: string; city?: string; bio?: string; scene?: string }
+export interface ProfilePatch { name?: string; city?: string; bio?: string; scene?: string; gender?: string; looking_for?: string; dating_goal?: string; discovery_hidden?: boolean }
 
 interface Data {
   me: Person | null;
   people: Person[];
   titles: Record<string, Record<string, Title>>;
   liked: string[];
+  incoming: Record<string, "like" | "super">;
   passed: string[];
   matches: Record<string, MatchInfo>;
   messages: Record<string, Msg[]>;
+  readThrough: Record<string, number>;
 }
 
-const EMPTY: Data = { me: null, people: [], titles: {}, liked: [], passed: [], matches: {}, messages: {} };
+const EMPTY: Data = { me: null, people: [], titles: {}, liked: [], incoming: {}, passed: [], matches: {}, messages: {}, readThrough: {} };
 
-interface ProfileRow { id: string; name: string; city: string; age: number | null; bio: string; scene: string; onboarded: boolean; avatar_path: string | null; avatar_paths: string[] }
+type ProfileRow = Omit<Person, "favorites">;
 interface MatchRow { id: string; user_a: string; user_b: string; created_at: string }
-interface MessageRow { id: number; match_id: string; sender_id: string; body: string; created_at: string }
+interface MessageRow { id: number; match_id: string; sender_id: string; body: string; created_at: string; media_path: string | null; media_kind: Msg["mediaKind"]; reply_to: number | null; deleted_at: string | null; delivered_at: string | null; seen_at: string | null }
 
 interface Ctx extends Data {
   ready: boolean;
@@ -47,11 +58,14 @@ interface Ctx extends Data {
   toggleFavorite: (id: string, title?: Title) => boolean;
   savePhotos: (previous: string[], paths: string[], upload?: { index: number; image: Blob }) => Promise<boolean>;
   /** true = new match, false = liked, null = failed (error already shown). */
-  like: (pid: string) => Promise<boolean | null>;
+  like: (pid: string, kind?: "like" | "super") => Promise<boolean | null>;
   unlike: (pid: string) => Promise<boolean>;
-  pass: (pid: string) => Promise<void>;
+  pass: (pid: string) => Promise<boolean>;
+  undoSwipe: (pid: string, wasPass: boolean) => Promise<boolean>;
   unmatch: (pid: string) => Promise<boolean>;
-  send: (pid: string, text: string) => Promise<void>;
+  send: (pid: string, text: string, options?: { replyTo?: string; media?: { file: Blob; kind: "photo" | "audio" } }) => Promise<void>;
+  removeMessage: (id: string) => Promise<void>;
+  acknowledge: (pid: string, through: string, seen: boolean) => Promise<void>;
   updateMe: (patch: ProfilePatch) => Promise<void>;
   saveIdentity: (birthDate: string | null, province: string) => Promise<void>;
   completeOnboarding: (p: { name: string; bio: string; favorites: string[] }) => Promise<void>;
@@ -63,8 +77,15 @@ const StoreCtx = createContext<Ctx | null>(null);
 const fail = (e: unknown, title = "İşlem tamamlanamadı") =>
   toast({ title, description: turkishError(e), variant: "destructive" });
 
+const MESSAGE_COLUMNS = "id,match_id,sender_id,body,created_at,media_path,media_kind,reply_to,deleted_at,delivered_at,seen_at";
+
 function toMsg(row: MessageRow, me: string): Msg {
-  return { id: String(row.id), from: row.sender_id === me ? "me" : "them", text: row.body, at: new Date(row.created_at).getTime() };
+  return {
+    id: String(row.id), from: row.sender_id === me ? "me" : "them", text: row.body,
+    at: new Date(row.created_at).getTime(), mediaPath: row.media_path, mediaKind: row.media_kind,
+    replyTo: row.reply_to ? String(row.reply_to) : null, deleted: !!row.deleted_at,
+    delivered: !!row.delivered_at, seen: !!row.seen_at,
+  };
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -79,15 +100,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!userId) return;
     const sb = requireSupabase();
     try {
-      const [profiles, favorites, likes, passes, matches, messages] = await Promise.all([
-        sb.from("scene_profiles").select("id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths"),
+      const [profiles, favorites, likes, incoming, passes, matches, messages, readMarks] = await Promise.all([
+        sb.from("scene_profiles").select("id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths,gender,looking_for,dating_goal,discovery_hidden"),
         sb.from("favorites").select("user_id,title_id,created_at,title_metadata").order("created_at"),
-        sb.from("likes").select("liked_id"),
+        sb.from("likes").select("liked_id").eq("liker_id",userId),
+        sb.from("likes").select("liker_id,kind").eq("liked_id",userId),
         sb.from("passes").select("passed_id"),
         sb.from("matches").select("id,user_a,user_b,created_at"),
-        sb.from("messages").select("id,match_id,sender_id,body,created_at").order("created_at"),
+        sb.from("messages").select(MESSAGE_COLUMNS).order("created_at"),
+        sb.from("scene_read_marks").select("match_id,through_id").eq("user_id", userId),
       ]);
-      for (const r of [profiles, favorites, likes, passes, matches, messages]) if (r.error) throw r.error;
+      for (const r of [profiles, favorites, likes, incoming, passes, matches, messages, readMarks]) if (r.error) throw r.error;
 
       const favs: Record<string, string[]> = {};
       const titles: Record<string, Record<string, Title>> = {};
@@ -119,9 +142,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         me: meRow ? toPerson(meRow) : null,
         people: rows.filter((p) => p.id !== userId && (p.onboarded || matchMap[p.id])).map(toPerson),
         liked: (likes.data as { liked_id: string }[]).map((l) => l.liked_id),
+        incoming: Object.fromEntries((incoming.data ?? []).map((row) => [row.liker_id, row.kind])),
         passed: (passes.data as { passed_id: string }[]).map((p) => p.passed_id),
         matches: matchMap,
         messages: msgs,
+        readThrough: Object.fromEntries((readMarks.data ?? []).map((row) => [byMatch[row.match_id], row.through_id])),
       });
       setLoadError(null);
     } catch (e) {
@@ -150,12 +175,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const entry = Object.entries(dataRef.current.matches).find(([, m]) => m.id === row.match_id);
         if (!entry) { void refresh(); return; }
         const [pid] = entry;
+        if (row.sender_id !== userId && !window.location.pathname.endsWith(`/mesajlar/${pid}`)) {
+          toast({ title: "Yeni mesaj", description: dataRef.current.people.find((person) => person.id === pid)?.name });
+        }
         setData((d) => {
           const list = d.messages[pid] ?? [];
           if (list.some((m) => m.id === String(row.id))) return d;
           return { ...d, messages: { ...d.messages, [pid]: [...list, toMsg(row, userId)] } };
         });
       })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, (payload) => {
+        const row = payload.new as MessageRow;
+        const entry = Object.entries(dataRef.current.matches).find(([, m]) => m.id === row.match_id);
+        if (!entry) return;
+        const [pid] = entry;
+        setData((d) => ({ ...d, messages: {
+          ...d.messages, [pid]: (d.messages[pid] ?? []).map((message) => message.id === String(row.id) ? toMsg(row, userId) : message),
+        } }));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "likes", filter: `liked_id=eq.${userId}` }, () => { void refresh(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => { void refresh(); })
       .subscribe((status) => { if (status === "SUBSCRIBED") void refresh(); });
     const onFocus = () => { if (document.visibilityState === "visible") void refresh(); };
@@ -186,10 +224,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return !has;
   }, [userId]);
 
-  const like = useCallback(async (pid: string) => {
+  const like = useCallback(async (pid: string, kind: "like" | "super" = "like") => {
     const sb = requireSupabase();
     try {
-      const { error } = await sb.from("likes").insert({ liker_id: userId, liked_id: pid });
+      const { error } = await sb.from("likes").insert({ liker_id: userId, liked_id: pid, kind });
       if (error && error.code !== "23505") throw error;
       const [a, b] = [userId!, pid].sort();
       const { data: m, error: mErr } = await sb.from("matches").select("id,created_at").eq("user_a", a).eq("user_b", b).maybeSingle();
@@ -219,7 +257,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setData((d) => ({ ...d, passed: d.passed.includes(pid) ? d.passed : [...d.passed, pid] }));
     const { error } = await requireSupabase().from("passes").upsert({ user_id: userId, passed_id: pid });
     if (error) { setData((d) => ({ ...d, passed: d.passed.filter((x) => x !== pid) })); fail(error); }
+    return !error;
   }, [userId]);
+
+  const undoSwipe = useCallback(async (pid: string, wasPass: boolean) => {
+    const { error } = await requireSupabase().rpc("undo_scene_swipe", { other: pid, was_pass: wasPass });
+    if (error) { fail(error); return false; }
+    setData((d) => wasPass
+      ? { ...d, passed: d.passed.filter((id) => id !== pid) }
+      : { ...d, liked: d.liked.filter((id) => id !== pid) });
+    return true;
+  }, []);
 
   const unmatch = useCallback(async (pid: string) => {
     const sb = requireSupabase();
@@ -240,19 +288,57 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return true;
   }, [userId]);
 
-  const send = useCallback(async (pid: string, text: string) => {
+  const send = useCallback<Ctx["send"]>(async (pid, text, options) => {
     const m = dataRef.current.matches[pid];
-    if (!m) { toast({ title: "Yalnızca eşleştiğin kişilere mesaj gönderebilirsin", variant: "destructive" }); return; }
-    const { data: row, error } = await requireSupabase()
-      .from("messages").insert({ match_id: m.id, sender_id: userId, body: text })
-      .select("id,match_id,sender_id,body,created_at").single();
-    if (error) { fail(error, "Mesaj gönderilemedi"); throw error; }
-    setData((d) => {
-      const list = d.messages[pid] ?? [];
-      if (list.some((x) => x.id === String(row.id))) return d;
-      return { ...d, messages: { ...d.messages, [pid]: [...list, toMsg(row as MessageRow, userId!)] } };
-    });
+    if (!m || !userId) throw new Error("Yalnızca eşleştiğin kişilere mesaj gönderebilirsin.");
+    const sb = requireSupabase();
+    let path: string | null = null;
+    try {
+      if (options?.media) path = await uploadChatMedia(m.id, userId, options.media.file, options.media.kind);
+      const { data: row, error } = await sb.from("messages").insert({
+        match_id: m.id, sender_id: userId, body: text || (options?.media?.kind === "audio" ? "Sesli mesaj" : "Fotoğraf"),
+        reply_to: options?.replyTo ?? null, media_path: path, media_kind: options?.media?.kind ?? null,
+      }).select(MESSAGE_COLUMNS).single();
+      if (error) throw error;
+      setData((d) => {
+        const list = d.messages[pid] ?? [];
+        if (list.some((message) => message.id === String(row.id))) return d;
+        return { ...d, messages: { ...d.messages, [pid]: [...list, toMsg(row, userId)] } };
+      });
+    } catch (error) {
+      if (path) await sb.storage.from(CHAT_BUCKET).remove([path]).catch(() => undefined);
+      fail(error, "Mesaj gönderilemedi");
+      throw error;
+    }
   }, [userId]);
+
+  const removeMessage = useCallback(async (id: string) => {
+    const sb = requireSupabase();
+    const { data: path, error } = await sb.rpc("remove_scene_message", { message: id });
+    if (error) { fail(error, "Mesaj silinemedi"); return; }
+    if (path) {
+      const result = await sb.storage.from(CHAT_BUCKET).remove([path]);
+      if (result.error) fail(result.error, "Ek depodan temizlenemedi");
+    }
+    await refresh();
+  }, [refresh]);
+
+  const acknowledge = useCallback(async (pid: string, through: string, seen: boolean) => {
+    const chat = dataRef.current.matches[pid]?.id;
+    if (!chat) return;
+    const { error } = await requireSupabase().rpc("ack_scene_messages", { chat, through_message: through, mark_seen: seen });
+    if (!error && seen) setData((d) => ({
+      ...d, readThrough: { ...d.readThrough, [pid]: Math.max(d.readThrough[pid] ?? 0, Number(through)) },
+    }));
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    for (const [pid, messages] of Object.entries(data.messages)) {
+      const unread = messages.filter((m) => m.from === "them" && !m.delivered && !m.deleted).at(-1);
+      if (unread) void acknowledge(pid, unread.id, false);
+    }
+  }, [acknowledge, data.messages, userId]);
 
   const updateMe = useCallback(async (patch: ProfilePatch) => {
     const { error } = await requireSupabase().from("profiles").update(patch).eq("id", userId!);
@@ -331,8 +417,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     personById: (id) => data.people.find((p) => p.id === id),
     isFav: (id) => !!data.me?.favorites.includes(id),
     titleById: (id, ownerId = data.me?.id) => byId(id) ?? (ownerId ? data.titles[ownerId]?.[id] : undefined),
-    toggleFavorite, savePhotos, like, unlike, pass, unmatch, send, updateMe, saveIdentity, completeOnboarding, resetDeck,
-  }), [data, ready, loadError, refresh, toggleFavorite, savePhotos, like, unlike, pass, unmatch, send, updateMe, saveIdentity, completeOnboarding, resetDeck]);
+    toggleFavorite, savePhotos, like, unlike, pass, undoSwipe, unmatch, send, removeMessage, acknowledge, updateMe, saveIdentity, completeOnboarding, resetDeck,
+  }), [data, ready, loadError, refresh, toggleFavorite, savePhotos, like, unlike, pass, undoSwipe, unmatch, send, removeMessage, acknowledge, updateMe, saveIdentity, completeOnboarding, resetDeck]);
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }

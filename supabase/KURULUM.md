@@ -31,3 +31,24 @@ Safari'de uygulamayı açıp **Ara** ekranında örneğin **Kış Uykusu** ve **
 ### Terminalden yayına alanlar için
 
 Supabase CLI yapılandırılmışsa aynı veritabanı migration'ını SQL Editor'da çalıştırabilir ve fonksiyonu depo kökünden `supabase functions deploy tmdb-catalog --project-ref PROJE_KODU --no-verify-jwt` ile yayımlayabilirsin.
+
+## SCENE 3.0
+
+Aşağıdaki migration dosyalarını önce test projesinde, sıra ile uygula. Var olan SCENE verilerine silme işlemi uygulanmaz.
+
+1. `20261125052248_scene_experience.sql` — beğeni türleri, engelleme, şikâyet, sinema tercihleri ve profil alanları.
+2. `20261125052728_scene_conversations_and_profiles.sql` — sohbet durumları, gizlilik, özel medya, randevular ve doğrulama başvuruları.
+3. `20261125053832_scene_web_push.sql` — isteğe bağlı cihaz bildirimi abonelikleri ve işlem kuyruğu. İşçi ayarlanmasa da uygulama içi bildirimler çalışır.
+
+Mevcut `tmdb-catalog` Edge Function’ını bu daldaki kodla yeniden yayımla. Önceki `TMDB_READ_ACCESS_TOKEN` secret’ını kullanmaya devam eder. Ayrıca `scene-delete-account` Edge Function’ını yayımla. Silme işlevi oturumu ve güncel hesap şifresini kontrol eder. Supabase’in sunucuda sağladığı service role anahtarını kullanır. Test için yalnızca silinebilir test hesaplarını kullan. Ağ geçidinin eski JWT denetimi kapalıysa her iki işlev de kendi oturum denetimini yapar.
+
+### İsteğe bağlı arka plan bildirimi
+
+- Standart Web Push için VAPID anahtar çifti oluştur. Supabase Edge Function secret’larına `SCENE_VAPID_PUBLIC_KEY`, `SCENE_VAPID_PRIVATE_KEY`, `SCENE_VAPID_SUBJECT` (ör. `mailto:destek@alanadin.example`) ve rastgele en az 32 baytlık `SCENE_PUSH_JOB_SECRET` ekle.
+- Web uygulamasının derleme ortamında yalnızca **açık** anahtarı `VITE_SCENE_PUSH_PUBLIC_KEY` olarak ayarla. Özel anahtar, işçi sırrı ve Supabase service role anahtarı tarayıcıya gönderilmez.
+- `scene-push` Edge Function’ını yayımla. Bu işçi kullanıcı JWT’si yerine `x-scene-job-secret` başlığını kontrol eder. Supabase Cron’da dakikada bir işlevin URL’sine POST isteği gönder. Başlık değerini Supabase Vault’tan al. Sırrı sorgu metnine, depoya veya URL’ye yazma. Push metni gönderen adı, mesaj içeriği ve medya bilgisi içermez.
+- HTTPS gerekir. iOS 16.4 ve sonrası Safari’de uygulamayı **Ana Ekrana Ekle**, ana ekrandan aç, **Bildirimler → Bu cihazda aç** seçeneğini kullan. Bu kurulum tamamlanana kadar arka plan bildirimleri kapalı kalır.
+
+### Yayın öncesi canlı test
+
+İki test hesabıyla karşılıklı beğeni, iletildi/görüldü, gizlilik tercihleri, engelleme sonrası yeni mesajın reddi, fotoğraf ve ses, film randevusu ve tercihin geri alınmasını doğrula. Bir test hesabını kalıcı silip Storage dosyalarının da temizlendiğini kontrol et. Push açıksa iPhone Ana Ekran sürümünü kapattıktan sonra dene. Profil doğrulama başvuruları kayda alınır. Sonuçların işlenmesi için yönetici incelemesi veya doğrulama sağlayıcısı gerekir. Uygulama doğrulama rozeti üretmez.

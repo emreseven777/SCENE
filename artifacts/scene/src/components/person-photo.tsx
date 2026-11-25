@@ -36,7 +36,7 @@ export function PersonPhoto({ id, name, avatarPath, className, textClassName }: 
     <div
       role="img"
       aria-label={name}
-      className={cn("relative grid place-items-center overflow-hidden font-display font-black uppercase", className)}
+      className={cn("relative grid place-items-center overflow-hidden font-display font-bold uppercase", className)}
       style={{ background: `linear-gradient(145deg, #ff914d 0%, hsl(${330 + tint / 2} 85% 62%) 52%, #6d42bb 100%)` }}
     >
 

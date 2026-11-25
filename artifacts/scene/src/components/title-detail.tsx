@@ -22,7 +22,7 @@ export function TitleDetail({ id, title, onClose }: { id?: string | null; title?
             </div>
             <div className="space-y-4 p-6">
               <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-brand-ink">{t.type === "film" ? "Film" : "Dizi"}{t.year ? ` / ${t.year}` : ""}{t.genres.length ? ` / ${t.genres.join(", ")}` : ""}</div>
-              <DialogTitle className="font-display text-3xl font-extrabold leading-tight tracking-tight">{t.title}</DialogTitle>
+              <DialogTitle className="font-display text-3xl font-bold leading-tight tracking-tight">{t.title}</DialogTitle>
               {t.original && <p className="-mt-2 text-sm italic text-muted-foreground">{t.original}</p>}
               <DialogDescription className="text-sm leading-relaxed text-foreground/80">{t.overview || "Bu yapım için özet bulunamadı."}</DialogDescription>
               {t.by && <p className="text-xs text-muted-foreground">Yaratıcı / Yönetmen: <span className="text-foreground">{t.by}</span></p>}
