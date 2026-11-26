@@ -1,5 +1,5 @@
 export const brand = {
-  name: "MOVIA DATING",
+  name: "MOVIA",
   contactEmail: "moviadating@gmail.com",
   slogan: "Bu kez aşkı sadece izleme.",
   website: "https://joinmovia.vercel.app",
