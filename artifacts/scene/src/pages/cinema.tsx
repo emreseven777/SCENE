@@ -72,9 +72,18 @@ export default function Cinema() {
     return available.filter((title) => !excluded.has(title.id));
   }, [archive.data, catalog.data, user.favorites, usingArchive, type, selectedGenre, year]);
   const top = deck[0];
+  const nextPosters = deck.slice(1, 5).map((title) => title.poster).filter(Boolean).join("\n");
+  useEffect(() => {
+    if (tab !== "deck") return;
+    for (const url of nextPosters.split("\n").filter(Boolean)) {
+      const image = new Image();
+      image.fetchPriority = "low";
+      image.src = url;
+    }
+  }, [nextPosters, tab]);
   const prefetchKey = [type, genre, year, sort, catalog.data?.pages.length].join("/");
   useEffect(() => {
-    if (tab !== "deck" || !archive.isSuccess || deck.length > 3 || !catalog.hasNextPage
+    if (tab !== "deck" || !archive.isSuccess || deck.length > 6 || !catalog.hasNextPage
       || catalog.isFetching || catalog.isFetchNextPageError || prefetched === prefetchKey) return;
     // Limit automatic requests to pages with a visible card. Empty batches get an explicit load button.
     if (deck.length) {
@@ -97,7 +106,7 @@ export default function Cinema() {
         ...(rows ?? []).filter((row) => row.title_id !== title.id),
         ...(choice ? [{ title_id: title.id, title_metadata: title, choice }] : []),
       ]);
-      await store.refresh();
+      void store.refresh().catch(() => { /* Choice already persisted; refresh can retry later. */ });
       setLast(record ? { title, previous, favorite: wasFavorite } : null);
     } catch {
       toast({ title: "Sinema tercihi kaydedilemedi", variant: "destructive" });
@@ -146,7 +155,7 @@ export default function Cinema() {
         <label><span className="font-bold">Sıralama</span><select disabled={usingArchive} className="mt-1 w-full rounded-lg border bg-card p-2" value={usingArchive ? "archive" : sort} onChange={(e) => setSort(e.target.value)}>{usingArchive && <option value="archive">Arşiv sırası</option>}<option value="popularity.desc">Popüler</option><option value="vote_average.desc">En yüksek puan</option></select></label>
       </div>
       {usingArchive && <p role="status" className="mb-3 text-sm text-muted-foreground">
-        TMDB şu anda kullanılamıyor. MOVIA DATING arşivi gösteriliyor.{" "}
+        TMDB şu anda kullanılamıyor. MOVIA arşivi gösteriliyor.{" "}
         <button type="button" className="underline" disabled={catalog.isFetching} onClick={() => void catalog.refetch()}>TMDB’yi tekrar dene</button>
       </p>}
       {archive.isPending || catalog.isPending ? <p role="status">Katalog yükleniyor…</p> : archive.isSuccess && top ? <>
