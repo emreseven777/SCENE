@@ -33,7 +33,7 @@ export function PushSettings({ user }: { user: string }) {
   return <section className="scene-panel mt-5 space-y-2 p-4">
     <h2 className="text-xl font-bold">Mesaj bildirimleri</h2>
     {!publicKey ? <p className="text-sm text-muted-foreground">Bu kurulumda arka plan bildirimleri yapılandırılmadı.</p>
-      : !supported ? <p className="text-sm text-muted-foreground">Bu tarayıcıda arka plan bildirimi kullanılamıyor. iPhone’da Movia’yı Ana Ekran’a ekleyip oradan aç.</p>
+      : !supported ? <p className="text-sm text-muted-foreground">Bu tarayıcıda arka plan bildirimi kullanılamıyor. iPhone’da MOVIA DATING’i Ana Ekran’a ekleyip oradan aç.</p>
         : <>
           {subscription.isSuccess && !subscription.data && <div className="flex items-start gap-2 text-sm">
             <input id="scene-device-push-consent" type="checkbox" className="mt-1 accent-primary"

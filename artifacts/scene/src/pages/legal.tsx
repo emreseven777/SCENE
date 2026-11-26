@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { Link, useSearch } from "wouter";
+import { SupportEmail } from "@/components/scene-brand";
+import { brand } from "@/lib/brand";
 import { LEGAL_VERSION, legalDocuments } from "@/lib/legal-documents";
 
 export default function Legal() {
@@ -12,10 +14,10 @@ export default function Legal() {
 
   return <main className="scene-page mx-auto max-w-3xl space-y-5 pb-8">
     <nav className="flex flex-wrap gap-4 text-sm text-brand-ink underline" aria-label="Hukuki sayfalar">
-      <Link href="/">Movia ana sayfa</Link>
+      <Link href="/">{brand.name} ana sayfa</Link>
       {selected && <Link href="/kurallar">Tüm belgeler</Link>}
     </nav>
-    <h1 className="scene-title">{document?.title ?? "Movia hukuki belgeleri"}</h1>
+    <h1 className="scene-title">{document?.title ?? `${brand.name} hukuki belgeleri`}</h1>
     <p role="note" className="scene-panel border-primary/30 p-4 text-sm">İşletmeci tarafından onaylanan metin · {LEGAL_VERSION}.</p>
     {!document && <ul className="scene-panel divide-y">{legalDocuments.map((item) =>
       <li key={item.id}><Link href={`/kurallar?belge=${item.id}`} className="block p-4 font-semibold text-brand-ink underline">{item.title}</Link></li>)}</ul>}
@@ -25,5 +27,6 @@ export default function Legal() {
         <p className="text-sm leading-relaxed text-foreground/85">{content}</p>
       </section>)}
     </article>}
+    <footer className="text-sm text-muted-foreground">İletişim ve destek · <SupportEmail /></footer>
   </main>;
 }

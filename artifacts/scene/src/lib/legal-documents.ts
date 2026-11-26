@@ -7,11 +7,11 @@ export const legalDocuments = [
     id: "aydinlatma",
     title: "KVKK Aydınlatma Metni",
     sections: [
-      ["Veri sorumlusu", `Veri sorumlusu, ${brand.storeName} hizmetini gerçek kişi olarak işleten ${dataController.name}’dir. KVKK başvuru e-postası ${dataController.contactEmail}. Tebligat adresi ${dataController.postalAddress}. Web sitesi ${brand.website}.`],
+      ["Veri sorumlusu", `Veri sorumlusu, ${brand.name} hizmetini gerçek kişi olarak işleten ${dataController.name}’dir. KVKK başvuru e-postası ${brand.contactEmail}. Tebligat adresi ${dataController.postalAddress}. Web sitesi ${brand.website}.`],
       ["Toplama yöntemi ve amaçlar", "Hesap ve profil bilgileri kayıt ve profil formlarından, içerik ve tercihler uygulama işlemlerinden, cihaz ve bağlantı bilgileri teknik kayıtlar üzerinden elektronik olarak toplanır. Hesap oluşturma, yaş sınırı, profil, eşleştirme, mesajlaşma, topluluk, güvenlik ve ilgili kişi başvuruları için işlenir."],
       ["İşleme sebepleri", "Üyelik ve hizmet için zorunlu veriler, sözleşmenin kurulması veya ifasıyla doğrudan bağlantılı olduğu ölçüde KVKK m.5/2(c) uyarınca değerlendirilir. Yasal yükümlülük ve ilgili kişi talepleri için m.5/2(ç), uyuşmazlık için m.5/2(e), güvenlik ve kötüye kullanım önleme için dengeleme testiyle m.5/2(f) değerlendirilir. İsteğe bağlı cihaz bildirimi için ayrı açık rıza öngörülür. Özel nitelikli olabilecek veriler için m.6 değerlendirmesi yayından önce tamamlanacaktır."],
       ["Alıcılar ve aktarım", "Görünür profil alanları seçtiğin ayarlara göre üyelere, özel mesajlar eşleştiğin üyeye, oda gönderileri oda üyelerine açılır. Barındırma, kimlik doğrulama, katalog, e-posta ve cihaz bildirimi için ilgili sağlayıcılar görevleriyle sınırlı veri alabilir. Yetkili makamlara kanuni yükümlülük kapsamında aktarım yapılabilir. Sağlayıcı, ülke ve KVKK m.9 dayanağı eşleştirmesi yayından önce tamamlanacaktır."],
-      ["Hakların ve başvuru", `KVKK m.11 kapsamında bilgi alma, amaca uygun kullanım ve alıcıları öğrenme, düzeltme, şartları varsa silme veya yok etme, ilgili işlemlerin alıcılara bildirilmesi, münhasıran otomatik analiz aleyhine sonuca itiraz ve zararın giderilmesini talep etme hakların bulunur. Hesabın varsa Profil → Kişisel veriler ve KVKK bölümünden başvurabilirsin. Hesabına erişemiyorsan ${dataController.contactEmail} adresine e-posta gönderebilir veya ${dataController.postalAddress} adresine yazılı başvuru yapabilirsin. Başvurular en kısa sürede ve en geç 30 gün içinde yanıtlanır.`],
+      ["Hakların ve başvuru", `KVKK m.11 kapsamında bilgi alma, amaca uygun kullanım ve alıcıları öğrenme, düzeltme, şartları varsa silme veya yok etme, ilgili işlemlerin alıcılara bildirilmesi, münhasıran otomatik analiz aleyhine sonuca itiraz ve zararın giderilmesini talep etme hakların bulunur. Hesabın varsa Profil → Kişisel veriler ve KVKK bölümünden başvurabilirsin. Hesabına erişemiyorsan ${brand.contactEmail} adresine e-posta gönderebilir veya ${dataController.postalAddress} adresine yazılı başvuru yapabilirsin. Başvurular en kısa sürede ve en geç 30 gün içinde yanıtlanır.`],
     ],
   },
   {
@@ -28,7 +28,7 @@ export const legalDocuments = [
     id: "kosullar",
     title: "Kullanım Koşulları",
     sections: [
-      ["Hizmet ve üyelik", `Hizmetin gerçek kişi işletmecisi ${dataController.name}’dir. Genel iletişim e-postası ${dataController.contactEmail}. ${brand.storeName}, 18 yaşını dolduran kişilere açık sinema temalı tanışma hizmetidir. Doğru bilgi ver, hesabını ve oturum bilgilerini koru.`],
+      ["Hizmet ve üyelik", `Hizmetin gerçek kişi işletmecisi ${dataController.name}’dir. Genel iletişim e-postası ${brand.contactEmail}. ${brand.name}, 18 yaşını dolduran kişilere açık sinema temalı tanışma hizmetidir. Doğru bilgi ver, hesabını ve oturum bilgilerini koru.`],
       ["İçerik ve önlemler", "Yalnızca paylaşmaya yetkili olduğun içeriği yükle. Hizmetin sunulması için içeriğin ilgili üyelere ve gerekli teknik hizmet sağlayıcılarına iletilmesi gerekir. Topluluk kuralları ihlalinde gerekçeye uygun içerik kaldırma, askıya alma ve hesap kısıtlaması uygulanabilir."],
       ["Sona erme ve haklar", "Profil üzerinden hesabı kapatabilirsin. Uygulanabilir zorunlu haklar saklıdır. Değişikliklerin duyuru şekli ve uyuşmazlık iletişim kanalı [yayın öncesi tamamlanacak]."],
     ],

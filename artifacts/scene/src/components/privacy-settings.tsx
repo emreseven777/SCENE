@@ -1,3 +1,4 @@
+import { SupportEmail } from "@/components/scene-brand";
 import { useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -69,6 +70,7 @@ export function PrivacySettings({ user, photos }: { user: string; photos: readon
     <summary className="cursor-pointer text-xl font-bold">Kişisel veriler ve KVKK</summary>
     {open && <>
       <Link href="/kurallar" className="block text-sm text-brand-ink underline">KVKK ve hukuki belgeler</Link>
+      <p className="text-sm text-muted-foreground">İletişim ve destek · <SupportEmail /></p>
       {settings.isPending && <p role="status" className="text-sm">Gizlilik bilgileri yükleniyor…</p>}
       {settings.isError && <p role="alert" className="text-sm">{turkishError(settings.error)}</p>}
       {settings.data?.registration && <p className="text-sm">Koşulların kayıtlı sürümü {settings.data.registration.terms_version} · {new Date(settings.data.registration.accepted_at).toLocaleDateString("tr-TR")}</p>}

@@ -87,7 +87,7 @@ export default function Community() {
       const author = post.author_id === me?.id ? me : people.find((person) => person.id === post.author_id);
       return <article key={post.id} className="scene-panel mb-2 space-y-2 p-4">
         <header className="flex flex-wrap justify-between gap-2 text-sm">
-          {author ? <Link href={author.id === me?.id ? "/profil" : `/kullanici/${author.id}`} className="font-semibold text-brand-ink">{author.name}</Link> : <span>Movia üyesi</span>}
+          {author ? <Link href={author.id === me?.id ? "/profil" : `/kullanici/${author.id}`} className="font-semibold text-brand-ink">{author.name}</Link> : <span>MOVIA DATING üyesi</span>}
           <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString("tr-TR")}</time>
         </header>
         {post.spoiler ? <details><summary className="cursor-pointer">Spoiler · Görüntüle</summary><p className="whitespace-pre-wrap break-words">{post.body}</p></details>

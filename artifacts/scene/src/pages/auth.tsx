@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
-import { CinemaCollage, MoviaMark, SceneBrand, ThemeToggle } from "@/components/scene-brand";
+import { CinemaCollage, MoviaMark, SceneBrand, SupportEmail, ThemeToggle } from "@/components/scene-brand";
 import { latestAdultBirthDate } from "@/lib/provinces";
 import { brand } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
@@ -55,7 +55,7 @@ return <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-
 <div className="my-auto flex flex-col items-center py-8">
 <div className="flex flex-col items-center gap-3">
 <MoviaMark className="size-28 rounded-[2rem] shadow-xl" />
-<span className="font-serif text-[clamp(3rem,13vw,4.8rem)] font-bold leading-none tracking-[.04em] text-[#790e25]">{brand.name}</span>
+<span className="font-serif text-[clamp(1.8rem,8.1vw,3.1rem)] font-bold leading-none tracking-[.04em] text-[#790e25]">{brand.name}</span>
 </div>
 <p className="mt-6 text-xs font-semibold uppercase tracking-[.24em] text-[#a47a40]">Sinema • Arkadaşlık • Flört</p>
 <h1 className="mt-4 font-serif text-[clamp(2rem,8vw,3rem)] font-bold leading-tight text-[#790e25]">{brand.slogan}</h1>
@@ -71,6 +71,10 @@ return <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-
 <Button asChild variant="outline" size="lg" className="h-12 w-full rounded-full border-[#810e28] bg-transparent text-[#810e28]"><Link href="/giris">Giriş Yap</Link></Button>
 </div>
 <ComingSoonStores />
+<footer className="flex flex-wrap justify-center gap-x-4 gap-y-2 pb-6 text-xs text-[#653a36]" aria-label="Destek ve belgeler">
+  <Link className="underline underline-offset-4" href="/kurallar">Hukuki belgeler</Link>
+  <SupportEmail />
+</footer>
 </main>;
 }
 
@@ -88,6 +92,10 @@ export function Frame({ title, description, children }: { title: string; descrip
           <CinemaCollage className="min-h-[24rem]" />
         </div>
       </main>
+      <footer className="flex flex-wrap justify-center gap-x-4 gap-y-2 pt-5 text-xs text-muted-foreground" aria-label="Destek ve belgeler">
+        <Link className="underline underline-offset-4" href="/kurallar">Hukuki belgeler</Link>
+        <SupportEmail />
+      </footer>
     </div>
   );
 }
@@ -165,7 +173,7 @@ export function RegisterPage() {
   }
 
   return (
-    <Frame title="Movia’ya katıl" description="Favori filmlerini paylaş, ortak hikâyeleri keşfet.">
+    <Frame title={`${brand.name}’e katıl`} description="Favori filmlerini paylaş, ortak hikâyeleri keşfet.">
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5"><Label htmlFor="name">İsim</Label><Input id="name" autoComplete="given-name" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} className="h-12 text-base" data-testid="input-register-name" /></div>
         <div className="space-y-1.5"><Label htmlFor="r-email">E-posta</Label><Input id="r-email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 text-base" data-testid="input-register-email" /></div>
@@ -174,7 +182,7 @@ export function RegisterPage() {
           <Label htmlFor="register-birth-date">Doğum tarihi</Label>
           <Input id="register-birth-date" type="date" autoComplete="bday" required max={latest}
             value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-12 text-base" />
-          <p className="text-xs text-muted-foreground">Movia 18 yaş ve üzeri içindir. Profilde yalnızca yaşın gösterilir.</p>
+          <p className="text-xs text-muted-foreground">{brand.name} 18 yaş ve üzeri içindir. Profilde yalnızca yaşın gösterilir.</p>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-brand-ink">
           <Link className="underline" href="/kurallar?belge=aydinlatma" target="_blank" rel="noopener">KVKK Aydınlatma Metni</Link>
