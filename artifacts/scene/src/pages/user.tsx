@@ -42,7 +42,7 @@ function UserView({ pid }: { pid: string }) {
   return (
     <div className="scene-page max-w-5xl">
       <div className="scene-panel relative overflow-hidden">
-        <ProfilePortrait person={matched ? p : { ...p, avatar_paths: p.avatar_path ? [p.avatar_path] : [] }} />
+        <ProfilePortrait preview={matched} person={matched ? p : { ...p, avatar_paths: p.avatar_path ? [p.avatar_path] : [] }} />
         <Link href="/" aria-label="Keşfet’e dön" data-testid="link-back" className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/70"><ArrowLeft size={18} /></Link>
       </div>
 
