@@ -47,6 +47,7 @@ export default function Admin() {
   const [offset, setOffset] = useState(0);
   const [decision, setDecision] = useState<{ subject: string; action: Action }>();
   const [reason, setReason] = useState("");
+  const [search, setSearch] = useState("");
   const rows = useQuery({
     queryKey: ["scene-moderation", session?.user.id, queue, offset],
     enabled: access.data === true,
@@ -74,6 +75,8 @@ export default function Admin() {
   const minimum = queue === "privacy" ? 10 : 5;
   const maximum = queue === "privacy" ? 2000 : 500;
 
+  const visibleRows = (rows.data ?? []).filter((row) => queue === "statistics" || !search.trim() || [row.id, row.name, row.state, row.reported_id].some((value) => String(value ?? "").toLocaleLowerCase("tr-TR").includes(search.trim().toLocaleLowerCase("tr-TR"))));
+
   return <main className="scene-page max-w-4xl">
     <h1 className="scene-title mb-4">Yönetim</h1>
     {access.isPending && <p role="status">Yetki denetleniyor…</p>}
@@ -81,13 +84,20 @@ export default function Admin() {
     {access.data === false && <p role="alert">Bu sayfa yönetici yetkisi gerektirir.</p>}
     {access.data && <>
       <nav className="mb-4 flex flex-wrap gap-2" aria-label="Yönetim bölümleri">
-        {Object.entries(queues).map(([key, label]) => <Button key={key} variant={queue === key ? "default" : "secondary"}
-          onClick={() => { setQueue(key as Queue); setOffset(0); setDecision(undefined); mutation.reset(); }}>{label}</Button>)}
+        {Object.entries(queues).map(([key, label]) => <Button key={key} variant={queue === key ? "default" : "secondary"} disabled={mutation.isPending} aria-pressed={queue === key}
+          onClick={() => { setQueue(key as Queue); setSearch(""); setOffset(0); setDecision(undefined); mutation.reset(); }}>{label}</Button>)}
       </nav>
+      <div className="scene-panel mb-4 flex flex-wrap items-end gap-3 p-3">
+        {queue !== "statistics" && <label className="flex-1 text-sm">Bu sayfadaki kayıtları ara
+          <input className="mt-1 w-full rounded-lg border bg-card p-2 text-base" value={search} disabled={mutation.isPending} onChange={(event) => { setSearch(event.target.value); setDecision(undefined); }} placeholder="Ad, kayıt numarası veya durum" />
+        </label>}
+        <Button variant="outline" disabled={rows.isFetching || mutation.isPending} onClick={() => void rows.refetch()}>Yenile</Button>
+      </div>
+      {search.trim() && rows.data?.length && visibleRows.length === 0 ? <p role="status">Bu sayfada aramana uygun kayıt yok.</p> : null}
       {rows.isPending && <p role="status">Kayıtlar yükleniyor…</p>}
       {rows.isError && <p role="alert">{turkishError(rows.error)}</p>}
       {rows.data?.length === 0 && <p>Bu bölümde kayıt yok.</p>}
-      {rows.data?.map((row) => queue === "statistics" ? <dl key="statistics" className="scene-panel grid grid-cols-2 gap-3 p-4">
+      {visibleRows.map((row) => queue === "statistics" ? <dl key="statistics" className="scene-panel grid grid-cols-2 gap-3 p-4">
         <div><dt>Kurulumu tamamlanan profiller</dt><dd>{row.profiles}</dd></div>
         <div><dt>Kaldırılmamış eşleşmeler</dt><dd>{row.active_matches}</dd></div>
         <div><dt>Silinmemiş özel mesajlar</dt><dd>{row.messages}</dd></div>
@@ -113,13 +123,14 @@ export default function Admin() {
         </div>
         {decision?.subject === String(row.id) && <form className="space-y-2" onSubmit={(event) => {
           event.preventDefault();
-          if (!mutation.isPending && reason.trim().length >= minimum) mutation.mutate(decision);
+          if (!mutation.isPending && reason.trim().length >= minimum && reason.trim().length <= maximum) mutation.mutate(decision);
         }}>
           <label className="block text-sm">{queue === "privacy" ? "Başvuru sahibine gönderilecek yanıt" : `${decision.action.label} için gerekçe`}
             <Textarea required minLength={minimum} maxLength={maximum} value={reason} onChange={(event) => setReason(event.target.value)} />
           </label>
           {mutation.isError && <p role="alert">{turkishError(mutation.error)}</p>}
-          <Button size="sm" disabled={mutation.isPending || reason.trim().length < minimum}>Kararı kaydet</Button>
+          <p className="text-xs text-muted-foreground">{reason.trim().length} / {maximum} karakter</p>
+          <Button size="sm" disabled={mutation.isPending || reason.trim().length < minimum || reason.trim().length > maximum}>Kararı kaydet</Button>
           <Button size="sm" type="button" variant="ghost" disabled={mutation.isPending} onClick={() => setDecision(undefined)}>Vazgeç</Button>
         </form>}
       </article>)}
