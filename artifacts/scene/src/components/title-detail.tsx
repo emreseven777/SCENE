@@ -1,16 +1,13 @@
-import { Link } from "wouter";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import type { Title } from "@/lib/catalog";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { HeartButton } from "./heart-button";
-import { PersonPhoto } from "./person-photo";
 
 export function TitleDetail({ id, title, onClose }: { id?: string | null; title?: Title | null; onClose: () => void }) {
-  const { isFav, toggleFavorite, people, titleById } = useStore();
+  const { isFav, toggleFavorite, titleById } = useStore();
   const t = title ?? (id ? titleById(id) : undefined);
   const { toast } = useToast();
-  const fans = t ? people.filter((p) => p.onboarded && p.favorites.includes(t.id)) : [];
   return (
     <Dialog open={!!t} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto rounded-3xl border-border bg-card p-0">
@@ -33,18 +30,6 @@ export function TitleDetail({ id, title, onClose }: { id?: string | null; title?
                 }} />
                 <span className="text-sm">{isFav(t.id) ? "Favorilerinde" : "Favorilerine ekle"}</span>
               </div>
-              {fans.length > 0 && (
-                <div>
-                  <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Bunu sevenler</div>
-                  <div className="flex flex-wrap gap-2">
-                    {fans.map((p) => (
-                      <Link key={p.id} href={`/kullanici/${p.id}`} onClick={onClose} data-testid={`link-fan-${p.id}`} className="flex items-center gap-2 rounded-full bg-muted py-1 pl-1 pr-3 text-xs hover:bg-border">
-                        <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-6 w-6 rounded-full" textClassName="text-[10px]" />{p.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
