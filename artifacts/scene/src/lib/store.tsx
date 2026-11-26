@@ -73,7 +73,7 @@ interface Ctx extends Data {
   acknowledge: (pid: string, through: string, seen: boolean) => Promise<void>;
   updateMe: (patch: ProfilePatch) => Promise<void>;
   saveIdentity: (birthDate: string | null, province: string) => Promise<void>;
-  completeOnboarding: (p: { name: string; bio: string; favorites: string[] }) => Promise<void>;
+  completeOnboarding: (p: { name: string; bio: string; favorites: string[]; favoriteTitles?: Record<string, Title> }) => Promise<void>;
   resetDeck: () => Promise<void>;
 }
 
@@ -401,11 +401,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
-  const completeOnboarding = useCallback(async (p: { name: string; bio: string; favorites: string[] }) => {
+  const completeOnboarding = useCallback(async (p: { name: string; bio: string; favorites: string[]; favoriteTitles?: Record<string, Title> }) => {
     const sb = requireSupabase();
     try {
       if (p.favorites.length) {
-        const ins = await sb.from("favorites").upsert(p.favorites.map((title_id) => ({ user_id: userId, title_id })), {
+        const ins = await sb.from("favorites").upsert(p.favorites.map((title_id) => ({ user_id: userId, title_id, title_metadata: savedTmdbTitle(title_id, p.favoriteTitles?.[title_id]) ?? null })), {
           onConflict: "user_id,title_id", ignoreDuplicates: true,
         });
         if (ins.error) throw ins.error;

@@ -16,9 +16,10 @@ import NotFound from "./not-found";
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>();
-  const { personById } = useStore();
+  const { personById, matches, ready } = useStore();
   const p = personById(id ?? "");
-  if (!p) return <NotFound />;
+  if (!ready) return null;
+  if (!p || !matches[p.id]) return <NotFound />;
   return <UserView pid={p.id} />;
 }
 
