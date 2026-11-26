@@ -15,7 +15,7 @@ import { Link, useParams } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Lock, Send, MoreHorizontal, Plus, Smile } from "lucide-react";
 import { format } from "date-fns";
-import { fetchChatMessages, type Msg, useCommon, useStore } from "@/lib/store";
+import { canOpenProfile, fetchChatMessages, type Msg, useCommon, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { PersonPhoto } from "@/components/person-photo";
 import { quizResultLabel, readQuizResult } from "@/lib/quiz-result";
@@ -243,7 +243,7 @@ export function Chat() {
           <h1 className="mt-3 font-display text-4xl font-bold uppercase">Kapalı set</h1>
           <p className="mt-2 text-sm text-muted-foreground">Yalnızca eşleştiğin kişilerle sohbet edebilirsin.{p ? ` ${p.name} ile henüz eşleşmedin.` : ""}</p>
           <div className="mt-5 flex justify-center gap-2">
-            {p && <Link href={`/kullanici/${p.id}`} className="inline-flex h-10 items-center rounded-full bg-primary text-primary-foreground px-4 text-sm font-semibold">Profili gör</Link>}
+            {p && canOpenProfile(store, p.id) && <Link href={`/kullanici/${p.id}`} className="inline-flex h-10 items-center rounded-full bg-primary text-primary-foreground px-4 text-sm font-semibold">Profili gör</Link>}
             <Link href="/mesajlar" className="inline-flex h-10 items-center rounded-md bg-muted px-4 text-sm">Mesajlar</Link>
           </div>
         </div>

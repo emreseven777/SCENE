@@ -47,6 +47,10 @@ interface Data {
   readThrough: Record<string, number>;
 }
 
+export function canOpenProfile(store: Pick<Data, "matches" | "incoming" | "liked">, id: string) {
+  return Boolean(store.matches[id] || store.incoming[id] || store.liked.includes(id));
+}
+
 const EMPTY: Data = { me: null, people: [], titles: {}, liked: [], incoming: {}, passed: [], matches: {}, messages: {}, readThrough: {} };
 
 type ProfileRow = Omit<Person, "favorites">;

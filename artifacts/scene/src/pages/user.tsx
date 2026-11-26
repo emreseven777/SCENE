@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { ArrowLeft, Heart, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { useCommon, useStore } from "@/lib/store";
+import { canOpenProfile, useCommon, useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Poster } from "@/components/poster";
@@ -16,11 +16,11 @@ import NotFound from "./not-found";
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>();
-  const { personById, matches, ready } = useStore();
-  const p = personById(id ?? "");
-  if (!ready) return null;
-  if (!p || !matches[p.id]) return <NotFound />;
-  return <UserView pid={p.id} />;
+  const store = useStore();
+  const person = store.personById(id ?? "");
+  if (!store.ready) return null;
+  if (!person || !canOpenProfile(store, person.id)) return <NotFound />;
+  return <UserView key={person.id} pid={person.id} />;
 }
 
 function UserView({ pid }: { pid: string }) {
@@ -41,7 +41,7 @@ function UserView({ pid }: { pid: string }) {
   return (
     <div className="scene-page max-w-5xl">
       <div className="scene-panel relative overflow-hidden">
-        <ProfilePortrait key={p.id} person={p} />
+        <ProfilePortrait person={matched ? p : { ...p, avatar_paths: p.avatar_path ? [p.avatar_path] : [] }} />
         <Link href="/" aria-label="Keşfet’e dön" data-testid="link-back" className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/70"><ArrowLeft size={18} /></Link>
       </div>
 
@@ -64,8 +64,10 @@ function UserView({ pid }: { pid: string }) {
           <div className="rounded-md border border-primary/30 px-4 py-2.5"><span className="font-display text-2xl font-bold text-brand-ink" data-testid="text-user-common">{common.length}</span> <span className="text-sm text-muted-foreground">ortak film ve dizi</span></div>
         </div>
 
-        <ProfileAbout person={p} />
-        <ProfileDetails person={p} />
+        {matched ? <>
+          <ProfileAbout person={p} />
+          <ProfileDetails person={p} />
+        </> : <p className="text-sm text-muted-foreground">Profil ayrıntıları karşılıklı eşleştiğinizde açılır.</p>}
         <section className="scene-panel p-4 sm:p-6">
           <h2 className="text-xl font-bold">Sinema uyumu</h2>
           {fit === null ? <p className="mt-2 text-sm text-muted-foreground">Uyumu hesaplamak için ikinizin de en az üç favorisi gerekli.</p>
@@ -82,11 +84,11 @@ function UserView({ pid }: { pid: string }) {
               {common.map((id) => { const t = store.titleById(id, p.id); return t && <Poster key={id} t={t} onClick={() => setSelectedTitle(t)} className="ring-2 ring-primary/70" />; })}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Henüz ortak favoriniz yok. Aşağıdaki listeden birini favorilerine eklersen sayı anında güncellenir.</div>
+            <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Henüz ortak favoriniz yok.</div>
           )}
         </section>
 
-        {others.length > 0 && (
+        {matched && others.length > 0 && (
           <section>
             <h2 className="mb-4 font-display text-2xl font-bold tracking-tight text-foreground/80">{p.name} ayrıca seviyor</h2>
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">

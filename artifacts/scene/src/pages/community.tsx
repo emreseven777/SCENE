@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useAdminAccess } from "@/lib/admin-access";
-import { useStore } from "@/lib/store";
+import { canOpenProfile, useStore } from "@/lib/store";
 import { requireSupabase, turkishError } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +19,8 @@ const roomPrompts: Record<Room, string> = {
 type Post = { id: string; author_id: string; body: string; spoiler: boolean; created_at: string };
 
 export default function Community() {
-  const { me, people } = useStore();
+  const store = useStore();
+  const { me, people } = store;
   const admin = useAdminAccess();
   const [room, setRoom] = useState<Room>("drama");
   const [body, setBody] = useState("");
@@ -87,7 +88,9 @@ export default function Community() {
       const author = post.author_id === me?.id ? me : people.find((person) => person.id === post.author_id);
       return <article key={post.id} className="scene-panel mb-2 space-y-2 p-4">
         <header className="flex flex-wrap justify-between gap-2 text-sm">
-          {author ? <Link href={author.id === me?.id ? "/profil" : `/kullanici/${author.id}`} className="font-semibold text-brand-ink">{author.name}</Link> : <span>MOVIA DATING üyesi</span>}
+          {author && (author.id === me?.id || canOpenProfile(store, author.id))
+            ? <Link href={author.id === me?.id ? "/profil" : `/kullanici/${author.id}`} className="font-semibold text-brand-ink">{author.name}</Link>
+            : <span>{author?.name ?? "MOVIA DATING üyesi"}</span>}
           <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString("tr-TR")}</time>
         </header>
         {post.spoiler ? <details><summary className="cursor-pointer">Spoiler · Görüntüle</summary><p className="whitespace-pre-wrap break-words">{post.body}</p></details>

@@ -8,8 +8,8 @@ export default function Notifications() {
   const entries = store.people.flatMap((person) => {
     const unread = (store.messages[person.id] ?? []).filter((m) => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[person.id] ?? 0)).length;
     if (unread) return [{ id: person.id, label: `${person.name} · ${unread} okunmamış mesaj`, path: `/mesajlar/${person.id}` }];
-    if (store.matches[person.id]) return [{ id: person.id, label: `${person.name} ile eşleştin`, path: "/begeniler" }];
-    if (store.incoming[person.id]) return [{ id: person.id, label: `${person.name} ${store.incoming[person.id] === "super" ? "süper beğeni gönderdi" : "seni beğendi"}`, path: "/begeniler" }];
+    if (store.matches[person.id]) return [{ id: person.id, label: `${person.name} ile eşleştin`, path: `/kullanici/${person.id}` }];
+    if (store.incoming[person.id]) return [{ id: person.id, label: `${person.name} ${store.incoming[person.id] === "super" ? "süper beğeni gönderdi" : "seni beğendi"}`, path: `/kullanici/${person.id}` }];
     return [];
   });
   return <div className="scene-page max-w-2xl">
