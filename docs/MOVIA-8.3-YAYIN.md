@@ -1,6 +1,6 @@
 # MOVIA DATING 8.3 yayın ve geri dönüş planı
 
-Bu çalışma yayın onayı bekliyor. Mevcut üretim projesi ve veritabanı korunacak. Yeni adresin HTTP yanıtı `404 DEPLOYMENT_NOT_FOUND`; Vercel projesinin Domains bölümünde atanabilirlik teyidi gerekiyor.
+Bu çalışma yayın onayı bekliyor. Mevcut üretim projesi ve veritabanı korunacak. 26 Kasım 2026 kontrolünde yeni ve eski adres aynı SCENE derlemesini sunuyor. Her iki adreste de `/sifre-yenile` mevcut dağıtımda 404. [Geçiş, geri dönüş ve cihaz kontrolleri](./MOVIA-8.3-GECIS-KONTROLLERI.md)
 
 ## Yayın öncesi
 
