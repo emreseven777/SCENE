@@ -263,7 +263,6 @@ export default function Discover() {
                 </div>
               </motion.div>
             )}
-          {deck.length > 1 && <div className="mt-3 text-center font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Sırada {deck.length - 1} kişi daha</div>}
         </div>
 
         <div className="min-w-0 space-y-4">
