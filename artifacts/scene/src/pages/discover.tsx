@@ -3,7 +3,7 @@ import { requireSupabase } from "@/lib/supabase";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { motion } from "framer-motion";
-import { Heart, RotateCcw, Star, X, Film, Sparkles, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { Heart, Star, X, Film, Sparkles, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { useStore, type Person } from "@/lib/store";
 import { SwipeCard, type SwipeDirection } from "@/components/swipe-card";
 import { cinemaFit, GENDERS, GOALS, profileCinemaSignals, profileGenres, selectedTrait, sharedFavorites } from "@/lib/dating";
@@ -59,7 +59,6 @@ export default function Discover() {
   const { toast } = useToast();
   const [matchPid, setMatchPid] = useState<string | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
-  const [last, setLast] = useState<{ id: string; direction: SwipeDirection } | null>(null);
   const [filter, setFilter] = useState(emptyFilters);
 
   const allows = (preference: string | null | undefined, gender: string | null) =>
@@ -144,26 +143,17 @@ export default function Discover() {
     setBusy(true);
     try {
       if (direction === "left") {
-        if (await store.pass(p.id)) setLast({ id: p.id, direction });
+        await store.pass(p.id);
         return;
       }
       const mutual = await store.like(p.id, direction === "up" ? "super" : "like");
-      if (mutual) { setLast(null); setMatchPid(p.id); }
+      if (mutual) { setMatchPid(p.id); }
       else if (mutual === false) {
-        setLast({ id: p.id, direction });
         toast({ title: direction === "up" ? "Süper beğeni gönderildi" : `${p.name} beğenildi` });
       }
     } finally { setBusy(false); }
   };
 
-  const undo = async () => {
-    if (!last || busy || store.matches[last.id]) return;
-    setBusy(true);
-    try {
-      const restored = await store.undoSwipe(last.id, last.direction === "left");
-      if (restored) setLast(null);
-    } finally { setBusy(false); }
-  };
 
   return (
     <div className="scene-page min-w-0 space-y-3 pt-3 sm:space-y-4">
@@ -212,7 +202,6 @@ export default function Discover() {
           <p role="status" className="pb-2 text-sm text-destructive">En düşük yaş, en yüksek yaşı geçemez.</p>}
         {activeFilters > 0 && <Button size="sm" variant="ghost" onClick={() => setFilter(emptyFilters)}>Filtreleri temizle</Button>}
       </details>
-      {last && !store.matches[last.id] && <Button size="sm" variant="secondary" disabled={busy} onClick={() => void undo()}><RotateCcw /> Son kaydırmayı geri al</Button>}
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
         <div className="relative mx-auto w-full min-w-0 max-w-[28rem] lg:max-w-none">
           {current ? (
@@ -258,8 +247,7 @@ export default function Discover() {
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="scene-panel grid min-h-52 place-items-center p-5 text-center">
                 <div>
                   <Sparkles className="mx-auto mb-3 text-brand-ink" /><h2 className="font-display text-2xl font-bold">Şimdilik bu kadar</h2>
-                  <p className="mt-3 text-sm text-muted-foreground">{cast.length === 0 ? "Henüz keşfedebileceğin bir profil yok." : "Şimdilik herkesi gördün. Yeni kullanıcılar kayıt oldukça burada görünecek."}</p>
-                  {store.passed.length > 0 && <Button className="mt-5" onClick={() => void store.resetDeck()} data-testid="button-reset-deck"><RotateCcw size={16} className="mr-2" />Geçtiklerini yeniden gör</Button>}
+                  <p className="mt-3 text-sm text-muted-foreground">Şimdilik herkesi gördün, yakında yenilenecek.</p>
                 </div>
               </motion.div>
             )}
