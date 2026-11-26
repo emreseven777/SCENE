@@ -9,6 +9,12 @@ const quiz = [
   { question: "Walter White hangi dizinin karakteridir?", choices: ["Dark", "Breaking Bad", "Succession"], answer: 1 },
   { question: "The Bear dizisi ağırlıklı olarak hangi ortamda geçer?", choices: ["Bir müzede", "Bir laboratuvarda", "Bir restoran mutfağında"], answer: 2 },
   { question: "Ruhların Kaçışı filminin başkarakteri kimdir?", choices: ["Chihiro", "Amelie", "Mia"], answer: 0 },
+  { question: "Interstellar filminin yönetmeni kimdir?", choices: ["Denis Villeneuve", "Christopher Nolan", "Ridley Scott"], answer: 1 },
+  { question: "Yüzüklerin Efendisi üçlemesinin yönetmeni kimdir?", choices: ["Peter Jackson", "James Cameron", "Steven Spielberg"], answer: 0 },
+  { question: "The Queen's Gambit hangi oyun etrafında şekillenir?", choices: ["Poker", "Go", "Satranç"], answer: 2 },
+  { question: "Parazit filminin yönetmeni kimdir?", choices: ["Park Chan-wook", "Bong Joon-ho", "Hayao Miyazaki"], answer: 1 },
+  { question: "Friends dizisi ağırlıklı olarak hangi şehirde geçer?", choices: ["New York", "Chicago", "Boston"], answer: 0 },
+  { question: "WALL-E hangi stüdyonun animasyon filmidir?", choices: ["DreamWorks", "Studio Ghibli", "Pixar"], answer: 2 },
 ];
 const personality = [
   { question: "Bir film gecesinde seni en çok ne çeker?", choices: ["Tuhaf bir evren", "İnsan ilişkileri", "İnce bir mizah"] },
@@ -37,7 +43,8 @@ export default function CinemaActivities() {
 
   return <section className="scene-page max-w-3xl space-y-4">
     <Link href="/sinema" className="text-sm text-brand-ink underline">Sinema Salonu</Link>
-    <h1 className="scene-title">Sinema etkinlikleri</h1>
+    <h1 className="scene-title">MOVIA Quiz</h1>
+    <p className="text-sm text-muted-foreground">Sinema bilgini keşfet, film zevkini tanı ve haftanın önerilerine göz at.</p>
     <div className="flex flex-wrap gap-2">
       <Button variant={mode === "quiz" ? "default" : "secondary"} onClick={() => { setMode("quiz"); setAnswers([]); }}>Bilgi yarışması</Button>
       <Button variant={mode === "personality" ? "default" : "secondary"} onClick={() => { setMode("personality"); setAnswers([]); }}>Sinema kişilik testi</Button>
@@ -45,13 +52,14 @@ export default function CinemaActivities() {
     <section className="scene-panel space-y-3 p-4">
       {current ? <>
         <p className="text-sm text-muted-foreground">Soru {answers.length + 1} / {questions.length}</p>
+        <progress className="h-2 w-full accent-primary" aria-label="Test ilerlemesi" value={answers.length} max={questions.length} />
         <h2 className="text-xl font-semibold">{current.question}</h2>
         <div className="grid gap-2">{current.choices.map((choice, index) => <Button key={choice} variant="secondary"
-          onClick={() => setAnswers((previous) => [...previous, index])}>{choice}</Button>)}</div>
+          onClick={() => setAnswers((previous) => previous.length === answers.length ? [...previous, index] : previous)}>{choice}</Button>)}</div>
       </> : <>
         <h2 className="text-xl font-semibold" role="status">{mode === "quiz" ? `${score} / ${quiz.length} doğru`
           : results.filter((_, index) => counts[index] === Math.max(...counts)).join(" · ")}</h2>
-        {mode === "quiz" && <ul className="space-y-2 text-sm">{quiz.map((item) => <li key={item.question}>{item.question} <strong>{item.choices[item.answer]}</strong></li>)}</ul>}
+        {mode === "quiz" && <ul className="space-y-2 text-sm">{quiz.map((item) => <li key={item.question}>{item.question} <strong>{item.choices[item.answer]}</strong> <span className="text-muted-foreground">· {answers[quiz.indexOf(item)] === item.answer ? "Doğru" : "Yanlış"}</span></li>)}</ul>}
         <Button variant="secondary" onClick={() => setAnswers([])}>Yeniden başla</Button>
       </>}
     </section>
