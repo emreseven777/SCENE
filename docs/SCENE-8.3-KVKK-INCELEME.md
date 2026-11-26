@@ -10,6 +10,12 @@ Hukuki belge taslaklarının tek kaynağı uygulamadaki [belge dosyası](../arti
 - **VERBİS.** Gerçek kişi olmak tek başına istisna kurmaz. Ana faaliyet özel nitelikli veri işleme değilse çalışan sayısı 50’den ve yıllık mali bilanço 100 milyon TL’den az olma, ana faaliyet özel nitelikli veri işlemeyse 10 çalışan ve 10 milyon TL eşikleri birlikte değerlendirilmeli. İşletmecinin verileri ve ana faaliyetin sınıflandırması eksik. Sicil istisnası diğer KVKK yükümlülüklerini kaldırmaz. [Güncel istisna duyurusu](https://www.kvkk.gov.tr/Icerik/8577/kisisel-verileri-koruma-kurulunun-04-09-2025-tarihli-ve-2025-1572-sayili-kararinin-uygulama-esaslarina-iliskin-kamuoyu-duyurusu)
 - **Özel nitelikli veri.** Cinsiyet ve tanışma tercihi birlikte cinsel hayata ilişkin çıkarıma yol açabilir. Sohbet, serbest metin ve fotoğraflar da özel nitelikli veri içerebilir. Kodda biyometrik tanımlama veya açık yönelim çıkarımı tespit edilmedi. Bu alanların amacı, görünürlüğü, zorunluluğu, m.6 dayanağı ve Kurulun yeterli önlemleri uzman tarafından ayrı değerlendirilmeli. Özelliğe özgü açık rıza gerekiyorsa ayrı ve özgür tercih tasarlanmalı. Zorunlu üyelik kutusu bu dayanağı karşılamaz. [6698 sayılı Kanun](https://www.mevzuat.gov.tr/mevzuatmetin/1.5.6698.pdf) · [2026/347 sayılı ilke kararı](https://www.kvkk.gov.tr/Icerik/8710/veri-sorumlulari-tarafindan-acik-riza-ve-aydinlatma-metinlerinin-ayri-ayri-duzenlenmesi-gerektigi-hakkinda-kisisel-verileri-koruma-kurulunun-18-02-2026-tarihli-ve-2026-347-sayili-ilke-kararina-iliskin-kamuoyu-duyurusu)
 
+## Onay ekranları
+
+- Kayıtta aydınlatma ve gizlilik metinlerine erişim verilir. Zorunlu kutu yalnızca kullanım koşullarının kabulü içindir. Aydınlatma metni için açık rıza alınmaz.
+- Bildirim rızası üyelikten ayrı, isteğe bağlı ve geri çekilebilir bir tercihtir. İşletim sistemi izniyle birlikte çalışır. Sürüm ve tercih kaydı sunucuda tutulur.
+- Özellik bazlı ek açık rıza ancak hukuki inceleme gerekliliğini belirlerse hazırlanıp uygulanır. Aydınlatma ve koşullarla birleştirilmez. Onaylanan metin ve yürürlük tarihi kesinleşene kadar uygulama ve sunucu sürümü taslak kalır.
+
 ## Veri akışları ve muhtemel hukuki dayanaklar
 
 | Akış | Veriler ve hedef | İnceleme ve uygulama eksikleri |
