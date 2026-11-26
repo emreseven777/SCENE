@@ -67,7 +67,6 @@ export default function Discover() {
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [filter, setFilter] = useState(emptyFilters);
   const [photoComment, setPhotoComment] = useState<{ person: string; value: string }>();
-  const [highlighted, setHighlighted] = useState<string>();
   const feed = useDiscoveryFeed(store.me?.id);
   const serverFeed = !!feed.data && !feed.data.pages[0]?.legacy;
   const candidates = useMemo(() =>
@@ -116,29 +115,13 @@ export default function Discover() {
       .sort((a, b) => serverFeed ? 0 : (b.score ?? -1) - (a.score ?? -1) || Number(b.sharedExpectation) - Number(a.sharedExpectation) || b.c.length - a.c.length || a.p.id.localeCompare(b.p.id)),
     [cast, store.liked, store.passed, store.matches, mine, fits, ownDetails, serverFeed],
   );
-  const current = deck.find(({ p }) => p.id === highlighted) ?? deck[0];
+  const current = deck[0];
   const upcoming = deck.filter(({ p }) => p.id !== current?.p.id).slice(0, 2);
   usePreloadPortraits(upcoming[0]?.p.avatar_path, upcoming[1]?.p.avatar_path);
   const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = feed;
   useEffect(() => {
     if (!current && hasNextPage && !isFetchingNextPage && !isError) void fetchNextPage();
   }, [current, hasNextPage, isFetchingNextPage, isError, fetchNextPage]);
-
-  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).format();
-  const dailyRank = (id: string) => {
-    let value = 2166136261;
-    for (const char of `${store.me?.id ?? ""}:${day}:${id}`) value = Math.imul(value ^ char.charCodeAt(0), 16777619);
-    return value >>> 0;
-  };
-  const dailySuggestions = serverFeed ? deck.filter(({ c }) => c.length > 0)
-    .sort((a,b) => b.c.length-a.c.length || dailyRank(a.p.id)-dailyRank(b.p.id)).slice(0, 3) : [];
-  const cinemaSoulmate = serverFeed ? deck.filter(({ score, c }) => score !== null && score > 0 && c.length > 0)
-    .reduce<(typeof deck)[number] | undefined>((best, candidate) =>
-      !best || candidate.score! > best.score! ? candidate : best, undefined) : undefined;
-  const showCandidate = (id: string) => {
-    setHighlighted(id);
-    document.getElementById("discover-deck")?.scrollIntoView({block:"start"});
-  };
 
   const commonGenres = current ? fits.get(current.p.id)?.commonGenres ?? [] : [];
   const [dailyFilms, setDailyFilms] = useState<{ title: Title; count: number }[]>([]);
@@ -344,25 +327,6 @@ export default function Discover() {
         </div>
 
         <div className="min-w-0 space-y-4">
-          {cinemaSoulmate && <section className="scene-panel min-w-0 p-3">
-            <h2 className="mb-2 flex items-center gap-2 font-semibold"><Sparkles size={17} aria-hidden="true" />Sinema ruh eşin</h2>
-            <p className="mb-2 text-xs text-muted-foreground">Yüklenen adaylardaki en yüksek sinema uyumu</p>
-            <Button variant="secondary" onClick={() => showCandidate(cinemaSoulmate.p.id)} className="h-auto min-h-11 w-full whitespace-normal">
-              {cinemaSoulmate.p.name} · %{cinemaSoulmate.score}
-            </Button>
-          </section>}
-          {dailySuggestions.length > 0 && <section className="scene-panel min-w-0 p-3">
-            <h2 className="mb-2 font-semibold">Bugünün sana özel önerileri</h2>
-            <ul className="space-y-2">
-              {dailySuggestions.map(({p, c}) => <li key={p.id}>
-                <button type="button" onClick={() => showCandidate(p.id)}
-                  className="flex min-h-11 w-full items-center gap-2 rounded-xl bg-secondary/50 px-2 text-left">
-                  <span className="min-w-0 grow break-words font-semibold">{p.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{c.length} ortak favori</span>
-                </button>
-              </li>)}
-            </ul>
-          </section>}
           <section className="scene-panel min-w-0 p-3">
             <h2 className="mb-2 font-semibold">Günün en çok beğenilen filmleri</h2>
             <p className="mb-3 text-xs text-muted-foreground">Bugün favorilere en çok eklenen filmler</p>
