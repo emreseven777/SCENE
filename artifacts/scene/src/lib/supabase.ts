@@ -9,7 +9,14 @@ export const supabaseConfigured = Boolean(url && anonKey);
 // closing the app. Passwords are sent to Supabase once and never stored.
 export const supabase: SupabaseClient | null = supabaseConfigured
   ? createClient(url!, anonKey!, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: (url, params) =>
+          url.pathname !== `${import.meta.env.BASE_URL}sifre-yenile` &&
+          params.type !== "recovery" &&
+          Boolean(params.access_token || params.error_description),
+      },
     })
   : null;
 

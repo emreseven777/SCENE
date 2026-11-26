@@ -58,8 +58,19 @@ function RecoveryLink({ to, children }: { to: string; children: string }) {
   return <Link href={to} className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-brand-ink underline">{children}</Link>;
 }
 
+function readRecoveryLink() {
+  const fragment = new URLSearchParams(window.location.hash.slice(1));
+  const tokenHash = fragment.get("recovery_token");
+  if (tokenHash) return { kind: "otp", tokenHash } as const;
+  const accessToken = fragment.get("access_token");
+  const refreshToken = fragment.get("refresh_token");
+  return fragment.get("type") === "recovery" && accessToken && refreshToken
+    ? { kind: "session", accessToken, refreshToken } as const
+    : null;
+}
+
 export function ResetPassword() {
-  const [token, setToken] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get("recovery_token"));
+  const [link, setLink] = useState(readRecoveryLink);
   const [client, setClient] = useState<ReturnType<typeof createRecoveryClient> | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -74,17 +85,19 @@ export function ResetPassword() {
   }, []);
 
   async function verify() {
-    if (!token || busy) return;
+    if (!link || busy) return;
     setBusy(true);
     setError("");
     try {
       const recovery = createRecoveryClient();
-      const { data, error } = await recovery.auth.verifyOtp({ token_hash: token, type: "recovery" });
+      const { data, error } = link.kind === "otp"
+        ? await recovery.auth.verifyOtp({ token_hash: link.tokenHash, type: "recovery" })
+        : await recovery.auth.setSession({ access_token: link.accessToken, refresh_token: link.refreshToken });
       if (error || !data.session) {
         setError(recoveryError(error ?? {}, "Bağlantı doğrulanamadı. Yeniden dene veya yeni bir bağlantı iste."));
-        if (!error || (error.status && error.status >= 400 && error.status < 429)) setToken(null);
+        if (!error || (error.status && error.status >= 400 && error.status < 429)) setLink(null);
       } else {
-        setToken(null);
+        setLink(null);
         setClient(recovery);
       }
     } catch {
@@ -132,7 +145,7 @@ export function ResetPassword() {
         <Label htmlFor="confirm-password">Yeni şifreyi tekrar gir</Label>
         <Input id="confirm-password" type="password" required minLength={6} autoComplete="new-password" value={confirm} onChange={(event) => setConfirm(event.target.value)} />
         <Button disabled={busy}>Şifreyi güncelle</Button>
-      </form> : token ? <Button onClick={() => void verify()} disabled={busy}>Bağlantıyı doğrula</Button> :
+      </form> : link ? <Button onClick={() => void verify()} disabled={busy}>Bağlantıyı doğrula</Button> :
         !error && <p role="alert">Bağlantı geçersiz veya süresi dolmuş. Yeni bir bağlantı iste.</p>}
       {error && <p role="alert" className="mt-3 text-destructive">{error}</p>}
       <RecoveryLink to="/sifremi-unuttum">Yeni bağlantı iste</RecoveryLink>
