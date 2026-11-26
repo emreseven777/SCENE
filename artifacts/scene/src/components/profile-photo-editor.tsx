@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Eye, ImagePlus, Star } from "lucide-react";
+import { useRef, useState, type ChangeEvent } from "react";
+import { ArrowDown, ArrowUp, Camera, Eye, ImagePlus, Star } from "lucide-react";
 import { AVATAR_BUCKET, MAX_PROFILE_PHOTOS } from "@/lib/avatars";
 import { useStore, type Person } from "@/lib/store";
 import { requireSupabase, turkishError } from "@/lib/supabase";
@@ -16,6 +16,7 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
   const { savePhotos } = useStore();
   const { toast } = useToast();
   const input = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
   const selection = useRef({ index: 0, previous: person.avatar_paths });
   const [pending, setPending] = useState<{ file: File; index: number; previous: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -37,10 +38,21 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
     }
   }
 
-  const pick = (index: number) => {
+  const pick = (index: number, useCamera = false) => {
     selection.current = { index, previous: paths };
-    input.current?.click();
+    (useCamera ? camera : input).current?.click();
   };
+
+  function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      toast({ title: "25 MB veya daha küçük bir fotoğraf seç.", variant: "destructive" });
+      return;
+    }
+    setPending({ file, ...selection.current });
+  }
 
   async function cropExisting(index: number) {
     setBusy(true);
@@ -69,16 +81,10 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
         <Button variant="secondary" onClick={() => setPreview(true)}><Eye size={16} />Profil önizleme</Button>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">İlk fotoğraf profil kartında görünür. Oklarla sıralamayı değiştirebilirsin.</p>
-      <input ref={input} type="file" accept="image/*,.heic,.heif" className="hidden" aria-label="Galeriden profil fotoğrafı seç" onChange={(event) => {
-        const file = event.currentTarget.files?.[0];
-        event.currentTarget.value = "";
-        if (!file) return;
-        if (file.size > 25 * 1024 * 1024) {
-          toast({ title: "25 MB veya daha küçük bir fotoğraf seç.", variant: "destructive" });
-          return;
-        }
-        setPending({ file, ...selection.current });
-      }} />
+      <input ref={input} type="file" accept="image/*,.heic,.heif" className="hidden"
+        aria-label="Galeriden profil fotoğrafı seç" onChange={choosePhoto} />
+      <input ref={camera} type="file" accept="image/*" capture="user" className="hidden"
+        aria-label="Kameradan profil fotoğrafı çek" onChange={choosePhoto} />
       {paths.length > 0 && (
         <ol className="mt-4 grid gap-2 md:grid-cols-2">
           {paths.map((path, index) => (
@@ -111,7 +117,10 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
           ))}
         </ol>
       )}
-      {paths.length < MAX_PROFILE_PHOTOS && <Button variant="secondary" className="mt-4" disabled={busy} onClick={() => pick(paths.length)}><ImagePlus size={17} />Fotoğraf ekle</Button>}
+      {paths.length < MAX_PROFILE_PHOTOS && <div className="mt-4 flex flex-wrap gap-2">
+        <Button variant="secondary" disabled={busy} onClick={() => pick(paths.length)}><ImagePlus size={17} />Fotoğraf ekle</Button>
+        <Button variant="secondary" disabled={busy} onClick={() => pick(paths.length, true)}><Camera size={17} />Fotoğraf çek</Button>
+      </div>}
       {busy && <p role="status" className="mt-2 text-sm text-muted-foreground">Kaydediliyor…</p>}
       {pending && (
         <PhotoCropDialog file={pending.file} onClose={() => setPending(null)} onSave={async (image) => {

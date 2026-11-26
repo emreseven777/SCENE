@@ -29,8 +29,7 @@ function UserView({ pid }: { pid: string }) {
   const common = useCommon(p.favorites);
   const own = profileCinemaSignals(store.me?.favorites ?? [], store.me?.discovery_details, (id) => store.titleById(id));
   const other = profileCinemaSignals(p.favorites, p.discovery_details, (id) => store.titleById(id, p.id));
-  const commonGenres = other.genres.filter((genre) => own.genres.includes(genre));
-  const fit = cinemaFit(own.titles, other.titles, own.genres, other.genres);
+  const { score: fit, commonGenres, sharedCount } = cinemaFit(own, other);
   const others = p.favorites.filter((f) => !common.includes(f));
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [matchPid, setMatchPid] = useState<string | null>(null);
@@ -70,6 +69,7 @@ function UserView({ pid }: { pid: string }) {
           <h2 className="text-xl font-bold">Sinema uyumu</h2>
           {fit === null ? <p className="mt-2 text-sm text-muted-foreground">Uyumu hesaplamak için ikinizin de en az üç favorisi gerekli.</p>
             : <p className="mt-2 text-sm"><strong>%{fit}</strong> · {CINEMA_FIT_DESCRIPTION}</p>}
+          {sharedCount > common.length && <p className="mt-2 text-sm">Profilde seçtiğiniz yapımlar da ortak.</p>}
           {commonGenres.length > 0 && <p className="mt-2 text-sm">Ortak türler: {commonGenres.join(", ")}</p>}
         </section>
         <ProfileSafety person={p} />

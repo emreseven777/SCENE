@@ -9,6 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 
 const rooms = { drama: "Dram", comedy: "Komedi", "science-fiction": "Bilim kurgu", horror: "Korku", animation: "Animasyon" } as const;
 type Room = keyof typeof rooms;
+const roomPrompts: Record<Room, string> = {
+  drama: "Seni en çok etkileyen dram filmi ya da dizisi hangisi?",
+  comedy: "Tekrar izlediğinde bile güldüren bir yapım önerir misin?",
+  "science-fiction": "Hangi bilim kurgu evreninde bir gün geçirmek isterdin?",
+  horror: "Spoiler vermeden, en gerilimli bulduğun yapımı önerir misin?",
+  animation: "Her yaştan izleyiciye önereceğin animasyon hangisi?",
+};
 type Post = { id: string; author_id: string; body: string; spoiler: boolean; created_at: string };
 
 export default function Community() {
@@ -57,7 +64,7 @@ export default function Community() {
     <Link href="/sinema" className="text-sm text-brand-ink underline">Sinema Salonu</Link>
     <h1 className="scene-title mb-4">Topluluk odaları</h1>
     <nav className="mb-4 flex flex-wrap gap-2" aria-label="Sinema türleri">
-      {Object.entries(rooms).map(([key, label]) => <Button key={key} variant={key === room ? "default" : "secondary"}
+      {Object.entries(rooms).map(([key, label]) => <Button key={key} variant={key === room ? "default" : "secondary"} aria-pressed={key === room}
         disabled={publish.isPending || moderate.isPending} onClick={() => { setRoom(key as Room); setReview(undefined); }}>{label}</Button>)}
     </nav>
     <form className="scene-panel mb-4 space-y-3 p-4" onSubmit={(e) => {
@@ -67,6 +74,8 @@ export default function Community() {
       <label className="block">{rooms[room]} odasına mesaj yaz
         <Textarea required maxLength={1000} value={body} onChange={(e) => setBody(e.target.value)} />
       </label>
+      {!body.trim() && <Button type="button" variant="secondary" className="h-auto min-h-11 whitespace-normal text-left"
+        onClick={() => setBody(roomPrompts[room])}>{roomPrompts[room]}</Button>}
       <label className="flex items-center gap-2"><input type="checkbox" checked={spoiler} onChange={(e) => setSpoiler(e.target.checked)} />Spoiler içeriyor</label>
       {publish.isError && <p role="alert">{turkishError(publish.error)}</p>}
       <Button disabled={publish.isPending || !body.trim()}>Gönder</Button>

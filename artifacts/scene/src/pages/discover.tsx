@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Heart, RotateCcw, Star, X, Film, Sparkles, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { useStore, type Person } from "@/lib/store";
 import { SwipeCard, type SwipeDirection } from "@/components/swipe-card";
-import { cinemaFit, GENDERS, GOALS, profileCinemaSignals, profileGenres, selectedTrait } from "@/lib/dating";
+import { cinemaFit, GENDERS, GOALS, profileCinemaSignals, profileGenres, selectedTrait, sharedFavorites } from "@/lib/dating";
 import { CHOICES, GENRES, INTERESTS, OCCUPATIONS } from "@/lib/profile-choices";
 import { PROVINCES, isProvince } from "@/lib/provinces";
 import { ProfileIdentity } from "@/components/profile-identity";
@@ -28,7 +28,7 @@ function DiscoverPortrait({ person, score, common }: { person: Person; score: nu
     <div className="absolute inset-x-3 top-3 flex min-w-0 flex-wrap items-center gap-2">
       {photos.length > 1 && <div className="flex w-full gap-1" role="group" aria-label="Profil fotoğrafını seç">
         {photos.map((path, index) => <button key={path} type="button" aria-label={`Fotoğraf ${index + 1}`} aria-pressed={active === index}
-          onClick={() => setPhotoIndex(index)} className="flex h-8 min-w-0 flex-1 items-center rounded-sm focus-visible:outline-white">
+          onClick={() => setPhotoIndex(index)} className="flex h-11 min-w-0 flex-1 items-center rounded-sm focus-visible:outline-white">
           <span className={`h-1 w-full rounded-full shadow-sm shadow-black/45 ${active === index ? "bg-white" : "bg-white/45"}`} />
         </button>)}
       </div>}
@@ -50,7 +50,7 @@ function DiscoverPortrait({ person, score, common }: { person: Person; score: nu
   </div>;
 }
 
-const emptyFilters = { city: "", gender: "", goal: "", from: "", to: "", fit: "", heightFrom: "", heightTo: "", education: "", smoking: "", alcohol: "", relationship: "", children: "", sport: "", genre: "", interest: "", occupation: "" };
+const emptyFilters = { city: "", gender: "", goal: "", from: "", to: "", fit: "", heightFrom: "", heightTo: "", education: "", smoking: "", alcohol: "", relationship: "", children: "", sport: "", genre: "", shared: "", photosOnly: "", interest: "", occupation: "" };
 
 export default function Discover() {
   const store = useStore();
@@ -70,7 +70,7 @@ export default function Discover() {
     const own = profileCinemaSignals(mine, ownDetails, (id) => store.titleById(id));
     return new Map(store.people.map((person) => {
       const other = profileCinemaSignals(person.favorites, person.discovery_details, (id) => store.titleById(id,person.id));
-      return [person.id, cinemaFit(own.titles, other.titles, own.genres, other.genres)];
+      return [person.id, cinemaFit(own, other)];
     }));
   }, [mine, ownDetails, store.people, store.titleById]);
   const cast = useMemo(() => store.people.filter((p) => p.onboarded && p.age !== null && isProvince(p.city) && !p.discovery_hidden && p.gender && p.looking_for && p.dating_goal
@@ -87,18 +87,21 @@ export default function Discover() {
       const wanted = filter[field as keyof typeof CHOICES];
       return !wanted || selectedTrait(p.discovery_details,field) === wanted;
     })
-    && (!movieMatch || (fits.get(p.id) ?? 0) > 0)
-    && (!filter.fit || (fits.get(p.id) ?? -1) >= Number(filter.fit))),
-    [store.people, store.me?.looking_for, store.me?.gender, filter, fits, movieMatch]);
+    && (!filter.shared || sharedFavorites(mine, p.favorites).length >= Number(filter.shared))
+    && (!filter.photosOnly || !!(p.avatar_path || p.avatar_paths.length))
+    && (!movieMatch || (fits.get(p.id)?.score ?? 0) > 0)
+    && (!filter.fit || (fits.get(p.id)?.score ?? -1) >= Number(filter.fit))),
+    [store.people, store.me?.looking_for, store.me?.gender, filter, fits, movieMatch, mine]);
   const deck = useMemo(
     () => cast.filter((p) => !store.liked.includes(p.id) && !store.passed.includes(p.id) && !store.matches[p.id])
-      .map((p) => ({ p, c: p.favorites.filter((f) => mine.includes(f)), score: fits.get(p.id) ?? null,
+      .map((p) => ({ p, c: sharedFavorites(mine, p.favorites), score: fits.get(p.id)?.score ?? null,
         sharedExpectation: !!selectedTrait(ownDetails,"relationship") &&
           selectedTrait(ownDetails,"relationship") === selectedTrait(p.discovery_details,"relationship") }))
       .sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || Number(b.sharedExpectation) - Number(a.sharedExpectation) || b.c.length - a.c.length || a.p.id.localeCompare(b.p.id)),
     [cast, store.liked, store.passed, store.matches, mine, fits, ownDetails],
   );
   const current = deck[0];
+  const commonGenres = current ? fits.get(current.p.id)?.commonGenres ?? [] : [];
   const calendarDay = new Intl.DateTimeFormat("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric" }).format();
   const eligible = movieMatch ? [] : deck.slice(1).filter((item) => (item.score ?? 0) > 0).slice(0, 9);
   const daily = Array.from({ length: Math.min(3, eligible.length) },
@@ -138,9 +141,9 @@ export default function Discover() {
   return (
     <div className="scene-page min-w-0 space-y-3 pt-3 sm:space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="scene-title text-[clamp(2rem,7vw,3rem)]">{movieMatch ? "Movie Match" : "Keşfet"}</h1>
+        <h1 className="scene-title text-[clamp(2rem,7vw,3rem)]">{movieMatch ? "Sinema eşleşmesi" : "Keşfet"}</h1>
         <div className="flex min-w-0 flex-wrap gap-1.5">
-          <Button asChild variant="secondary" size="sm"><Link href={movieMatch ? "/" : "/?mod=movie-match"}><Sparkles />{movieMatch ? "Keşfet’e dön" : "Movie Match"}</Link></Button>
+          <Button asChild variant="secondary" size="sm"><Link href={movieMatch ? "/" : "/?mod=movie-match"}><Sparkles />{movieMatch ? "Keşfet’e dön" : "Sinema eşleşmesi"}</Link></Button>
           <Button asChild variant="ghost" size="icon"><Link href="/arama" aria-label="Favori yapımlarını ekle"><Film /></Link></Button>
         </div>
       </header>
@@ -172,13 +175,22 @@ export default function Discover() {
             <option value="">Tümü</option>{Array.from({ length:111 },(_,i) => i+130).map((height) => <option key={height} value={height}>{height} cm</option>)}
           </select></label>)}
         </div>
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+          <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={!!filter.shared}
+            onChange={(event) => setFilter({ ...filter, shared: event.target.checked ? "1" : "" })} />Ortak favorisi olanlar</label>
+          <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={!!filter.photosOnly}
+            onChange={(event) => setFilter({ ...filter, photosOnly: event.target.checked ? "1" : "" })} />Fotoğrafı olanlar</label>
+        </div>
+        {filter.from && filter.to && Number(filter.from) > Number(filter.to) &&
+          <p role="status" className="pb-2 text-sm text-destructive">En düşük yaş, en yüksek yaşı geçemez.</p>}
         {activeFilters > 0 && <Button size="sm" variant="ghost" onClick={() => setFilter(emptyFilters)}>Filtreleri temizle</Button>}
       </details>
       {last && !store.matches[last.id] && <Button size="sm" variant="secondary" disabled={busy} onClick={() => void undo()}><RotateCcw /> Son kaydırmayı geri al</Button>}
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
         <div className="relative mx-auto w-full min-w-0 max-w-[28rem] lg:max-w-none">
           {current ? (
-              <article className="scene-panel relative min-w-0" data-testid={`card-person-${current.p.id}`}>
+              <motion.article key={current.p.id} initial={{ opacity: 0, scale: .985 }} animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: .18 }} className="scene-panel relative min-w-0" data-testid={`card-person-${current.p.id}`}>
                 <SwipeCard key={current.p.id} disabled={busy} labels={{ left: "Geç", right: "Beğen", up: "Süper beğeni" }}
                   onSwipe={(direction) => swipe(current.p, direction)} next={deck[1] && <PersonPhoto id={deck[1].p.id} name={deck[1].p.name} avatarPath={deck[1].p.avatar_path} className="h-full" />}>
                   <DiscoverPortrait key={current.p.id} person={current.p} score={current.score} common={current.c.length} />
@@ -189,6 +201,14 @@ export default function Discover() {
                     <motion.button type="button" whileTap={{ scale: 0.85 }} onClick={() => void swipe(current.p, "right")} disabled={busy} aria-label="Beğen" data-testid="button-like" className="scene-gradient grid size-[4.5rem] shrink-0 place-items-center rounded-full text-primary-foreground shadow-md disabled:opacity-50"><Heart size={32} fill="currentColor" /></motion.button>
                     <button type="button" onClick={() => void swipe(current.p, "up")} disabled={busy} aria-label="Süper beğeni" className="grid size-16 shrink-0 place-items-center rounded-full border bg-secondary text-brand-ink transition hover:bg-muted active:scale-95 disabled:opacity-50"><Star size={28} /></button>
                   </div>
+                  {(commonGenres.length || current.sharedExpectation) ? (
+                    <div className="mb-3 rounded-xl bg-secondary/60 px-3 py-2 text-sm">
+                      <strong>Neden önerildi?</strong>
+                      {commonGenres.length > 0 &&
+                        <p>Ortak türler: {commonGenres.slice(0, 3).join(", ")}</p>}
+                      {current.sharedExpectation && <p>İlişki beklentiniz aynı.</p>}
+                    </div>
+                  ) : null}
                   <div className="mb-2 text-xs font-semibold text-muted-foreground">{current.c.length ? "Ortak favoriler" : "Henüz ortak favori yok"}</div>
                   <div data-testid="common-posters" aria-label="Ortak film ve dizi afişleri" role="region" tabIndex={0} className="flex w-full min-w-0 max-w-full snap-x gap-2 overflow-x-auto overscroll-x-contain px-1 py-1 scrollbar-none">
                     {[...new Set(current.c)].map((id) => {
@@ -206,7 +226,7 @@ export default function Discover() {
                   </div>
 
                 </div>
-              </article>
+              </motion.article>
             ) : (
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="scene-panel grid min-h-52 place-items-center p-5 text-center">
                 <div>
@@ -234,7 +254,7 @@ export default function Discover() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {members.length === 0 && <p className="col-span-full rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Bu bölümde başka profil yok.</p>}
             {members.slice(0, visibleCount).map((p, i) => {
-              const c = p.favorites.filter((id) => mine.includes(id)).length;
+              const c = sharedFavorites(mine, p.favorites).length;
               const status = store.matches[p.id] ? "Eşleşme" : store.liked.includes(p.id) ? "Beğendin" : null;
               return (
                 <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>

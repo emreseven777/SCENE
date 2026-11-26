@@ -1,3 +1,4 @@
+import { sharedFavorites } from "./dating";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { requireSupabase, turkishError } from "./supabase";
 import { CHAT_BUCKET, uploadChatMedia } from "./chat-media";
@@ -440,5 +441,5 @@ export function useStore() {
 export function useCommon(favorites: string[]) {
   const { me } = useStore();
   const mine = me?.favorites;
-  return useMemo(() => (mine ? favorites.filter((f) => mine.includes(f)) : []), [favorites, mine]);
+  return useMemo(() => (mine ? sharedFavorites(mine, favorites) : []), [favorites, mine]);
 }

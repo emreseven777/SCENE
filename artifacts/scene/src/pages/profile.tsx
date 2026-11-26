@@ -72,6 +72,14 @@ export default function Profile() {
         <div className="flex items-center justify-between"><h2 className="font-display text-xl font-bold">Profil gücün</h2><span className="font-bold text-brand-ink">%{completion}</span></div>
         <progress aria-label="Profil tamamlanma oranı" value={completion} max={100} className="mt-3 h-2 w-full accent-primary" />
         <div className="mt-3 grid grid-cols-2 gap-2 text-sm">{profileSteps.map(s => <span key={s.label} className={s.done ? "text-brand-ink" : "text-muted-foreground"}>{s.done ? "✓" : "○"} {s.label}</span>)}</div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {!me.avatar_path && <Button asChild variant="secondary"><a href="#profile-photos-heading">Ana fotoğraf ekle</a></Button>}
+          {!me.bio.trim() && <Button variant="secondary" onClick={() => {
+            setForm({ name: me.name, city: me.city, bio: me.bio, scene: me.scene });
+            setEditing(true);
+          }}>Hakkında bölümünü doldur</Button>}
+          {me.favorites.length < 5 && <Button asChild variant="secondary"><Link href="/arama">Favori yapım ekle</Link></Button>}
+        </div>
       </section>
       <section className="scene-panel mt-6 p-5">
         <h2 className="font-display text-xl font-bold">Cinema DNA</h2>

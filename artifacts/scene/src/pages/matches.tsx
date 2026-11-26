@@ -1,3 +1,4 @@
+import { cinemaFit, profileCinemaSignals, sharedFavorites } from "@/lib/dating";
 import { SceneHeading } from "@/components/scene-brand";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
@@ -15,7 +16,7 @@ export default function Matches() {
   const mine = store.me?.favorites ?? [];
   const matched = store.people.filter((p) => store.matches[p.id]).sort((a, b) => store.matches[b.id].at - store.matches[a.id].at);
   const pending = store.people.filter((p) => store.liked.includes(p.id) && !store.matches[p.id]);
-  const common = (favs: string[]) => favs.filter((f) => mine.includes(f)).length;
+  const own = profileCinemaSignals(mine, store.me?.discovery_details, (id) => store.titleById(id));
 
   return (
     <div className="scene-page">
@@ -32,15 +33,23 @@ export default function Matches() {
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {matched.map((p, i) => {
             const last = store.messages[p.id]?.at(-1);
+            const common = sharedFavorites(mine, p.favorites);
+            const titles = common.flatMap((id) => store.titleById(id, p.id)?.title ?? []).slice(0, 2);
+            const signals = profileCinemaSignals(p.favorites, p.discovery_details, (id) => store.titleById(id, p.id));
+            const { score, commonGenres } = cinemaFit(own, signals);
             return (
-              <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} className="scene-panel group relative flex overflow-hidden" data-testid={`card-match-${p.id}`}>
+              <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 4) * 0.04 }} className="scene-panel group relative flex overflow-hidden" data-testid={`card-match-${p.id}`}>
                 <Link href={`/kullanici/${p.id}`} className="relative w-24 shrink-0 sm:w-32"><PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-full min-h-[10rem] w-full" textClassName="text-5xl" /></Link>
                 <div className="flex min-w-0 flex-1 flex-col p-4">
                   <div className="flex items-start justify-between">
                     <Link href={`/kullanici/${p.id}`} className="break-words font-display text-xl font-bold leading-tight sm:text-2xl hover:text-brand-ink">{p.name}</Link>
-                    <div className="text-right"><span className="font-display text-3xl font-bold leading-none text-brand-ink">{common(p.favorites)}</span><div className="font-mono text-[9px] uppercase">ortak</div></div>
+                    <div className="text-right"><span className="font-display text-3xl font-bold leading-none text-brand-ink">{common.length}</span><div className="font-mono text-[9px] uppercase">ortak</div></div>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">{formatDistanceToNow(store.matches[p.id].at, { locale: tr, addSuffix: true })} eşleştiniz</div>
+                  {score !== null && <p className="mt-1 text-sm font-semibold text-brand-ink">%{score} sinema uyumu</p>}
+                  {(titles.length > 0 || commonGenres.length > 0) && <p className="mt-1 text-xs text-muted-foreground break-words">
+                    {titles.length ? `Ortak favoriler: ${titles.join(", ")}` : `Ortak türler: ${commonGenres.slice(0, 2).join(", ")}`}
+                  </p>}
                   <p className="mt-2 line-clamp-2 text-sm text-foreground/70">{last ? last.text : "Henüz mesaj yok. İlk repliği sen söyle."}</p>
                   <div className="mt-auto flex flex-wrap items-center gap-1 pt-3">
                     <Link href={`/mesajlar/${p.id}`} data-testid={`link-chat-${p.id}`} className="inline-flex h-9 items-center gap-2 rounded-full bg-primary text-primary-foreground px-4 text-xs font-semibold"><MessageCircle size={14} />Sohbet</Link>

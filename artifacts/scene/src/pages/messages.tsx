@@ -1,3 +1,4 @@
+import { ProfileSafety } from "@/components/dating-profile";
 import { CinemaMessage, SharedCinema } from "@/components/shared-cinema";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AttachmentControls, AttachmentPreview, ChatAttachment, type PendingMedia } from "@/components/chat-experience";
@@ -110,6 +111,13 @@ export function Chat() {
   }
   const msgs = [...allMessages.values()].sort((a, b) => Number(a.id) - Number(b.id));
   const common = useCommon(p?.favorites ?? []);
+  const sharedTitles = common.flatMap((id) => store.titleById(id, p?.id) ?? []);
+  const starters = sharedTitles.slice(0, 3).flatMap((title, index) => {
+    if (index > 0) return [`“${title.title}” seven birine hangi yapımı önerirdin?`];
+    return title.type === "dizi"
+      ? [`“${title.title}” dizisinde favori karakterin kim?`, `“${title.title}” için spoiler vermeden hangi bölümü öne çıkarırsın?`]
+      : [`“${title.title}” filminde seni en çok hangi sahne etkiledi?`, `“${title.title}” ile bir film maratonu yapsak yanına ne eklerdin?`];
+  });
   const newest = !term ? msgs.at(-1)?.id : undefined;
 
   useEffect(() => {
@@ -229,11 +237,15 @@ export function Chat() {
               <div className="text-[11px] text-muted-foreground">{isTyping ? "Yazıyor…" : online ? "Çevrimiçi" : presence ? `Son görülme: ${new Date(presence.updated_at).toLocaleString("tr-TR")}` : `${common.length} ortak favori`}</div>
             </div>
           </Link>
-          {chat && user && <FilmDate chat={chat} user={user} titles={common.flatMap((title) => store.titleById(title)?.title ?? [])} />}
+          {chat && user && <FilmDate chat={chat} user={user} titles={sharedTitles.map((title) => title.title)} />}
         </div>
         {chat && user && <SharedCinema key={chat} match={chat} viewer={user}
           titles={[...new Set([...common, ...(store.me?.favorites ?? []), ...p.favorites])].flatMap((id) => store.titleById(id) ?? store.titleById(id, p.id) ?? [])}
           onShare={publishTyping} />}
+        <details className="border-b px-4 py-2 text-sm">
+          <summary className="cursor-pointer font-semibold">Güvenlik seçenekleri</summary>
+          <ProfileSafety person={p} />
+        </details>
         <details className="border-b px-4 py-2 text-sm">
           <summary className="cursor-pointer font-semibold">Sohbette ara</summary>
           <input className="mt-2 w-full rounded-lg border bg-card p-2 text-base" type="search" aria-label="Mesaj ara"
@@ -241,7 +253,12 @@ export function Chat() {
         </details>
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5">
           <div className="mx-auto max-w-xs text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Eşleştiniz. Bu sohbeti yalnızca ikiniz görebilirsiniz.</div>
-          {!msgs.length && common.length > 0 && <button type="button" className="mx-auto block rounded-xl border bg-muted p-2 text-xs" onClick={() => setText(`${store.titleById(common[0])?.title ?? "Ortak favorimiz"} için en sevdiğin sahne hangisi?`)}>Ortak bir favoriyle sohbet başlat</button>}
+          {!term && !msgs.length && !text.trim() && !media && starters.length > 0 &&
+            <div className="mx-auto max-w-md space-y-2 pt-2" aria-label="Ortak favorilerden sohbet başlatıcıları">
+              {starters.map((prompt) => <button key={prompt} type="button"
+                className="block min-h-11 w-full rounded-xl border bg-muted px-3 py-2 text-left text-sm"
+                onClick={() => setText(prompt)}>{prompt}</button>)}
+            </div>}
           {term && (term !== searchTerm || history.isPending) && <p role="status" className="text-sm">Mesajlar aranıyor…</p>}
           {history.isError && <p role="alert" className="text-sm">{turkishError(history.error)}</p>}
           {term && term === searchTerm && history.isSuccess && !msgs.length &&

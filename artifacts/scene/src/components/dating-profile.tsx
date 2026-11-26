@@ -153,10 +153,17 @@ export function ProfileSafety({ person }: { person: Person }) {
       <DialogDescription>Birbirinizin profilini ve sohbetini göremezsiniz. Yeni mesaj gönderilemez.</DialogDescription>
       <Button variant="destructive" disabled={busy} onClick={async () => {
         setBusy(true);
-        const { error } = await requireSupabase().from("scene_blocks").insert({ blocked_id: person.id });
-        setBusy(false);
-        if (error) toast({ title: "Kullanıcı engellenemedi", description: turkishError(error), variant: "destructive" });
-        else { setAction(null); await refresh(); toast({ title: "Kullanıcı engellendi" }); }
+        try {
+          const { error } = await requireSupabase().from("scene_blocks").insert({ blocked_id: person.id });
+          if (error) throw error;
+          setAction(null);
+          await refresh();
+          toast({ title: "Kullanıcı engellendi" });
+        } catch (error) {
+          toast({ title: "Engelleme işlemi tamamlanamadı", description: turkishError(error), variant: "destructive" });
+        } finally {
+          setBusy(false);
+        }
       }}>Engellemeyi onayla</Button>
     </DialogContent></Dialog>}
   </div>;
