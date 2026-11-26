@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { requireSupabase } from "@/lib/supabase";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
@@ -23,7 +23,7 @@ function isActive(loc: string, href: string) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [loc] = useLocation();
-  const { matches, me, messages, readThrough } = useStore();
+  const { matches, me, messages, readThrough, incoming, people } = useStore();
   const user = me?.id;
   const unread = Object.entries(messages).reduce((sum, [pid, list]) =>
     sum + list.filter((m) => m.from === "them" && !m.deleted && Number(m.id) > (readThrough[pid] ?? 0)).length, 0);
@@ -38,7 +38,18 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.addEventListener("visibilitychange", pulse);
     return () => { clearInterval(timer); document.removeEventListener("visibilitychange", pulse); };
   }, [user]);
-  const count = Object.keys(matches).length;
+  const likes = people.filter(p => incoming[p.id] && !matches[p.id]).map(p => `${p.id}:${incoming[p.id]}`);
+  const key = `movia-seen-likes:${user}`;
+  const [seen, setSeen] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; } });
+  const likesKey = JSON.stringify(likes);
+  useEffect(() => {
+    if (!user || !isActive(loc, "/begeniler")) return;
+    const next: string[] = JSON.parse(likesKey);
+    setSeen(next);
+    try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* storage unavailable */ }
+  }, [user, loc, key, likesKey]);
+  const count = isActive(loc, "/begeniler") ? 0 : likes.filter(id => !seen.includes(id)).length;
+  const badgeCount = (href: string) => href === "/begeniler" ? count : href === "/mesajlar" ? unread : 0;
   return (
     <div className="w-full min-w-0 min-h-[100dvh] lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)]">
       <aside className="sticky top-0 hidden h-[100dvh] flex-col border-r bg-card px-5 py-8 lg:flex">
@@ -53,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}>
                 <Icon size={18} />
                 <span>{label}</span>
-                {href === "/begeniler" && count > 0 && <span className="ml-auto rounded-full bg-card px-2 py-0.5 text-xs text-brand-ink">{count}</span>}
+                {badgeCount(href) > 0 && <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">{badgeCount(href) > 99 ? "99+" : badgeCount(href)}</span>}
               </Link>
             );
           })}
@@ -82,8 +93,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span className="relative grid h-8 w-full max-w-12 place-items-center">
                   {on && <motion.span layoutId="tab" className="absolute inset-0 rounded-full bg-secondary" />}
                   <Icon size={19} className="relative" />
-                  {href === "/mesajlar" && unread > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1 text-[9px] text-primary-foreground">{Math.min(unread, 99)}</span>}
-                  {href === "/begeniler" && count > 0 && <span className="absolute right-2 top-1 size-2 rounded-full bg-primary ring-2 ring-card" />}
+                  {badgeCount(href) > 0 && <span aria-label={`${badgeCount(href)} yeni bildirim`} className="absolute right-0 -top-1 grid min-w-[18px] h-[18px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground ring-2 ring-card">{badgeCount(href) > 99 ? "99+" : badgeCount(href)}</span>}
                 </span>
                 <span className="max-w-full truncate">{label}</span>
               </Link>
