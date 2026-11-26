@@ -1,7 +1,7 @@
 import { useAdminAccess } from "@/lib/admin-access";
 import { useState } from "react";
 import { Link } from "wouter";
-import { LogOut, Mail, MapPin, Pencil, Plus, Quote } from "lucide-react";
+import { LogOut, Mail, MapPin, Pencil, Plus, Quote, Camera, ChevronDown, Film, Tv, Heart, Users, Shield, Settings, Dna, BarChart3, BadgeCheck } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { turkishError } from "@/lib/supabase";
@@ -28,6 +28,7 @@ export default function Profile() {
   const me = store.me!;
   const { email, signOut } = useAuth();
   const { toast } = useToast();
+  const [photosOpen, setPhotosOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: me.name, city: me.city, bio: me.bio, scene: me.scene });
@@ -54,50 +55,52 @@ export default function Profile() {
 
   return (
     <div className="scene-page max-w-5xl">
-      <div className="scene-panel flex flex-wrap items-start gap-4 p-4 sm:items-center sm:gap-6 sm:p-7">
-        <div className="shrink-0" data-testid="img-my-avatar">
-          <PersonPhoto id={me.id} name={me.name} avatarPath={me.avatar_path} className="size-20 rounded-3xl sm:size-28" textClassName="text-6xl" />
+      <div className="flex flex-col items-center gap-3 px-4 py-6 text-center">
+        <div className="relative rounded-full bg-gradient-to-br from-pink-500 to-violet-600 p-1" data-testid="img-my-avatar">
+          <PersonPhoto id={me.id} name={me.name} avatarPath={me.avatar_path} className="size-32 rounded-full border-2 border-background sm:size-40" textClassName="text-6xl" />
+          <button type="button" aria-label="Fotoğrafları düzenle" className="absolute bottom-0 right-0 rounded-full bg-gradient-to-br from-pink-500 to-violet-600 p-3 text-white shadow-lg" onClick={() => { setPhotosOpen(true); requestAnimationFrame(() => document.getElementById("profile-photos-menu")?.scrollIntoView({block:"start",behavior:"smooth"})); }}><Camera size={20}/></button>
         </div>
-        <div className="min-w-[10rem] flex-1">
-          <h1 className="break-words font-display text-3xl font-bold tracking-tight sm:text-5xl" data-testid="text-my-name">{me.name}{me.age !== null && <span className="font-semibold text-muted-foreground">, {me.age}</span>}</h1>
-          <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground"><MapPin size={14} /><span data-testid="text-my-city">{me.city || "İl belirtilmemiş"}</span></div>
-          <p className="mt-3 max-w-xl text-foreground/80" data-testid="text-my-bio">{me.bio || "Henüz bir şey yazmadın."}</p>
-          {me.scene && <p className="mt-2 flex max-w-xl gap-2 text-sm italic text-foreground/70" data-testid="text-my-scene"><Quote size={14} className="mt-0.5 shrink-0 text-brand-ink" />{me.scene}</p>}
+        <div className="w-full">
+          <h1 className="break-words font-display text-3xl font-bold tracking-tight sm:text-4xl" data-testid="text-my-name">{me.name}{me.age !== null && <span className="font-semibold text-muted-foreground">, {me.age}</span>}{me.verified_photo && <BadgeCheck className="ml-2 inline text-brand-ink" size={23} aria-label="Doğrulanmış fotoğraf"/>}</h1>
+          <div className="mt-2 flex items-center justify-center gap-1 text-sm text-muted-foreground"><MapPin size={14} /><span data-testid="text-my-city">{me.city || "İl belirtilmemiş"}</span></div>
+          <p className="mx-auto mt-3 max-w-xl text-foreground/80" data-testid="text-my-bio">{me.bio || "Henüz bir şey yazmadın."}</p>
+          {me.scene && <p className="mx-auto mt-2 flex max-w-xl justify-center gap-2 text-sm italic text-foreground/70" data-testid="text-my-scene"><Quote size={14} className="mt-0.5 shrink-0 text-brand-ink" />{me.scene}</p>}
         </div>
-        <Button variant="secondary" onClick={() => { setForm({ name: me.name, city: me.city, bio: me.bio, scene: me.scene }); setEditing(true); }} data-testid="button-edit-profile"><Pencil size={15} className="mr-2" />Düzenle</Button>
+        <Button variant="secondary" onClick={() => { setForm({ name: me.name, city: me.city, bio: me.bio, scene: me.scene }); setEditing(true); }} data-testid="button-edit-profile"><Pencil size={15} className="mr-2" />Profili Düzenle</Button>
       </div>
 
-      <section className="scene-panel mt-6 p-5">
+      <div className="scene-panel my-4 grid grid-cols-4 divide-x divide-border overflow-hidden">
+        {[
+          {value: me.favorites.filter(id => store.titleById(id)?.type === "film").length, label:"Film", Icon:Film},
+          {value: me.favorites.filter(id => store.titleById(id)?.type === "dizi").length, label:"Dizi", Icon:Tv},
+          {value: Object.keys(store.incoming).length, label:"Beğeni", Icon:Heart},
+          {value: Object.keys(store.matches).length, label:"Eşleşme", Icon:Users}
+        ].map(({value,label,Icon}) => <div key={label} className="flex flex-col items-center gap-1 px-1 py-4"><Icon size={21} className="text-brand-ink"/><strong className="text-xl font-bold tabular-nums">{value}</strong><span className="text-xs font-semibold text-muted-foreground">{label}</span></div>)}
+      </div>
+      <details  className="scene-panel my-2 overflow-hidden"><summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 font-bold [&::-webkit-details-marker]:hidden"><BarChart3 size={22} className="text-brand-ink"/><span className="flex-1">Profil Gücü</span><ChevronDown size={18} className="text-muted-foreground"/></summary><div className="px-3 pb-3">
         <div className="flex items-center justify-between"><h2 className="font-display text-xl font-bold">Profil gücün</h2><span className="font-bold text-brand-ink">%{completion}</span></div>
         <progress aria-label="Profil tamamlanma oranı" value={completion} max={100} className="mt-3 h-2 w-full accent-primary" />
         <div className="mt-3 grid grid-cols-2 gap-2 text-sm">{profileSteps.map(s => <span key={s.label} className={s.done ? "text-brand-ink" : "text-muted-foreground"}>{s.done ? "✓" : "○"} {s.label}</span>)}</div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {!me.avatar_path && <Button asChild variant="secondary"><a href="#profile-photos-heading">Ana fotoğraf ekle</a></Button>}
+          {!me.avatar_path && <Button asChild variant="secondary"><a href="#profile-photos-heading" onClick={() => setPhotosOpen(true)}>Ana fotoğraf ekle</a></Button>}
           {!me.bio.trim() && <Button variant="secondary" onClick={() => {
             setForm({ name: me.name, city: me.city, bio: me.bio, scene: me.scene });
             setEditing(true);
           }}>Hakkında bölümünü doldur</Button>}
           {me.favorites.length < 5 && <Button asChild variant="secondary"><Link href="/arama">Favori yapım ekle</Link></Button>}
         </div>
-      </section>
-      <section className="scene-panel mt-6 p-5">
+      </div></details>
+      <details  className="scene-panel my-2 overflow-hidden"><summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 font-bold [&::-webkit-details-marker]:hidden"><Dna size={22} className="text-brand-ink"/><span className="flex-1">Cinema DNA</span><ChevronDown size={18} className="text-muted-foreground"/></summary><div className="px-3 pb-3">
         <h2 className="font-display text-xl font-bold">Cinema DNA</h2>
         <p className="mt-1 text-sm text-muted-foreground">Favori yapımlarından oluşan sinema zevkin.</p>
         {topGenres.length ? topGenres.map(([genre,count]) => <div key={genre} className="mt-3"><div className="flex justify-between text-sm"><span>{genre}</span><span>{count} yapım</span></div><progress aria-label={genre} className="h-2 w-full accent-primary" value={count} max={me.favorites.length}/></div>) : <Link href="/arama" className="mt-3 block text-sm text-brand-ink underline">DNA profilin için favori ekle</Link>}
-      </section>
-      <ProfilePhotoEditor person={me} />
-      <div className="mt-6"><DatingFields person={me} /></div>
-      <div className="mt-6"><AccountVisibility person={me} /></div>
-      <div className="mt-6"><PrivacySettings user={me.id} photos={me.avatar_paths.length ? me.avatar_paths : me.avatar_path ? [me.avatar_path] : []} /></div>
+      </div></details>
+      <details id="profile-photos-menu" open={photosOpen} onToggle={e => setPhotosOpen(e.currentTarget.open)} className="scene-panel my-2 overflow-hidden"><summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 font-bold [&::-webkit-details-marker]:hidden"><Camera size={22} className="text-brand-ink"/><span className="flex-1">Fotoğraflarım</span><ChevronDown size={18} className="text-muted-foreground"/></summary><div className="px-3 pb-3"><ProfilePhotoEditor person={me} /></div></details>
+      <details  className="scene-panel my-2 overflow-hidden"><summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 font-bold [&::-webkit-details-marker]:hidden"><Users size={22} className="text-brand-ink"/><span className="flex-1">Tanışma Tercihlerim</span><ChevronDown size={18} className="text-muted-foreground"/></summary><div className="px-3 pb-3"><DatingFields person={me} /></div></details>
+      <details  className="scene-panel my-2 overflow-hidden"><summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 font-bold [&::-webkit-details-marker]:hidden"><Shield size={22} className="text-brand-ink"/><span className="flex-1">Gizlilik ve Güvenlik</span><ChevronDown size={18} className="text-muted-foreground"/></summary><div className="px-3 pb-3"><AccountVisibility person={me} /><PrivacySettings user={me.id} photos={me.avatar_paths.length ? me.avatar_paths : me.avatar_path ? [me.avatar_path] : []} /></div></details>
       {adminAccess.data && <Button className="mt-4" variant="secondary" asChild><Link href="/yonetim">Yönetim paneli</Link></Button>}
 
-      <div className="scene-panel mt-6 grid grid-cols-3 divide-x divide-border overflow-hidden">
-        {[[me.favorites.length, "Favori"], [Object.keys(store.matches).length, "Eşleşme"], [store.liked.length, "Beğeni"]].map(([v, l]) => (
-          <div key={l} className="bg-card p-4 text-center"><div className="font-display text-3xl font-bold text-brand-ink">{v}</div><div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{l}</div></div>
-        ))}
-      </div>
-
-      <section className="mt-10">
+      <details  className="scene-panel my-2 overflow-hidden"><summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 font-bold [&::-webkit-details-marker]:hidden"><Heart size={22} className="text-brand-ink"/><span className="flex-1">Favorilerim</span><ChevronDown size={18} className="text-muted-foreground"/></summary><div className="px-3 pb-3">
         <div className="mb-4 flex items-baseline justify-between">
           <h2 className="font-display text-2xl font-bold tracking-tight">Favorilerin</h2>
           <Link href="/arama" data-testid="link-add-favorites" className="inline-flex items-center gap-1 text-sm text-brand-ink hover:underline"><Plus size={15} />Ekle</Link>
@@ -112,9 +115,9 @@ export default function Profile() {
             })}
           </div>
         )}
-      </section>
+      </div></details>
 
-      <section className="scene-panel mt-8 p-5 sm:p-7">
+      <details  className="scene-panel my-2 overflow-hidden"><summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 font-bold [&::-webkit-details-marker]:hidden"><Settings size={22} className="text-brand-ink"/><span className="flex-1">Hesap Ayarları</span><ChevronDown size={18} className="text-muted-foreground"/></summary><div className="px-3 pb-3">
         <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Hesap</div>
         <div className="mt-2 flex items-center gap-2 text-sm text-foreground/80" data-testid="text-my-email"><Mail size={14} className="shrink-0 text-brand-ink" /><span className="min-w-0 [overflow-wrap:anywhere]">{email}</span></div>
         <p className="mt-1 text-xs text-muted-foreground">E-posta adresin yalnızca sana görünür.</p>
@@ -134,7 +137,7 @@ export default function Profile() {
             </AlertDialogContent>
           </AlertDialog>
         </div>
-      </section>
+      </div></details>
 
       <Dialog open={editing} onOpenChange={setEditing}>
         <DialogContent className="border-border bg-card">
