@@ -46,7 +46,7 @@ function ConversationList({ activeId }: { activeId?: string }) {
                 {unread > 0 && <span aria-label={`${unread} okunmamış mesaj`} className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground">{unread}</span>}
                 {last && <span className="font-mono text-[10px] text-muted-foreground">{format(last.at, "HH:mm")}</span>}
               </div>
-              <p className={cn("truncate text-sm", last?.from === "them" ? "text-foreground/80" : "text-muted-foreground")}>{last ? `${last.from === "me" ? "Sen: " : ""}${last.text}` : "Yeni eşleşme. Selam ver."}</p>
+              <p className={cn("truncate text-sm font-semibold", last?.from === "them" ? "text-foreground/80" : "text-muted-foreground")}>{last ? `${last.from === "me" ? "Sen: " : ""}${last.text}` : "Yeni eşleşme. Selam ver."}</p>
             </div>
           </Link>
         </li>
@@ -281,7 +281,7 @@ export function Chat() {
             followLatest.current = list.scrollHeight - list.scrollTop - list.clientHeight < 96;
             if (followLatest.current) setHasNewMessages(false);
           }}>
-          <div className="mx-auto max-w-xs text-center text-[10px] text-white/70">Yalnızca ikiniz görebilirsiniz.</div>
+          <div className="mx-auto max-w-xs text-center text-[10px] font-semibold text-white/70">Yalnızca ikiniz görebilirsiniz.</div>
           {!term && !msgs.length && !text.trim() && !media && starters.length > 0 &&
             <div className="mx-auto max-w-md space-y-2 pt-2" aria-label="Ortak favorilerden sohbet başlatıcıları">
               {starters.map((prompt) => <button key={prompt} type="button"
@@ -306,12 +306,12 @@ export function Chat() {
           <AnimatePresence initial={false}>
             {msgs.map((m) => (
               <motion.div key={m.id} layout initial={{ opacity: 0, y: 10, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={cn("flex flex-col", m.from === "me" ? "items-end" : "items-start")} data-testid={`msg-${m.id}`}>
-                <div className={cn("max-w-[82%] min-w-0 break-words rounded-[24px] border px-4 py-2.5 text-sm leading-relaxed backdrop-blur-xl shadow-lg", m.from === "me" ? "rounded-br-md border-pink-400/40 bg-gradient-to-br from-pink-600/70 to-fuchsia-900/80 text-white shadow-pink-950/20" : "rounded-bl-md border-white/20 bg-gradient-to-br from-white/25 to-white/10 text-white shadow-black/10")}>
+                <div className={cn("max-w-[82%] min-w-0 break-words rounded-[24px] border px-4 py-2.5 text-sm font-bold leading-relaxed backdrop-blur-xl shadow-lg", m.from === "me" ? "rounded-br-md border-pink-400/40 bg-gradient-to-br from-pink-600/70 to-fuchsia-900/80 text-white shadow-pink-950/20" : "rounded-bl-md border-white/20 bg-gradient-to-br from-white/25 to-white/10 text-white shadow-black/10")}>
                   {m.replyTo && !m.deleted && <blockquote className="mb-2 line-clamp-2 border-l-2 border-current pl-2 text-xs">{msgs.find((item) => item.id === m.replyTo)?.text ?? "Yanıtlanan mesaj"}</blockquote>}
                   {m.mediaPath && !m.deleted && <ChatAttachment message={m} blur={preferences.data?.blur_photos ?? true} />}
                   <CinemaMessage body={m.text} />
                 </div>
-                <div className="mt-0.5 px-2 text-[10px] text-white/70">{format(m.at, "HH:mm")}{m.from === "me" && !m.deleted && <> · {m.seen ? "Görüldü" : m.delivered ? "İletildi" : "Gönderildi"}</>}</div>
+                <div className="mt-0.5 px-2 text-[10px] font-semibold text-white/70">{format(m.at, "HH:mm")}{m.from === "me" && !m.deleted && <> · {m.seen ? "Görüldü" : m.delivered ? "İletildi" : "Gönderildi"}</>}</div>
                 {!m.deleted && <details className="mt-1 max-w-full text-xs">
                   <summary className="cursor-pointer py-0.5 text-white/70 list-none" aria-label="Mesaj işlemleri">··· {reactions.data?.filter((row) => String(row.message_id) === m.id).map((row) => row.emoji).join(" ")}</summary>
                   <div className="flex flex-wrap gap-1 rounded-xl bg-card text-card-foreground p-1">
@@ -351,7 +351,7 @@ export function Chat() {
             </details>
           </div>
         </div></details>
-          <input value={text} onChange={(e) => publishTyping(e.target.value)} maxLength={2000} placeholder="Bir replik yaz..." data-testid="input-message" className="h-11 min-w-0 flex-1 rounded-full bg-white/15 px-4 text-base text-white outline-none ring-1 ring-white/25 placeholder:text-white/65 focus:ring-pink-400" />
+          <input value={text} onChange={(e) => publishTyping(e.target.value)} maxLength={2000} placeholder="Bir replik yaz..." data-testid="input-message" className="h-11 min-w-0 flex-1 rounded-full bg-white/15 px-4 text-base font-bold text-white outline-none ring-1 ring-white/25 placeholder:text-white/65 focus:ring-pink-400" />
           <motion.button whileTap={{ scale: 0.88 }} type="submit" disabled={(!text.trim() && !media) || sending} aria-label="Gönder" data-testid="button-send" className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-pink-500 to-fuchsia-800 text-white shadow-lg shadow-pink-900/40 disabled:opacity-40"><Send size={17} /></motion.button>
         </form>
       </div>
