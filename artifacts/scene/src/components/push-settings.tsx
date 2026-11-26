@@ -45,7 +45,7 @@ export function PushSettings({ user }: { user: string }) {
           setBusy(true); setStatus("");
           try {
             if (!subscription.data && await Notification.requestPermission() !== "granted") throw new Error("Bildirim izni verilmedi.");
-            const registration = await navigator.serviceWorker.register(new URL("scene-push-sw.js",urlScope()));
+            const registration = await navigator.serviceWorker.register(new URL("sw.js",urlScope()));
             const ready = registration.active ? registration : await navigator.serviceWorker.ready;
             const existing = await ready.pushManager.getSubscription();
             const table = requireSupabase().from("scene_push_subscriptions");

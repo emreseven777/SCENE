@@ -1,3 +1,6 @@
+// Keep background push on the same registration as the app and offline page.
+importScripts("./scene-push-sw.js");
+
 // Do not cache private profiles, messages, authentication or API responses.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
