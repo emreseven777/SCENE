@@ -3,9 +3,9 @@ import { requireSupabase } from "@/lib/supabase";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { motion } from "framer-motion";
-import { Heart, Star, X, Film, Sparkles, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { Heart, X, Film, Clapperboard, Sparkles, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { useStore, type Person } from "@/lib/store";
-import { SwipeCard, type SwipeDirection } from "@/components/swipe-card";
+import { SwipeCard } from "@/components/swipe-card";
 import { cinemaFit, GENDERS, GOALS, profileCinemaSignals, profileGenres, selectedTrait, sharedFavorites } from "@/lib/dating";
 import { CHOICES, GENRES, INTERESTS, OCCUPATIONS } from "@/lib/profile-choices";
 import { PROVINCES, isProvince } from "@/lib/provinces";
@@ -16,38 +16,43 @@ import { Button } from "@/components/ui/button";
 import { MatchOverlay } from "@/components/match-overlay";
 import { TitleDetail } from "@/components/title-detail";
 
+type DiscoverySwipe = "left" | "right";
+
 function DiscoverPortrait({ person, score, common }: { person: Person; score: number | null; common: number }) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const photos = [...new Set([person.avatar_path, ...person.avatar_paths].filter((path): path is string => !!path))];
   const active = Math.min(photoIndex, Math.max(0, photos.length - 1));
 
-  return <div className="relative h-[clamp(17rem,calc(100svh-22rem),30rem)] overflow-hidden rounded-t-3xl lg:aspect-[3/4] lg:h-auto lg:max-h-[34rem]"
+  return <div className="relative h-[clamp(23rem,62svh,38rem)] overflow-hidden rounded-t-[1.45rem] bg-muted lg:h-[36rem]"
     data-testid="discover-portrait">
     <PersonPhoto id={person.id} name={person.name} avatarPath={photos[active] ?? null}
       className="absolute inset-0 size-full" textClassName="text-8xl" />
-    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-linear-to-t from-black/70 to-transparent" />
-    <div className="absolute inset-x-3 top-3 flex min-w-0 flex-wrap items-center gap-2">
-      {photos.length > 1 && <div className="flex w-full gap-1" role="group" aria-label="Profil fotoğrafını seç">
-        {photos.map((path, index) => <button key={path} type="button" aria-label={`Fotoğraf ${index + 1}`} aria-pressed={active === index}
-          onClick={() => setPhotoIndex(index)} className="flex h-11 min-w-0 flex-1 items-center rounded-sm focus-visible:outline-white">
-          <span className={`h-1 w-full rounded-full shadow-sm shadow-black/45 ${active === index ? "bg-white" : "bg-white/45"}`} />
-        </button>)}
-      </div>}
-      <span className="flex max-w-full items-center gap-1.5 break-words rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-brand-ink">
-        <Sparkles size={14} className="shrink-0" />{score !== null && <span>%{score} uyum</span>}
-        <span><span data-testid="text-common-count">{common}</span> ortak favori</span>
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[51%] bg-linear-to-t from-black via-black/70 to-transparent" />
+    <div className="pointer-events-none absolute inset-x-3 top-3">
+      <span className="inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full border border-violet/60 bg-[#190722]/90 px-3 py-2 text-xs font-bold text-white shadow-sm sm:text-sm">
+        <Sparkles size={16} className="shrink-0 text-fuchsia-300" aria-hidden="true" />
+        {score !== null && <span>%{score} Uyum ·</span>}
+        <span><span data-testid="text-common-count">{common}</span> Ortak Favori</span>
       </span>
     </div>
     {photos.length > 1 && <>
       <button type="button" aria-label="Önceki fotoğraf" data-swipe-tap disabled={active === 0} onClick={() => setPhotoIndex(active - 1)}
-        className="absolute bottom-20 left-0 top-24 flex w-1/3 items-center justify-start pl-2 text-white focus-visible:outline-white disabled:invisible"><ChevronLeft className="rounded-full bg-black/65 p-2" size={44} /></button>
+        className="group absolute inset-y-16 bottom-28 left-0 flex w-1/3 items-center justify-start pl-2 text-white focus-visible:outline-white disabled:invisible">
+        <ChevronLeft className="rounded-full bg-black/70 p-2 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" size={44} />
+      </button>
       <button type="button" aria-label="Sonraki fotoğraf" data-swipe-tap disabled={active === photos.length - 1} onClick={() => setPhotoIndex(active + 1)}
-        className="absolute bottom-20 right-0 top-24 flex w-1/3 items-center justify-end pr-2 text-white focus-visible:outline-white disabled:invisible"><ChevronRight className="rounded-full bg-black/65 p-2" size={44} /></button>
+        className="group absolute inset-y-16 bottom-28 right-0 flex w-1/3 items-center justify-end pr-2 text-white focus-visible:outline-white disabled:invisible">
+        <ChevronRight className="rounded-full bg-black/70 p-2 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" size={44} />
+      </button>
     </>}
-    <Link href={`/kullanici/${person.id}`} data-testid="link-current-profile"
-      className="absolute inset-x-0 bottom-0 block min-w-0 px-4 pb-5 pt-6 drop-shadow-sm sm:px-5">
-      <ProfileIdentity person={person} size="text-[clamp(2rem,8vw,2.75rem)]" />
-    </Link>
+    <div className="pointer-events-none absolute inset-x-0 bottom-16 min-w-0 px-4 drop-shadow-md sm:px-5">
+      <ProfileIdentity person={person} size="text-[clamp(2.1rem,9vw,3.25rem)]" cityClassName="text-base font-bold" />
+    </div>
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-center justify-between gap-1 bg-linear-to-r from-rose-900/50 via-black/20 to-emerald-900/55 px-3 text-white sm:px-4">
+      <span className="flex items-center gap-1.5"><X size={26} className="shrink-0" /><span className="text-[11px] leading-tight">Sola kaydır<strong className="block text-sm">Geç</strong></span></span>
+      <span className="flex items-center gap-1">{photos.map((path, index) => <span key={path} className={`h-1 rounded-full ${index === active ? "w-3.5 bg-white" : "w-1 bg-white/55"}`} />)}</span>
+      <span className="flex items-center gap-1.5 text-right"><span className="text-[11px] leading-tight">Sağa kaydır<strong className="block text-sm">Beğen</strong></span><Heart size={24} className="shrink-0" /></span>
+    </div>
   </div>;
 }
 
@@ -138,7 +143,7 @@ export default function Discover() {
   const activeFilters = Object.values(filter).filter(Boolean).length;
   const [busy, setBusy] = useState(false);
 
-  const swipe = async (p: Person, direction: SwipeDirection) => {
+  const swipe = async (p: Person, direction: DiscoverySwipe) => {
     if (busy) return;
     setBusy(true);
     try {
@@ -146,14 +151,13 @@ export default function Discover() {
         await store.pass(p.id);
         return;
       }
-      const mutual = await store.like(p.id, direction === "up" ? "super" : "like");
-      if (mutual) { setMatchPid(p.id); }
+      const mutual = await store.like(p.id, "like");
+      if (mutual) setMatchPid(p.id);
       else if (mutual === false) {
-        toast({ title: direction === "up" ? "Süper beğeni gönderildi" : `${p.name} beğenildi` });
+        toast({ title: `${p.name} beğenildi` });
       }
     } finally { setBusy(false); }
   };
-
 
   return (
     <div className="scene-page min-w-0 space-y-3 pt-3 sm:space-y-4">
@@ -175,19 +179,19 @@ export default function Discover() {
           {([
             ["city", "İl", Object.fromEntries(PROVINCES.map((name) => [name, name]))],
             ["gender", "Cinsiyet", GENDERS], ["goal", "Tanışma amacı", GOALS],
-          ] as const).map(([key, label, options]) => <label className="min-w-0" key={key}><span className="font-bold">{label}</span><select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm" value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}><option value="">Tümü</option>{Object.entries(options).map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>)}
-          {([["from", "En düşük yaş", 18], ["to", "En yüksek yaş", 18], ["fit", "En düşük uyum (%)", 0]] as const).map(([key, label, min]) => <label className="min-w-0" key={key}><span className="font-bold">{label}</span><input className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm" type="number" min={min} max={key === "fit" ? 100 : undefined} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} /></label>)}
+          ] as const).map(([key, label, options]) => <label className="min-w-0 font-bold" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base font-normal sm:text-sm" value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}><option value="">Tümü</option>{Object.entries(options).map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>)}
+          {([["from", "En düşük yaş", 18], ["to", "En yüksek yaş", 18], ["fit", "En düşük uyum (%)", 0]] as const).map(([key, label, min]) => <label className="min-w-0 font-bold" key={key}>{label}<input className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base font-normal sm:text-sm" type="number" min={min} max={key === "fit" ? 100 : undefined} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} /></label>)}
           {([
             ["education","Eğitim",CHOICES.education], ["smoking","Sigara",CHOICES.smoking], ["alcohol","Alkol",CHOICES.alcohol],
             ["relationship","İlişki beklentisi",CHOICES.relationship], ["children","Çocuk",CHOICES.children], ["sport","Spor",CHOICES.sport],
             ["genre","Favori tür",Object.fromEntries(GENRES.map((genre) => [genre,genre]))],
             ["interest","İlgi alanı",Object.fromEntries(INTERESTS.map((name) => [name,name]))],
             ["occupation","Meslek",Object.fromEntries(OCCUPATIONS.map((name) => [name,name]))],
-          ] as const).map(([key,label,options]) => <label className="min-w-0" key={key}><span className="font-bold">{label}</span><select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm"
+          ] as const).map(([key,label,options]) => <label className="min-w-0 font-bold" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base font-normal sm:text-sm"
             aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
             <option value="">Tümü</option>{Object.entries(options).map(([value,name]) => <option key={value} value={value}>{name}</option>)}
           </select></label>)}
-          {([["heightFrom","En kısa boy"],["heightTo","En uzun boy"]] as const).map(([key,label]) => <label className="min-w-0" key={key}><span className="font-bold">{label}</span><select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm"
+          {([["heightFrom","En kısa boy"],["heightTo","En uzun boy"]] as const).map(([key,label]) => <label className="min-w-0 font-bold" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base font-normal sm:text-sm"
             aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
             <option value="">Tümü</option>{Array.from({ length:111 },(_,i) => i+130).map((height) => <option key={height} value={height}>{height} cm</option>)}
           </select></label>)}
@@ -203,44 +207,68 @@ export default function Discover() {
         {activeFilters > 0 && <Button size="sm" variant="ghost" onClick={() => setFilter(emptyFilters)}>Filtreleri temizle</Button>}
       </details>
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
-        <div className="relative mx-auto w-full min-w-0 max-w-[28rem] lg:max-w-none">
+        <div className="relative mx-auto w-full min-w-0 max-w-[28rem] lg:max-w-none"
+          role="region" aria-label="Profil kartı" aria-describedby={current ? "discover-keyboard-help" : undefined}
+          tabIndex={current ? 0 : undefined} onKeyDown={(event) => {
+            if (!current || busy || event.currentTarget !== event.target || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+            event.preventDefault();
+            void swipe(current.p, event.key === "ArrowLeft" ? "left" : "right");
+          }}>
           {current ? (
-              <motion.article key={current.p.id} initial={{ opacity: 0, scale: .985 }} animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: .18 }} className="scene-panel relative min-w-0" data-testid={`card-person-${current.p.id}`}>
-                <SwipeCard key={current.p.id} disabled={busy} labels={{ left: "Geç", right: "Beğen", up: "Süper beğeni" }}
-                  onSwipe={(direction) => swipe(current.p, direction)} next={deck[1] && <PersonPhoto id={deck[1].p.id} name={deck[1].p.name} avatarPath={deck[1].p.avatar_path} className="h-full" />}>
-                  <DiscoverPortrait key={current.p.id} person={current.p} score={current.score} common={current.c.length} />
+              <motion.article key={current.p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                transition={{ duration: .18 }} className="scene-panel relative min-w-0 overflow-hidden rounded-[1.6rem] border-2 border-violet/75" data-testid={`card-person-${current.p.id}`}>
+                <p className="sr-only" id="discover-keyboard-help">Geçmek için sol ok, beğenmek için sağ ok tuşuna bas.</p>
+                <div className="absolute inset-x-3 top-14 z-40 flex gap-2">
+                  <button type="button" disabled={busy} onClick={() => void swipe(current.p, "left")} data-testid="button-pass"
+                    className="sr-only focus:not-sr-only focus:rounded-full focus:bg-card focus:px-3 focus:py-2 focus:font-bold">Geç</button>
+                  <button type="button" disabled={busy} onClick={() => void swipe(current.p, "right")} data-testid="button-like"
+                    className="sr-only focus:not-sr-only focus:rounded-full focus:bg-card focus:px-3 focus:py-2 focus:font-bold">Beğen</button>
+                </div>
+                <SwipeCard horizontalOnly disabled={busy} labels={{ left: "Geç", right: "Beğen" }}
+                  onSwipe={(direction) => direction === "up" ? Promise.resolve() : swipe(current.p, direction)}>
+                  <DiscoverPortrait person={current.p} score={current.score} common={current.c.length} />
                 </SwipeCard>
-                <div className="min-w-0 px-3 pb-3 sm:px-4">
-                  <div className="mb-3 flex items-center justify-center gap-3 sm:gap-5">
-                    <button type="button" onClick={() => void swipe(current.p, "left")} disabled={busy} aria-label="Geç" data-testid="button-pass" className="grid size-16 shrink-0 place-items-center rounded-full border bg-card text-brand-ink transition hover:bg-secondary active:scale-95 disabled:opacity-50"><X size={30} /></button>
-                    <motion.button type="button" whileTap={{ scale: 0.85 }} onClick={() => void swipe(current.p, "right")} disabled={busy} aria-label="Beğen" data-testid="button-like" className="scene-gradient grid size-[4.5rem] shrink-0 place-items-center rounded-full text-primary-foreground shadow-md disabled:opacity-50"><Heart size={32} fill="currentColor" /></motion.button>
-                    <button type="button" onClick={() => void swipe(current.p, "up")} disabled={busy} aria-label="Süper beğeni" className="grid size-16 shrink-0 place-items-center rounded-full border bg-secondary text-brand-ink transition hover:bg-muted active:scale-95 disabled:opacity-50"><Star size={28} /></button>
-                  </div>
-                  {(commonGenres.length || current.sharedExpectation) ? (
-                    <div className="mb-3 rounded-xl bg-secondary/60 px-3 py-2 text-sm">
-                      <strong>Neden önerildi?</strong>
-                      {commonGenres.length > 0 &&
-                        <p>Ortak türler: {commonGenres.slice(0, 3).join(", ")}</p>}
-                      {current.sharedExpectation && <p>İlişki beklentiniz aynı.</p>}
+                <div className="space-y-2 p-2.5 sm:p-3">
+                  {(commonGenres.length > 0 || current.sharedExpectation) && (
+                    <section className="flex items-center gap-2.5 rounded-2xl border border-violet/30 bg-secondary/45 p-2.5">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-violet/20 text-brand-ink"><Sparkles size={18} aria-hidden="true" /></span>
+                      <div className="min-w-0 text-sm">
+                        <h2 className="font-bold leading-tight">Neden önerildi?</h2>
+                        {commonGenres.length > 0 && <p>Ortak türler: {commonGenres.slice(0, 3).join(", ")}</p>}
+                        {current.sharedExpectation && <p>İlişki beklentiniz aynı.</p>}
+                      </div>
+                    </section>
+                  )}
+                  <details open className="group rounded-2xl border border-violet/30 bg-secondary/45 p-2.5">
+                    <summary className="flex cursor-pointer list-none items-center gap-2.5 font-bold [&::-webkit-details-marker]:hidden">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-violet/20 text-brand-ink"><Clapperboard size={18} aria-hidden="true" /></span>
+                      Ortak favoriler ({current.c.length})
+                      <ChevronRight size={18} aria-hidden="true" className="ml-auto shrink-0 motion-safe:transition-transform group-open:rotate-90" />
+                    </summary>
+                    {current.c.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">Henüz ortak favori yok.</p> :
+                      <div data-testid="common-posters" aria-label="Ortak film ve dizi afişleri" role="region" tabIndex={0}
+                        className="mt-2 flex w-full min-w-0 snap-x gap-2 overflow-x-auto overscroll-x-contain p-0.5 scrollbar-none">
+                        {[...new Set(current.c)].map((id) => {
+                          const title = store.titleById(id, current.p.id);
+                          return title && <button key={id} type="button" onClick={() => setSelectedTitle(title)} data-testid={`button-title-${id}`}
+                            className="relative aspect-[4/5] w-[clamp(3rem,15vw,5rem)] shrink-0 snap-start overflow-hidden rounded-xl border border-violet/40 bg-card focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+                            {title.poster ? <img src={title.poster} alt={title.title} loading="lazy" className="size-full object-cover" />
+                              : <span className="line-clamp-4 px-1 text-xs font-semibold">{title.title}</span>}
+                          </button>;
+                        })}
+                      </div>}
+                  </details>
+                  <section className="rounded-2xl border border-violet/30 bg-secondary/45 p-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-violet/20 text-brand-ink"><Heart size={18} aria-hidden="true" /></span>
+                      <h2 className="font-bold">Uyum oranı</h2>
+                      {current.score !== null && <span className="ml-auto font-bold">%{current.score}</span>}
                     </div>
-                  ) : null}
-                  <div className="mb-2 text-xs font-semibold text-muted-foreground">{current.c.length ? "Ortak favoriler" : "Henüz ortak favori yok"}</div>
-                  <div data-testid="common-posters" aria-label="Ortak film ve dizi afişleri" role="region" tabIndex={0} className="flex w-full min-w-0 max-w-full snap-x gap-2 overflow-x-auto overscroll-x-contain px-1 py-1 scrollbar-none">
-                    {[...new Set(current.c)].map((id) => {
-                      const t = store.titleById(id, current.p.id); if (!t) return null;
-                      return (
-                        <button key={id} onClick={() => setSelectedTitle(t)} data-testid={`button-title-${id}`} className={`relative h-24 w-16 shrink-0 snap-start overflow-hidden rounded-lg ${current.c.includes(id) ? "ring-2 ring-primary" : "opacity-50"}`}>
-                          {t.poster ? (
-                            <img src={t.poster} alt={t.title} loading="lazy" className="h-full w-full object-cover" />
-                          ) : (
-                            <span className="line-clamp-4 px-1 text-xs font-semibold">{t.title}</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
+                    {current.score !== null ? <div role="meter" aria-label="Uyum oranı" aria-valuemin={0} aria-valuemax={100} aria-valuenow={current.score}
+                      className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-linear-to-r from-fuchsia-500 to-violet" style={{ width: `${current.score}%` }} />
+                    </div> : <p className="mt-2 text-sm text-muted-foreground">Uyumu hesaplamak için daha fazla favori gerekli.</p>}
+                  </section>
                 </div>
               </motion.article>
             ) : (

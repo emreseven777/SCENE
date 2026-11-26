@@ -2,10 +2,11 @@ import { BadgeCheck, MapPin } from "lucide-react";
 import type { Person } from "@/lib/store";
 import { isProvince } from "@/lib/provinces";
 
-export function ProfileIdentity({ person, as: Heading = "h2", size = "text-5xl", testId }: {
+export function ProfileIdentity({ person, as: Heading = "h2", size = "text-5xl", cityClassName = "text-xs", testId }: {
   person: Person;
   as?: "h1" | "h2" | "div";
   size?: string;
+  cityClassName?: string;
   testId?: string;
 }) {
   return (
@@ -16,7 +17,7 @@ export function ProfileIdentity({ person, as: Heading = "h2", size = "text-5xl",
       {person.verified_photo && <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-black/75 px-2 py-1 text-xs">
         <BadgeCheck aria-hidden="true" className="text-sky-400" size={15} /> Fotoğrafı onaylandı
       </span>}
-      <div className="mt-2 flex items-center gap-1 text-xs text-white/90">
+      <div className={`mt-2 flex items-center gap-1.5 text-white/95 ${cityClassName}`}>
         <MapPin size={14} aria-hidden="true" className="shrink-0" />
         {isProvince(person.city) ? person.city : "İl belirtilmemiş"}
       </div>
