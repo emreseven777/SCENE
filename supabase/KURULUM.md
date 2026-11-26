@@ -44,6 +44,8 @@ Mevcut `tmdb-catalog` Edge Function’ını bu daldaki kodla yeniden yayımla. �
 
 ### İsteğe bağlı arka plan bildirimi
 
+MOVIA 10.0 FINAL adayı arka plan push özelliğini varsayılan olarak kapalı tutar. Bu yayın için VAPID ayarlarını ve zamanlayıcıyı etkinleştirme. Uygulama içi bildirim listesi bu ayara bağlı değildir. Ayrı bir güncellemede doğrulandıktan sonra `VITE_MOVIA_WEB_PUSH_ENABLED=true` değerini açık VAPID anahtarıyla birlikte tanımla.
+
 - Standart Web Push için VAPID anahtar çifti oluştur. Supabase Edge Function secret’larına `SCENE_VAPID_PUBLIC_KEY`, `SCENE_VAPID_PRIVATE_KEY`, `SCENE_VAPID_SUBJECT` (ör. `mailto:destek@alanadin.example`) ve rastgele en az 32 baytlık `SCENE_PUSH_JOB_SECRET` ekle.
 - Web uygulamasının derleme ortamında yalnızca **açık** anahtarı `VITE_SCENE_PUSH_PUBLIC_KEY` olarak ayarla. Özel anahtar, işçi sırrı ve Supabase service role anahtarı tarayıcıya gönderilmez.
 - `scene-push` Edge Function’ını yayımla. Bu işçi kullanıcı JWT’si yerine `x-scene-job-secret` başlığını kontrol eder. Ağ geçidinin JWT doğrulamasını yalnızca bu işlev için kapat. URL ve işçi sırrı Supabase Vault’a eklendikten sonra [dakikalık zamanlayıcıyı](operations/movia_schedule_push.sql) çalıştır. Geri almak için `select cron.unschedule('movia-scene-push');` çalıştır. Sırrı sorgu metnine, depoya veya URL’ye yazma. Push metni gönderen adı, mesaj içeriği ve medya bilgisi içermez.
@@ -67,6 +69,6 @@ Yerel veritabanında `supabase/tests/scene_profile_81.sql` dosyası seçim doğr
 
 - Üretim migration’larından önce güncel şifreli PostgreSQL ve Storage yedeğini doğrula. Yedeği izole ortamda geri yükle, 10.0 migration’larını tarihlerine göre uygula ve canlıdaki mevcut geçmiş kayıtlarını yeniden uygulama. Eski web sürümünün dağıtım kimliğini kaydet.
 - Supabase Auth’ta yeni parolalar için asgari uzunluğu 12 olarak uygula. Önceki parolalarla giriş ve mevcut yönlendirmeler korunmalı. İzole GoTrue’da API üzerinden kaydı ve parola yenilemeyi kontrol et.
-- Push dağıtımı için Vercel Production’da VAPID açık anahtarı ve Supabase Edge Function/Vault yapılandırması gerekir. Anahtar çiftini paylaşma. Zamanlayıcıyı etkinleştirdikten sonra kontrollü iki hesapta tarayıcı kapalıyken teslimi doğrula.
-- Fiziksel iPhone’da Ana Ekran’dan açılan PWA’yı, Android’de Chrome’u kullan. İzin ver, uygulamayı arka plana al, test hesabından mesaj gönder, bildirime dokunarak sohbet listesine dön. İzni geri çekince yeni mesajın bildirim üretmediğini kontrol et. Her iki cihazda da mikrofonla profil yanıtı kaydet, eşleşilen hesapla oynat ve kaldır.
+- 10.0 FINAL dağıtımında `VITE_MOVIA_WEB_PUSH_ENABLED` kapalı kalır. VAPID ve Cron kurulumu sonraki güncellemenin kapsamındadır.
+- Fiziksel iPhone ve Android’de mikrofonla profil yanıtı kaydet, eşleşilen test hesabıyla oynat ve kaldır. Arka plan push teslimi ve izin iptali kontrollerini push güncellemesine ayır.
 - Geri dönüş gerekirse önce eski Vercel dağıtımını etkinleştir. Push yeni duruma bağlıysa `movia-scene-push` işini durdur. Yeni etkileşim tablolarını ve kullanıcı dosyalarını silme.

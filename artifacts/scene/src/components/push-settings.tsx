@@ -5,7 +5,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { requireSupabase, turkishError } from "@/lib/supabase";
 
-const publicKey = import.meta.env.VITE_SCENE_PUSH_PUBLIC_KEY as string | undefined;
+const webPushEnabled = import.meta.env.VITE_MOVIA_WEB_PUSH_ENABLED === "true";
+const publicKey = webPushEnabled
+  ? import.meta.env.VITE_SCENE_PUSH_PUBLIC_KEY as string | undefined
+  : undefined;
 
 function urlScope() {
   return new URL(import.meta.env.BASE_URL, window.location.origin);
@@ -32,7 +35,8 @@ export function PushSettings({ user }: { user: string }) {
   });
   return <section className="scene-panel mt-5 space-y-2 p-4">
     <h2 className="text-xl font-bold">Mesaj bildirimleri</h2>
-    {!publicKey ? <p className="text-sm text-muted-foreground">Bu kurulumda arka plan bildirimleri yapılandırılmadı.</p>
+    {!webPushEnabled ? <p className="text-sm text-muted-foreground">Arka plan bildirimleri bu sürümde kapalı.</p>
+      : !publicKey ? <p className="text-sm text-muted-foreground">Bu kurulumda arka plan bildirimleri yapılandırılmadı.</p>
       : !supported ? <p className="text-sm text-muted-foreground">Bu tarayıcıda arka plan bildirimi kullanılamıyor. iPhone’da MOVIA DATING’i Ana Ekran’a ekleyip oradan aç.</p>
         : <>
           {subscription.isSuccess && !subscription.data && <div className="flex items-start gap-2 text-sm">
