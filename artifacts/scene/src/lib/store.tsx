@@ -25,6 +25,7 @@ export interface Person {
   discovery_hidden: boolean;
   account_hidden: boolean;
   discovery_details?: ProfileDetailsData;
+  verified_photo?: boolean;
 }
 export interface Msg {
   id: string; from: "me" | "them"; text: string; at: number;
@@ -118,7 +119,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const sb = requireSupabase();
     try {
       const [profiles, favorites, likes, incoming, passes, matches, messages, readMarks] = await Promise.all([
-        sb.from("scene_profiles").select("id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths,gender,looking_for,dating_goal,discovery_hidden,account_hidden,discovery_details"),
+        sb.from("scene_profiles").select("id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths,gender,looking_for,dating_goal,discovery_hidden,account_hidden,discovery_details,verified_photo"),
         sb.from("favorites").select("user_id,title_id,created_at,title_metadata").order("created_at"),
         sb.from("likes").select("liked_id").eq("liker_id",userId),
         sb.from("likes").select("liker_id,kind").eq("liked_id",userId),

@@ -207,14 +207,26 @@ export function AccountVisibility({ person }: { person: Person }) {
       <Link href="/bildirimler" className="text-sm font-semibold text-brand-ink underline">Bildirim merkezi</Link>
     </div>
     <div>
-      {verification.data ? <p className="text-sm">Doğrulama başvurusu: {verification.data.state === "pending" ? "İnceleme bekliyor" : verification.data.state === "verified" ? "Onaylandı" : "Reddedildi"}</p>
-        : verification.isSuccess && <Button variant="secondary" disabled={busy} onClick={async () => {
+      {verification.isError && <p role="alert" className="text-sm">Fotoğraf başvurusu yüklenemedi.</p>}
+      {verification.data && <p className="text-sm">
+        {person.verified_photo ? "Ana profil fotoğrafın onaylandı."
+          : verification.data.state === "pending" ? "Fotoğraf başvurun inceleme bekliyor."
+          : verification.data.state === "rejected" ? "Son fotoğraf başvurun reddedildi."
+          : "Mevcut ana fotoğrafın henüz onaylanmadı."}
+      </p>}
+      {verification.isSuccess && !person.verified_photo && <>
+        <p className="my-2 text-sm text-muted-foreground">Yönetici mevcut ana profil fotoğrafını inceler. Ana fotoğrafını değiştirirsen yeni fotoğraf için tekrar başvurabilirsin.</p>
+        <Button variant="secondary" disabled={busy || !person.avatar_path} onClick={async () => {
           setBusy(true);
-          const { error } = await requireSupabase().from("scene_verification_requests").insert({ user_id: person.id });
-          if (error) toast({ title: "Başvuru kaydedilemedi", variant: "destructive" });
-          else await verification.refetch();
-          setBusy(false);
-        }}>Doğrulama başvurusu yap</Button>}
+          try {
+            const { error } = await requireSupabase().rpc("scene_request_photo_review");
+            if (error) throw error;
+            await verification.refetch();
+          } catch (error) {
+            toast({ title: "Fotoğraf başvurusu kaydedilemedi", description: turkishError(error), variant: "destructive" });
+          } finally { setBusy(false); }
+        }}>Ana fotoğrafımı incelemeye gönder</Button>
+      </>}
     </div>
     {blocks.data?.map((row, i) => <div key={row.blocked_id} className="flex items-center gap-2 text-sm">
       <span>Engellenen profil {i + 1}</span>
