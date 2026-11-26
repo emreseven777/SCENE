@@ -24,6 +24,8 @@ function DiscoverPortrait({ person, score, common }: { person: Person; score: nu
   const photos = [...new Set([person.avatar_path, ...person.avatar_paths].filter((path): path is string => !!path))];
   const active = Math.min(photoIndex, Math.max(0, photos.length - 1));
 
+  usePreloadPortraits(photos[active + 1], photos[active - 1]);
+
   return <div className="relative h-[clamp(23rem,62svh,38rem)] overflow-hidden rounded-t-[1.45rem] bg-muted lg:h-[36rem]"
     data-testid="discover-portrait">
     <PersonPhoto id={person.id} name={person.name} avatarPath={photos[active] ?? null} priority
@@ -116,12 +118,12 @@ export default function Discover() {
     [cast, store.liked, store.passed, store.matches, mine, fits, ownDetails, serverFeed],
   );
   const current = deck[0];
-  const upcoming = deck.filter(({ p }) => p.id !== current?.p.id).slice(0, 2);
-  usePreloadPortraits(upcoming[0]?.p.avatar_path, upcoming[1]?.p.avatar_path);
+  const upcoming = deck.filter(({ p }) => p.id !== current?.p.id).slice(0, 3);
+  usePreloadPortraits(upcoming[0]?.p.avatar_path, upcoming[1]?.p.avatar_path, upcoming[2]?.p.avatar_path);
   const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = feed;
   useEffect(() => {
-    if (!current && hasNextPage && !isFetchingNextPage && !isError) void fetchNextPage();
-  }, [current, hasNextPage, isFetchingNextPage, isError, fetchNextPage]);
+    if (deck.length <= 3 && hasNextPage && !isFetchingNextPage && !isError) void fetchNextPage();
+  }, [deck.length, hasNextPage, isFetchingNextPage, isError, fetchNextPage]);
 
   const commonGenres = current ? fits.get(current.p.id)?.commonGenres ?? [] : [];
   const [dailyFilms, setDailyFilms] = useState<{ title: Title; count: number }[]>([]);
