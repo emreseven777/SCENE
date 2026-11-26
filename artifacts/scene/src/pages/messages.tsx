@@ -12,7 +12,7 @@ import { SceneHeading } from "@/components/scene-brand";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Lock, Send, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Lock, Send, MoreHorizontal, Plus, Smile } from "lucide-react";
 import { format } from "date-fns";
 import { fetchChatMessages, type Msg, useCommon, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -253,7 +253,7 @@ export function Chat() {
     <div className="mx-auto grid max-w-6xl min-w-0 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-6 lg:px-8 lg:pt-8">
       <aside className="hidden lg:block"><ConversationList activeId={p.id} /></aside>
       <div className="scene-panel relative isolate !border-white/15 !bg-[#241936] !text-white bg-[radial-gradient(ellipse_at_0%_40%,#773453_0%,transparent_55%),radial-gradient(ellipse_at_100%_90%,#49305f_0%,transparent_60%)] flex h-[calc(100dvh-8.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[18rem] min-w-0 flex-col overflow-hidden lg:h-[calc(100dvh-5rem)]">
-        <div className="flex items-center gap-3 border-b border-white/15 bg-white/10 backdrop-blur-xl px-4 py-3">
+        <div className="flex items-center gap-2 border-b border-white/15 bg-white/10 backdrop-blur-xl px-3 py-2">
           <Link href="/mesajlar" className="lg:hidden" aria-label="Geri" data-testid="link-back-messages"><ArrowLeft size={20} /></Link>
           <Link href={`/kullanici/${p.id}`} className="flex items-center gap-3" data-testid="link-chat-profile">
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-10 w-10 rounded-full" textClassName="text-sm" />
@@ -262,29 +262,26 @@ export function Chat() {
               <div className="text-[11px] text-white/75">{isTyping ? "Yazıyor…" : online ? "Çevrimiçi" : presence ? `Son görülme: ${new Date(presence.updated_at).toLocaleString("tr-TR")}` : `${common.length} ortak favori`}</div>
             </div>
           </Link>
-          {chat && user && <FilmDate chat={chat} user={user} titles={sharedTitles.map((title) => title.title)} />}
-        </div>
+          <div className="ml-auto flex items-center gap-1">{chat && user && <FilmDate chat={chat} user={user} titles={sharedTitles.map((title) => title.title)} />}
+          <details className="relative z-30"><summary aria-label="Sohbet seçenekleri" className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-full border border-white/20 bg-white/10"><MoreHorizontal size={20} /></summary><div className="absolute right-0 top-full mt-2 w-[min(82vw,22rem)] max-h-[45dvh] overflow-auto rounded-2xl border border-border bg-card p-2 text-card-foreground shadow-xl">
         {chat && user && <SharedCinema key={chat} match={chat} viewer={user}
           titles={[...new Set([...common, ...(store.me?.favorites ?? []), ...p.favorites])].flatMap((id) => store.titleById(id) ?? store.titleById(id, p.id) ?? [])}
           onShare={publishTyping} />}
-        <details className="border-b border-white/15 bg-white/5 px-4 py-2 text-sm">
-          <summary className="cursor-pointer font-semibold flex items-center gap-2"><MoreHorizontal size={18} /> Sohbet seçenekleri</summary>
-          <div className="rounded-xl bg-card text-card-foreground p-2">
-          <details><summary className="cursor-pointer font-semibold">Güvenlik seçenekleri</summary>
+          <details className="px-4 py-2 text-sm"><summary className="cursor-pointer font-semibold">Güvenlik seçenekleri</summary>
           <ProfileSafety person={p} />
         </details>
         <details className="py-2 text-sm">
           <summary className="cursor-pointer font-semibold">Sohbette ara</summary>
           <input className="mt-2 w-full rounded-lg border bg-card p-2 text-base" type="search" aria-label="Mesaj ara"
             placeholder="Mesajlarda ara" value={search} onChange={(event) => setSearch(event.target.value)} />
-        </details></div></details>
-        <div ref={scrollRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain px-4 py-5"
+        </details></div></details></div></div>
+        <div ref={scrollRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain px-3 py-2"
           onScroll={(event) => {
             const list = event.currentTarget;
             followLatest.current = list.scrollHeight - list.scrollTop - list.clientHeight < 96;
             if (followLatest.current) setHasNewMessages(false);
           }}>
-          <div className="mx-auto max-w-xs text-center text-[10px] text-white/70">Eşleştiniz. Bu sohbeti yalnızca ikiniz görebilirsiniz.</div>
+          <div className="mx-auto max-w-xs text-center text-[10px] text-white/70">Yalnızca ikiniz görebilirsiniz.</div>
           {!term && !msgs.length && !text.trim() && !media && starters.length > 0 &&
             <div className="mx-auto max-w-md space-y-2 pt-2" aria-label="Ortak favorilerden sohbet başlatıcıları">
               {starters.map((prompt) => <button key={prompt} type="button"
@@ -336,22 +333,24 @@ export function Chat() {
         {hasNewMessages && !term && <div className="flex justify-center border-t p-2">
           <Button type="button" variant="secondary" size="sm" onClick={scrollToLatest}>Yeni mesajlara git</Button>
         </div>}
-        <div className="border-t border-white/15 bg-white/10 backdrop-blur-xl px-3 pt-1">
+        <div className="bg-white/10 px-3">
           {reply && <div className="flex items-center justify-between gap-2 text-xs"><span className="truncate">Yanıt: {msgs.find((item) => item.id === reply)?.text}</span><Button size="sm" variant="ghost" onClick={() => setReply(null)}>Vazgeç</Button></div>}
-          {!text.trim() && !media && <details className="mb-2 text-xs"><summary className="cursor-pointer py-2 text-pink-200">MOVIA Quiz · Sohbet kartları</summary><div className="flex flex-wrap gap-2">{["Hayatın bir film olsaydı adı ne olurdu?","Birlikte hangi filmi izlemek isterdin?","En sevdiğin film karakteri kim?","Bir filmin finalini değiştirebilseydin hangisi olurdu?"].map(question => <button key={question} type="button" className="rounded-xl border bg-card p-2 text-left" onClick={() => publishTyping(question)}>{question}</button>)}</div></details>}
           {media && <AttachmentPreview media={media} onRemove={() => setMedia(null)} />}
+        </div>
+        <form onSubmit={(e) => void submit(e)} className="flex items-center gap-2 border-t border-white/15 bg-white/10 px-2 py-2">
+          <details className="relative z-20 shrink-0"><summary aria-label="Ekler ve sohbet kartları" className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-full border border-white/20 bg-white/10"><Plus size={20} /></summary><div className="absolute bottom-full left-0 mb-2 w-[min(82vw,22rem)] max-h-[40dvh] overflow-auto rounded-2xl border border-border bg-card p-3 text-card-foreground shadow-xl">
+          {!text.trim() && !media && <details className="mb-2 text-xs"><summary className="cursor-pointer py-2 text-brand-ink">MOVIA Quiz · Sohbet kartları</summary><div className="flex flex-wrap gap-2">{["Hayatın bir film olsaydı adı ne olurdu?","Birlikte hangi filmi izlemek isterdin?","En sevdiğin film karakteri kim?","Bir filmin finalini değiştirebilseydin hangisi olurdu?"].map(question => <button key={question} type="button" className="rounded-xl border bg-card p-2 text-left" onClick={() => publishTyping(question)}>{question}</button>)}</div></details>}
           <div className="flex flex-wrap items-start gap-2">
             <AttachmentControls disabled={sending || !!media} onPick={setMedia} />
             <details className="text-sm">
-              <summary className="cursor-pointer rounded-md px-2 py-2">Emoji</summary>
+              <summary className="cursor-pointer rounded-md px-2 py-2" aria-label="Emoji"><Smile size={20} /></summary>
               <div className="flex flex-wrap gap-1">
                 {["🎬", "🍿", "❤️", "😂", "👍", "✨"].map((emoji) => <Button size="icon" key={emoji}
                   variant="ghost" type="button" onClick={() => publishTyping((text + emoji).slice(0, 2000))}>{emoji}</Button>)}
               </div>
             </details>
           </div>
-        </div>
-        <form onSubmit={(e) => void submit(e)} className="flex gap-2 bg-white/10 backdrop-blur-xl px-3 pb-3 pt-2">
+        </div></details>
           <input value={text} onChange={(e) => publishTyping(e.target.value)} maxLength={2000} placeholder="Bir replik yaz..." data-testid="input-message" className="h-11 min-w-0 flex-1 rounded-full bg-white/15 px-4 text-base text-white outline-none ring-1 ring-white/25 placeholder:text-white/65 focus:ring-pink-400" />
           <motion.button whileTap={{ scale: 0.88 }} type="submit" disabled={(!text.trim() && !media) || sending} aria-label="Gönder" data-testid="button-send" className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-pink-500 to-fuchsia-800 text-white shadow-lg shadow-pink-900/40 disabled:opacity-40"><Send size={17} /></motion.button>
         </form>
