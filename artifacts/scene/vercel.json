@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "git": { "deploymentEnabled": { "feat/scene-8-3-kvkk": false } },
+  "git": { "deploymentEnabled": { "feat/scene-8-3-kvkk": false, "feat/movia-9-0": false } },
   "framework": "vite",
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist/public",

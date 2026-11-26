@@ -4,6 +4,15 @@
 
 Hukuki belge taslaklarının tek kaynağı uygulamadaki [belge dosyası](../artifacts/scene/src/lib/legal-documents.ts). Karşılama akışında giriş ve kayıt ekranlarından, oturum açıkken Profil → Kişisel veriler ve KVKK bölümünden okunabilir. Bu dal, yeni migration ve taslak belgeler üretim yayını için bekletilir. Onaylanan her metnin değişmez bir kopyası ve etkinlik tarihi saklanmalı. Kayıt ve rıza sunucu sürümleri, kullanıcıya sunulan onaylanmış sürümlerle birlikte değiştirilmelidir.
 
+## İşletmeci kararı ve yayın talebi
+
+26 Kasım 2026’da proje sahibi, MOVIA DATING’in gerçek kişi işletmecisi ve veri
+sorumlusu olarak Emre İşkil’i onayladı ve mevcut kullanıcılar ile veriler
+korunarak canlı yayın talebini verdi. Bu kayıt, işletmeci kimliğini ve yayın
+talebini belgeler. Yedi metin taslak aşamasında. Bağımsız hukuki inceleme,
+m.6 ve m.9 dayanakları ile tebligat ve hesap dışı başvuru kanalları için bu
+onay bir sonuç kaydı oluşturmaz.
+
 ## İşletmeci ve karar gerektiren konular
 
 - **Veri sorumlusu gerçek kişi.** Veri sorumlusu Emre İşkil. Genel iletişim ve web sitesi uygulamanın merkezi yapılandırmasında tanımlı. Geçerli tebligat adresi, hesap dışı resmî başvuru kanalı, varsa KEP ve başvuru çalışma usulü teyit bekliyor. Hizmeti kamuya sunan gerçek kişi için aile ve kişisel faaliyet istisnası varsayılmadı.  [6698 sayılı Kanun](https://www.mevzuat.gov.tr/mevzuatmetin/1.5.6698.pdf) · [Aydınlatma Tebliği](https://www.kvkk.gov.tr/Icerik/4132/aydinlatma-yukumlulugunun-yerine-getirilmesinde-uyulacak-usul-ve-esaslar-hakkinda-teblig)
