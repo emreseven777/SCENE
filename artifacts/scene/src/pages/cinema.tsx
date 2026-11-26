@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bookmark, Film, Heart, RotateCcw, X } from "lucide-react";
+import { Bookmark, Film, Heart, RotateCcw, X, ChevronDown, SlidersHorizontal, Library, Popcorn, EyeOff } from "lucide-react";
 import { SceneHeading } from "@/components/scene-brand";
 import { SwipeCard, type SwipeDirection } from "@/components/swipe-card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ export default function Cinema() {
   const [year, setYear] = useState("");
   const [sort, setSort] = useState("popularity.desc");
   const [tab, setTab] = useState<"deck" | Choice>("deck");
+  const [menu, setMenu] = useState<"collection" | "club" | null>(null);
   const [selected, setSelected] = useState<Title | null>(null);
   const [last, setLast] = useState<Pick | null>(null);
   const [busy, setBusy] = useState(false);
@@ -125,14 +126,25 @@ export default function Cinema() {
 
   return <div className="scene-page max-w-3xl">
     <SceneHeading title="Sinema Salonu" description="Favorilerini seç, izleyeceklerini sıraya koy." />
-    <div className="mb-4 flex flex-wrap gap-2" aria-label="Sinema bölümleri">
-      <Button variant={tab === "deck" ? "default" : "secondary"} onClick={() => setTab("deck")}>Salon</Button>
-      {Object.entries(choices).map(([key, label]) => <Button key={key} variant={tab === key ? "default" : "secondary"} onClick={() => setTab(key as Choice)}>{label}</Button>)}
-      <Button asChild variant="ghost"><Link href="/arama">Arşivde ara</Link></Button>
-      <Button asChild variant="ghost"><Link href="/sinema/topluluk">Topluluk odaları</Link></Button>
-      <Button asChild variant="ghost"><Link href="/sinema/etkinlikler">Sinema etkinlikleri</Link></Button>
+    <div className="mb-3 flex items-center gap-2">
+      <Button size="sm" variant={type === "film" && tab === "deck" ? "default" : "secondary"} onClick={() => { setType("film"); setTab("deck"); setMenu(null); }}>Film</Button>
+      <Button size="sm" variant={type === "dizi" && tab === "deck" ? "default" : "secondary"} onClick={() => { setType("dizi"); setTab("deck"); setMenu(null); }}>Dizi</Button>
+      <Button asChild size="sm" variant="ghost" className="ml-auto"><Link href="/arama">Arşivde ara</Link></Button>
     </div>
-    {archive.isSuccess && <details className="scene-panel mb-4 p-4">
+    <div className="mb-3 grid grid-cols-2 gap-2">
+      <Button size="sm" variant="secondary" aria-expanded={menu === "collection"} onClick={() => setMenu(menu === "collection" ? null : "collection")}><Library />Koleksiyonum<ChevronDown /></Button>
+      <Button size="sm" variant="secondary" aria-expanded={menu === "club"} onClick={() => setMenu(menu === "club" ? null : "club")}><Popcorn />Sinema Kulübü<ChevronDown /></Button>
+    </div>
+    {menu === "collection" && <div className="scene-panel mb-3 grid gap-1 p-2">
+      <Button variant="ghost" onClick={() => { setTab("deck"); setMenu(null); }}>Salona dön</Button>
+      {Object.entries(choices).map(([key, label]) => <Button key={key} variant={tab === key ? "secondary" : "ghost"} onClick={() => { setTab(key as Choice); setMenu(null); }}>{label}</Button>)}
+    </div>}
+    {menu === "club" && <div className="scene-panel mb-3 grid gap-1 p-2">
+      <Button asChild variant="ghost"><Link href="/sinema/topluluk">Topluluk odaları</Link></Button>
+      <Button asChild variant="ghost"><Link href="/sinema/etkinlikler">Etkinlikler · Quiz ve bilgi yarışması</Link></Button>
+    </div>}
+    {tab !== "deck" && <h2 className="mb-3 text-xl font-bold">{choices[tab]}</h2>}
+    {menu === "collection" && archive.isSuccess && <details className="scene-panel mb-4 p-4">
       <summary className="cursor-pointer font-semibold">Sinema istatistiklerim ve başarılarım</summary>
       <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <div><dt>Favoriler</dt><dd>{user.favorites.length}</dd></div>
@@ -145,36 +157,38 @@ export default function Cinema() {
         {archive.data.length >= 10 && <li className="rounded-full border px-3 py-1">Salon müdavimi · 10 tercih</li>}
       </ul>}
     </details>}
-    {last && <Button className="mb-4" variant="secondary" disabled={busy} onClick={() => void change(last.title, last.previous, last.favorite, false)}><RotateCcw /> Son tercihi geri al</Button>}
     {archive.isError && <p role="alert">Tercihlerin yüklenemedi. <button className="underline" onClick={() => void archive.refetch()}>Tekrar dene</button></p>}
     {tab === "deck" ? <>
-      <div className="scene-panel mb-4 grid grid-cols-2 gap-2 p-3 text-sm sm:grid-cols-4">
+      <details className="scene-panel mb-3 p-3"><summary className="flex cursor-pointer list-none items-center gap-2 font-bold"><SlidersHorizontal size={16} /> Filtreler <ChevronDown className="ml-auto" size={16} /></summary><div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
         <label><span className="font-bold">Yapım</span><select className="mt-1 w-full rounded-lg border bg-card p-2" value={type} onChange={(e) => setType(e.target.value as TitleType)}><option value="film">Film</option><option value="dizi">Dizi</option></select></label>
         <label><span className="font-bold">Tür</span><select className="mt-1 w-full rounded-lg border bg-card p-2" value={genre} onChange={(e) => setGenre(e.target.value)}><option value="">Tümü</option>{genres.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
         <label><span className="font-bold">Yıl</span><select className="mt-1 w-full rounded-lg border bg-card p-2" value={year} onChange={(e) => setYear(e.target.value)}><option value="">Tümü</option>{Array.from({ length: new Date().getFullYear() - 1887 }, (_, i) => new Date().getFullYear() - i).map((y) => <option key={y}>{y}</option>)}</select></label>
         <label><span className="font-bold">Sıralama</span><select disabled={usingArchive} className="mt-1 w-full rounded-lg border bg-card p-2" value={usingArchive ? "archive" : sort} onChange={(e) => setSort(e.target.value)}>{usingArchive && <option value="archive">Arşiv sırası</option>}<option value="popularity.desc">Popüler</option><option value="vote_average.desc">En yüksek puan</option></select></label>
-      </div>
+      </div></details>
       {usingArchive && <p role="status" className="mb-3 text-sm text-muted-foreground">
         TMDB şu anda kullanılamıyor. MOVIA arşivi gösteriliyor.{" "}
         <button type="button" className="underline" disabled={catalog.isFetching} onClick={() => void catalog.refetch()}>TMDB’yi tekrar dene</button>
       </p>}
       {archive.isPending || catalog.isPending || (!top && catalog.isFetchingNextPage) ? <p role="status">Katalog yükleniyor…</p> : archive.isSuccess && top ? <>
         <SwipeCard key={top.id} labels={swipeLabels} disabled={busy} onSwipe={swipe}
-          next={deck[1]?.poster && <img src={deck[1].poster} alt="" className="size-full object-cover" fetchPriority="low" decoding="async" />}>
-          <div className="relative mx-auto h-[min(57dvh,32rem)] overflow-hidden rounded-3xl bg-[#201d29] text-white">
+          cinematicFeedback>
+          <div className="relative mx-auto h-[clamp(23rem,62svh,38rem)] overflow-hidden rounded-[1.6rem] border-2 border-violet/75 bg-[#201d29] text-white">
             {top.poster && <img alt="" src={top.poster} className="size-full object-cover" draggable={false} decoding="async" fetchPriority="high" />}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-5 pt-20">
+            <div className="absolute inset-x-0 bottom-14 bg-gradient-to-t from-black to-transparent p-5 pt-20">
               <h2 className="text-3xl font-bold">{top.title}</h2>
               <p className="mt-1 text-sm">{top.year || "Yıl yok"}{top.rating ? ` · ${top.rating.toFixed(1)}/10` : ""}</p>
               <button className="mt-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold" onClick={() => setSelected(top)}>Yapım detayları</button>
             </div>
+            <div className="absolute inset-x-0 bottom-0 flex h-14 items-center justify-between gap-1 bg-linear-to-r from-rose-900/65 via-black/70 to-emerald-900/65 px-3 text-white">
+              <button disabled={busy} onClick={() => void swipe("left")} className="flex items-center gap-1 text-left"><X size={22}/><span className="text-[10px]">Sola kaydır<strong className="block text-xs">Beğenmedim</strong></span></button>
+              <button disabled={busy} onClick={() => void swipe("up")} className="grid justify-items-center text-[10px]"><Bookmark size={18}/>İzleme listesi</button>
+              <button disabled={busy} onClick={() => void swipe("right")} className="flex items-center gap-1 text-right"><span className="text-[10px]">Sağa kaydır<strong className="block text-xs">Favori</strong></span><Heart size={22}/></button>
+            </div>
           </div>
         </SwipeCard>
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button variant="secondary" disabled={busy} onClick={() => void swipe("left")}><X /> Beğenmedim</Button>
-          <Button disabled={busy} onClick={() => void swipe("right")}><Heart /> Favori</Button>
-          <Button variant="secondary" disabled={busy} onClick={() => void swipe("up")}><Bookmark /> İzleme listesi</Button>
-          <Button variant="ghost" disabled={busy} onClick={() => void change(top, "unseen")}>İzlemedim</Button>
+        <div className="flex justify-between gap-2">
+          <Button size="sm" variant="ghost" disabled={busy || !last} onClick={() => { if (last) void change(last.title, last.previous, last.favorite, false); }}><RotateCcw /> Geri al</Button>
+          <Button size="sm" variant="ghost" disabled={busy} onClick={() => void change(top, "unseen")}><EyeOff /> İzlemedim</Button>
         </div>
       </> : catalog.isError && !usingArchive ? <p role="alert">TMDB kataloğu yüklenemedi. <button className="underline" onClick={() => void catalog.refetch()}>Tekrar dene</button></p>
         : <p className="p-4 text-sm text-muted-foreground">Bu sayfada yeni bir yapım yok.</p>}
