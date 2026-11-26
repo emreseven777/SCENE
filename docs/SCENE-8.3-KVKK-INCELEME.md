@@ -1,6 +1,6 @@
 # MOVIA DATING 8.3 KVKK inceleme dosyası
 
-**25 Kasım 2026 · 8.3-draft.1 · Uzman incelemesi bekliyor**
+**26 Kasım 2026 · 8.3-draft.1 · İşletmeci yayın beyanı kaydedildi**
 
 Hukuki belge taslaklarının tek kaynağı uygulamadaki [belge dosyası](../artifacts/scene/src/lib/legal-documents.ts). Karşılama akışında giriş ve kayıt ekranlarından, oturum açıkken Profil → Kişisel veriler ve KVKK bölümünden okunabilir. Bu dal, yeni migration ve taslak belgeler üretim yayını için bekletilir. Onaylanan her metnin değişmez bir kopyası ve etkinlik tarihi saklanmalı. Kayıt ve rıza sunucu sürümleri, kullanıcıya sunulan onaylanmış sürümlerle birlikte değiştirilmelidir.
 
@@ -15,9 +15,12 @@ güvenli migration ve dağıtımı, parola yenilemeyi, Türkçe e-posta şablonl
 ve tamamlanan 9.0 özelliklerini kapsar. Onaylanan taslakların değişmez
 kopyası [yayın adayında](https://github.com/emreseven777/SCENE/blob/79adacc1482b557ed32b900d23b3f730703c77d1/artifacts/scene/src/lib/legal-documents.ts) saklanır.
 
-Kayıt, proje sahibinin yayın onayıdır. Bağımsız avukat incelemesi
-tamamlanmadı. KVKK m.6 ve m.9 dayanakları, hesap dışı başvuru kanalı ve
-belgelerin yürürlük tarihi henüz doğrulanmadı.
+26 Kasım 2026’da Emre İşkil, veri sorumlusu ve proje sahibi olarak belgeleri
+ve KVKK m.6 ile m.9 kapsamındaki yükümlülükleri avukatıyla incelediğini ve
+tek üretim yayınına onay verdiğini beyan etti. Başvuru e-postası
+emreiskil5@gmail.com, tebligat adresi Büyükdere Caddesi, Anıl Sitesi, 5/3,
+Şişli/İstanbul olarak bildirildi. Bu bölüm işletmeci beyanını kaydeder.
+İnceleme tutanağı, sözleşme veya bildirim kaydı eklenmedi.
 
 ## İşletmeci ve karar gerektiren konular
 

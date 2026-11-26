@@ -8,5 +8,6 @@ export const brand = {
 export const dataController = {
   name: "Emre İşkil",
   operatorType: "gerçek kişi",
+  postalAddress: "Büyükdere Caddesi, Anıl Sitesi, 5/3, Şişli/İstanbul",
   contactEmail: "emreiskil5@gmail.com",
 } as const;
