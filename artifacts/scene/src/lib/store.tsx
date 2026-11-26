@@ -55,6 +55,15 @@ const EMPTY: Data = { me: null, people: [], titles: {}, liked: [], incoming: {},
 
 export const PROFILE_FIELDS = "id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths,gender,looking_for,dating_goal,discovery_hidden,account_hidden,discovery_details,verified_photo";
 export type ProfileRow = Omit<Person, "favorites">;
+
+export async function fetchProfiles(ids: string[], signal?: AbortSignal) {
+  const db = requireSupabase();
+  const scoped = db.rpc("scene_profiles_for", { profile_ids: ids });
+  const result = await (signal ? scoped.abortSignal(signal) : scoped);
+  if (result.error?.code !== "PGRST202") return result;
+  const legacy = db.from("scene_profiles").select(PROFILE_FIELDS).in("id", ids);
+  return signal ? legacy.abortSignal(signal) : legacy;
+}
 interface MatchRow { id: string; user_a: string; user_b: string; created_at: string }
 interface MessageRow { id: number; match_id: string; sender_id: string; body: string; created_at: string; media_path: string | null; media_kind: Msg["mediaKind"]; reply_to: number | null; deleted_at: string | null; delivered_at: string | null; seen_at: string | null }
 
@@ -123,34 +132,39 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!userId) return;
     const sb = requireSupabase();
     try {
-      const [profiles, favorites, likes, incoming, passes, matches, messages, readMarks] = await Promise.all([
-        sb.from("scene_profiles").select(PROFILE_FIELDS),
-        sb.from("favorites").select("user_id,title_id,created_at,title_metadata").order("created_at"),
+      const own = [userId];
+      const [likes, incoming, passes, matches, messages, readMarks, ownProfiles, ownFavorites] = await Promise.all([
         sb.from("likes").select("liked_id").eq("liker_id",userId),
         sb.from("likes").select("liker_id,kind").eq("liked_id",userId),
-        sb.from("passes").select("passed_id"),
+        sb.from("passes").select("passed_id").eq("user_id",userId),
         sb.from("matches").select("id,user_a,user_b,created_at"),
         sb.from("messages").select(MESSAGE_COLUMNS).order("id", { ascending: false }).limit(1000),
         sb.from("scene_read_marks").select("match_id,through_id").eq("user_id", userId),
+        fetchProfiles(own),
+        sb.from("favorites").select("user_id,title_id,title_metadata").in("user_id", own).order("created_at"),
       ]);
-      for (const r of [profiles, favorites, likes, incoming, passes, matches, messages, readMarks]) if (r.error) throw r.error;
+      for (const result of [likes, incoming, passes, matches, messages, readMarks, ownProfiles, ownFavorites]) {
+        if (result.error) throw result.error;
+      }
 
-      const rows = profiles.data as ProfileRow[];
-      const profileIds = new Set(rows.map((profile) => profile.id));
-      const known = [userId, ...((likes.data ?? []).map((row) => row.liked_id)), ...(incoming.data ?? []).map((row) => row.liker_id),
-        ...(matches.data as MatchRow[]).map((row) => row.user_a === userId ? row.user_b : row.user_a)];
-      const missing = [...new Set(known)].filter((id) => !profileIds.has(id));
-      const favoriteRows = favorites.data as { user_id: string; title_id: string; title_metadata: unknown }[];
-      const seenFavorites = new Set(favoriteRows.map((item) => `${item.user_id}:${item.title_id}`));
-      for (let offset = 0; offset < missing.length; offset += 24) {
-        const ids = missing.slice(offset, offset + 24);
-        const [extraProfiles, extraFavorites] = await Promise.all([
-          sb.from("scene_profiles").select(PROFILE_FIELDS).in("id", ids),
-          sb.from("favorites").select("user_id,title_id,title_metadata").in("user_id", ids),
+      const rows = ownProfiles.data as ProfileRow[];
+      const favoriteRows = ownFavorites.data as { user_id: string; title_id: string; title_metadata: unknown }[];
+      const known = new Set([
+        ...(likes.data ?? []).map((row) => row.liked_id),
+        ...(incoming.data ?? []).map((row) => row.liker_id),
+        ...(matches.data as MatchRow[]).map((row) => row.user_a === userId ? row.user_b : row.user_a),
+      ]);
+      known.delete(userId);
+      const related = [...known];
+      for (let offset = 0; offset < related.length; offset += 24) {
+        const ids = related.slice(offset, offset + 24);
+        const [profiles, favorites] = await Promise.all([
+          fetchProfiles(ids),
+          sb.from("favorites").select("user_id,title_id,title_metadata").in("user_id", ids).order("created_at"),
         ]);
-        if (extraProfiles.error || extraFavorites.error) throw extraProfiles.error ?? extraFavorites.error;
-        rows.push(...extraProfiles.data as ProfileRow[]);
-        favoriteRows.push(...extraFavorites.data.filter((item) => !seenFavorites.has(`${item.user_id}:${item.title_id}`)));
+        if (profiles.error || favorites.error) throw profiles.error ?? favorites.error;
+        rows.push(...profiles.data as ProfileRow[]);
+        favoriteRows.push(...favorites.data);
       }
       const favs: Record<string, string[]> = {};
       const titles: Record<string, Record<string, Title>> = {};
@@ -233,10 +247,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "likes", filter: `liked_id=eq.${userId}` }, () => { void refresh(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => { void refresh(); })
-      .subscribe((status) => { if (status === "SUBSCRIBED") void refresh(); });
+      .subscribe();
     const onFocus = () => { if (document.visibilityState === "visible") void refresh(); };
     document.addEventListener("visibilitychange", onFocus);
-    const timer = window.setInterval(() => void refresh(), 30_000);
+    const timer = window.setInterval(onFocus, 30_000);
     return () => {
       document.removeEventListener("visibilitychange", onFocus);
       window.clearInterval(timer);
@@ -385,14 +399,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!userId || dataRef.current.me?.id !== userId) throw new Error("Tekrar giriş yap.");
     const bucket = requireSupabase().storage.from(AVATAR_BUCKET);
     const next = [...paths];
-    const uploadedPath = upload ? `${userId}/${crypto.randomUUID()}.jpg` : null;
+    const format = upload?.image.type === "image/webp" ? "webp" : "jpg";
+    const uploadedPath = upload ? `${userId}/${crypto.randomUUID()}.${format}` : null;
     if (upload && uploadedPath) next[upload.index] = uploadedPath;
     if (next.length > MAX_PROFILE_PHOTOS) throw new Error("En fazla 6 fotoğraf ekleyebilirsin.");
 
     try {
       if (upload && uploadedPath) {
         const { error } = await bucket.upload(uploadedPath, upload.image, {
-          contentType: "image/jpeg", cacheControl: "60",
+          contentType: upload.image.type, cacheControl: "60",
         });
         if (error) throw error;
       }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, Film, Heart, RotateCcw, X } from "lucide-react";
@@ -38,11 +38,12 @@ export default function Cinema() {
   const archiveKey = ["cinema-choices", user.id];
   const archive = useQuery({
     queryKey: archiveKey,
-    queryFn: async () => {
+    staleTime: 30_000,
+    queryFn: async ({ signal }) => {
       const rows: { title_id: string; choice: Choice; title_metadata: unknown }[] = [];
       for (let offset = 0; ; offset += 250) {
         const { data, error } = await requireSupabase().from("cinema_choices")
-          .select("title_id,choice,title_metadata").eq("user_id", user.id).order("title_id").range(offset, offset + 249);
+          .select("title_id,choice,title_metadata").eq("user_id", user.id).order("title_id").range(offset, offset + 249).abortSignal(signal);
         if (error) throw error;
         rows.push(...data);
         if (data.length < 250) return rows;
@@ -58,16 +59,18 @@ export default function Cinema() {
     staleTime: 300_000,
     retry: false,
   });
-  const excluded = new Set([...(archive.data ?? []).map((item) => item.title_id), ...user.favorites]);
-  const unique = new Map((catalog.data?.pages ?? []).flatMap((page) => page.titles.map((title) => [title.id, title] as const)));
   const usingArchive = catalog.isError && !catalog.data;
   const selectedGenre = genres.find(([id]) => String(id) === genre)?.[1];
-  const availableTitles = usingArchive
-    ? CATALOG.filter((title) => title.type === type
-      && (!selectedGenre || title.genres.includes(selectedGenre))
-      && (!year || String(title.year) === year))
-    : [...unique.values()];
-  const deck = availableTitles.filter((title) => !excluded.has(title.id));
+  const deck = useMemo(() => {
+    const excluded = new Set([...(archive.data ?? []).map((item) => item.title_id), ...user.favorites]);
+    const unique = new Map((catalog.data?.pages ?? []).flatMap((page) => page.titles.map((title) => [title.id, title] as const)));
+    const available = usingArchive
+      ? CATALOG.filter((title) => title.type === type
+        && (!selectedGenre || title.genres.includes(selectedGenre))
+        && (!year || String(title.year) === year))
+      : [...unique.values()];
+    return available.filter((title) => !excluded.has(title.id));
+  }, [archive.data, catalog.data, user.favorites, usingArchive, type, selectedGenre, year]);
   const top = deck[0];
   const prefetchKey = [type, genre, year, sort, catalog.data?.pages.length].join("/");
   useEffect(() => {
@@ -148,9 +151,9 @@ export default function Cinema() {
       </p>}
       {archive.isPending || catalog.isPending ? <p role="status">Katalog yükleniyor…</p> : archive.isSuccess && top ? <>
         <SwipeCard key={top.id} labels={swipeLabels} disabled={busy} onSwipe={swipe}
-          next={deck[1]?.poster && <img src={deck[1].poster} alt="" className="size-full object-cover" />}>
+          next={deck[1]?.poster && <img src={deck[1].poster} alt="" className="size-full object-cover" fetchPriority="low" decoding="async" />}>
           <div className="relative mx-auto h-[min(57dvh,32rem)] overflow-hidden rounded-3xl bg-[#201d29] text-white">
-            {top.poster && <img alt="" src={top.poster} className="size-full object-cover" draggable={false} />}
+            {top.poster && <img alt="" src={top.poster} className="size-full object-cover" draggable={false} decoding="async" fetchPriority="high" />}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-5 pt-20">
               <h2 className="text-3xl font-bold">{top.title}</h2>
               <p className="mt-1 text-sm">{top.year || "Yıl yok"}{top.rating ? ` · ${top.rating.toFixed(1)}/10` : ""}</p>
@@ -171,7 +174,7 @@ export default function Cinema() {
       {!archived.length && <p className="col-span-full text-sm text-muted-foreground">Bu liste henüz boş.</p>}
       {archived.map((title) => <article className="scene-panel overflow-hidden" key={title.id}>
         <button className="w-full text-left" onClick={() => setSelected(title)}>
-          {title.poster ? <img src={title.poster} alt="" className="aspect-[2/3] w-full object-cover" loading="lazy" /> : <Film className="m-4" />}
+          {title.poster ? <img src={title.poster} alt="" className="aspect-[2/3] w-full object-cover" loading="lazy" decoding="async" /> : <Film className="m-4" />}
           <h2 className="px-3 pt-2 text-sm font-bold">{title.title}</h2>
         </button>
         <Button size="sm" variant="ghost" disabled={busy} onClick={() => void change(title, null)}>Listeden çıkar</Button>

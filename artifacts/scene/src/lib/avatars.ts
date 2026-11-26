@@ -20,10 +20,12 @@ export function drawAvatar(canvas: HTMLCanvasElement, image: HTMLImageElement, c
   context.drawImage(image, left, top, size, size, 0, 0, canvas.width, canvas.height);
 }
 
-export function encodeAvatar(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => blob && blob.type === "image/jpeg"
-      ? resolve(blob)
-      : reject(new Error("Fotoğraf işlenemedi.")), "image/jpeg", 0.85);
-  });
+export async function encodeAvatar(canvas: HTMLCanvasElement): Promise<Blob> {
+  const encode = (type: string, quality: number) =>
+    new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+  const webp = await encode("image/webp", 0.84);
+  if (webp?.type === "image/webp") return webp;
+  const jpeg = await encode("image/jpeg", 0.85);
+  if (jpeg?.type === "image/jpeg") return jpeg;
+  throw new Error("Fotoğraf işlenemedi.");
 }

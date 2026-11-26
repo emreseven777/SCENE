@@ -10,7 +10,7 @@ import { cinemaFit, GENDERS, GOALS, profileCinemaSignals, profileGenres, selecte
 import { CHOICES, GENRES, INTERESTS, OCCUPATIONS } from "@/lib/profile-choices";
 import { PROVINCES, isProvince } from "@/lib/provinces";
 import { ProfileIdentity } from "@/components/profile-identity";
-import { PersonPhoto } from "@/components/person-photo";
+import { PersonPhoto, usePreloadPortraits } from "@/components/person-photo";
 import { useDiscoveryFeed } from "@/lib/discovery-feed";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ function DiscoverPortrait({ person, score, common }: { person: Person; score: nu
 
   return <div className="relative h-[clamp(23rem,62svh,38rem)] overflow-hidden rounded-t-[1.45rem] bg-muted lg:h-[36rem]"
     data-testid="discover-portrait">
-    <PersonPhoto id={person.id} name={person.name} avatarPath={photos[active] ?? null}
+    <PersonPhoto id={person.id} name={person.name} avatarPath={photos[active] ?? null} priority
       className="absolute inset-0 size-full" textClassName="text-8xl" />
     <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[51%] bg-linear-to-t from-black via-black/70 to-transparent" />
     <div className="pointer-events-none absolute inset-x-3 top-3">
@@ -69,11 +69,10 @@ export default function Discover() {
   const [photoComment, setPhotoComment] = useState<{ person: string; value: string }>();
   const [highlighted, setHighlighted] = useState<string>();
   const feed = useDiscoveryFeed(store.me?.id);
-  const serverFeed = feed.data?.pages[0] != null;
-  const candidates = useMemo(() => serverFeed
-    ? [...new Map(feed.data!.pages.flatMap((page) => page?.profiles ?? []).map((person) => [person.id, person])).values()]
-    : feed.data?.pages[0] === null ? store.people : [],
-    [serverFeed, feed.data, store.people]);
+  const serverFeed = !!feed.data && !feed.data.pages[0]?.legacy;
+  const candidates = useMemo(() =>
+    [...new Map((feed.data?.pages ?? []).flatMap((page) => page.profiles).map((person) => [person.id, person])).values()],
+    [feed.data]);
   const fetchedTitles = useMemo<Record<string, Record<string, Title>>>(() =>
     Object.assign({}, ...(feed.data?.pages.map((page) => page?.titles ?? {}) ?? [])), [feed.data]);
   const titleFor = (id: string, owner: string) => fetchedTitles[owner]?.[id] ?? store.titleById(id, owner);
@@ -118,6 +117,8 @@ export default function Discover() {
     [cast, store.liked, store.passed, store.matches, mine, fits, ownDetails, serverFeed],
   );
   const current = deck.find(({ p }) => p.id === highlighted) ?? deck[0];
+  const upcoming = deck.filter(({ p }) => p.id !== current?.p.id).slice(0, 2);
+  usePreloadPortraits(upcoming[0]?.p.avatar_path, upcoming[1]?.p.avatar_path);
   const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = feed;
   useEffect(() => {
     if (!current && hasNextPage && !isFetchingNextPage && !isError) void fetchNextPage();
@@ -144,6 +145,7 @@ export default function Discover() {
   const [dailyError, setDailyError] = useState(false);
   useEffect(() => {
     let cancelled = false;
+    const abort = new AbortController();
     const load = async () => {
       try {
         const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
@@ -152,7 +154,7 @@ export default function Discover() {
         const end = new Date(start.getTime() + 86400000);
         const counts = new Map<string, { title: Title; users: Set<string> }>();
         for (let offset = 0; ; offset += 500) {
-          const { data, error } = await requireSupabase().from("favorites").select("user_id,title_id,title_metadata").gte("created_at", start.toISOString()).lt("created_at", end.toISOString()).order("user_id").order("title_id").range(offset, offset + 499);
+          const { data, error } = await requireSupabase().from("favorites").select("user_id,title_id,title_metadata").gte("created_at", start.toISOString()).lt("created_at", end.toISOString()).order("user_id").order("title_id").range(offset, offset + 499).abortSignal(abort.signal);
           if (error) throw error;
           for (const row of data ?? []) {
             const title = byId(row.title_id) ?? savedTmdbTitle(row.title_id, row.title_metadata);
@@ -170,9 +172,10 @@ export default function Discover() {
         }
       } catch { if (!cancelled) { setDailyFilms([]); setDailyError(true); } }
     };
-    void load();
-    const timer = window.setInterval(() => void load(), 60000);
-    return () => { cancelled = true; window.clearInterval(timer); };
+    const refresh = () => { if (document.visibilityState === "visible") void load(); };
+    const initial = window.setTimeout(refresh, 500);
+    const timer = window.setInterval(refresh, 60000);
+    return () => { cancelled = true; abort.abort(); window.clearTimeout(initial); window.clearInterval(timer); };
   }, [store.me?.id]);
   const activeFilters = Object.values(filter).filter(Boolean).length;
   const [busy, setBusy] = useState(false);

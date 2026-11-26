@@ -141,6 +141,7 @@ export function ProfileDetails({ person, publicPreview = false }: { person: Pers
 
 export function ProfileSafety({ person }: { person: Person }) {
   const { refresh } = useStore();
+  const client = useQueryClient();
   const { toast } = useToast();
   const [action, setAction] = useState<"block" | "report" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -157,7 +158,11 @@ export function ProfileSafety({ person }: { person: Person }) {
           const { error } = await requireSupabase().from("scene_blocks").insert({ blocked_id: person.id });
           if (error) throw error;
           setAction(null);
-          await refresh();
+          client.removeQueries({
+            queryKey: ["profile-avatar"],
+            predicate: ({ queryKey }) => typeof queryKey[2] === "string" && queryKey[2].startsWith(`${person.id}/`),
+          });
+          await Promise.all([refresh(), client.resetQueries({ queryKey: ["scene-discovery-feed"] })]);
           toast({ title: "Kullanıcı engellendi" });
         } catch (error) {
           toast({ title: "Engelleme işlemi tamamlanamadı", description: turkishError(error), variant: "destructive" });
@@ -171,6 +176,7 @@ export function ProfileSafety({ person }: { person: Person }) {
 
 export function AccountVisibility({ person }: { person: Person }) {
   const { updateMe, refresh } = useStore();
+  const client = useQueryClient();
   const { toast } = useToast();
   const blocks = useQuery({
     queryKey: ["scene-blocks", person.id],
@@ -234,7 +240,7 @@ export function AccountVisibility({ person }: { person: Person }) {
         setBusy(true);
         const { error } = await requireSupabase().from("scene_blocks").delete().eq("blocker_id", person.id).eq("blocked_id", row.blocked_id);
         if (error) toast({ title: "Engel kaldırılamadı", variant: "destructive" });
-        else { await blocks.refetch(); await refresh(); }
+        else { await Promise.all([blocks.refetch(), refresh(), client.resetQueries({ queryKey: ["scene-discovery-feed"] })]); }
         setBusy(false);
       }}>Engeli kaldır</Button>
     </div>)}

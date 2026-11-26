@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { AVATAR_BUCKET } from "@/lib/avatars";
 import { requireSupabase } from "@/lib/supabase";
@@ -15,22 +15,55 @@ function hueFor(id: string) {
   return h;
 }
 
-export function PersonPhoto({ id, name, avatarPath, className, textClassName, contain = false }: { id: string; name: string; avatarPath: string | null; className?: string; textClassName?: string; contain?: boolean }) {
-  const { userId } = useAuth();
-  const [brokenUrl, setBrokenUrl] = useState("");
-  const { data: url } = useQuery({
+function avatarQuery(userId: string | null, avatarPath: string | null) {
+  return queryOptions({
     queryKey: ["profile-avatar", userId, avatarPath],
     enabled: !!userId && !!avatarPath,
     queryFn: async () => {
-      const { data, error } = await requireSupabase().storage.from(AVATAR_BUCKET).createSignedUrl(avatarPath!, 300);
+      const { data, error } = await requireSupabase().storage.from(AVATAR_BUCKET).createSignedUrl(avatarPath!, 60);
       if (error) throw error;
       return data.signedUrl;
     },
-    staleTime: 240_000,
-    gcTime: 240_000,
-    refetchInterval: 240_000,
+    staleTime: 40_000,
+    gcTime: 45_000,
     retry: false,
   });
+}
+
+export function usePreloadPortraits(first?: string | null, second?: string | null) {
+  const { userId } = useAuth();
+  const client = useQueryClient();
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (!userId || connection?.saveData || connection?.effectiveType?.includes("2g")) return;
+    let active = true;
+    const images: HTMLImageElement[] = [];
+    const timer = window.setTimeout(() => {
+      if (document.visibilityState !== "visible") return;
+      for (const path of new Set([first, second])) {
+        if (!path) continue;
+        void client.fetchQuery(avatarQuery(userId, path)).then((url) => {
+          if (!active) return;
+          const image = new Image();
+          image.fetchPriority = "low";
+          images.push(image);
+          image.src = url;
+        }).catch(() => { /* The visible portrait can retry independently. */ });
+      }
+    }, 450);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+      for (const image of images) if (!image.complete) image.removeAttribute("src");
+    };
+  }, [client, userId, first, second]);
+}
+
+export function PersonPhoto({ id, name, avatarPath, className, textClassName, contain = false, priority = false }: { id: string; name: string; avatarPath: string | null; className?: string; textClassName?: string; contain?: boolean; priority?: boolean }) {
+  const { userId } = useAuth();
+  const [brokenUrl, setBrokenUrl] = useState("");
+  const { data: url, refetch } = useQuery(avatarQuery(userId, avatarPath));
+  useEffect(() => setBrokenUrl(""), [avatarPath, userId]);
   const visible = !!url && url !== brokenUrl;
   const tint = hueFor(id) % 60;
   return (
@@ -43,7 +76,8 @@ export function PersonPhoto({ id, name, avatarPath, className, textClassName, co
 
       {!visible && <span className={cn("relative text-white drop-shadow-md", textClassName)}>{initials(name)}</span>}
       {visible && url && (
-        <img alt="" src={url} loading="lazy" onError={() => setBrokenUrl(url)} className={cn("absolute inset-0 h-full w-full", contain ? "object-contain object-top" : "object-cover")} />
+        <img alt="" src={url} loading={priority ? "eager" : "lazy"} decoding="async" fetchPriority={priority ? "high" : "auto"}
+          onError={() => { setBrokenUrl(url); if (brokenUrl !== url && !brokenUrl) void refetch(); }} className={cn("absolute inset-0 h-full w-full", contain ? "object-contain object-top" : "object-cover")} />
       )}
     </div>
   );

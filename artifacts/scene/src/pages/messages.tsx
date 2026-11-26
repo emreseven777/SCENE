@@ -11,7 +11,7 @@ import { requireSupabase, turkishError } from "@/lib/supabase";
 import { useScenePreferences } from "@/lib/scene-preferences";
 import { useToast } from "@/hooks/use-toast";
 import { SceneHeading } from "@/components/scene-brand";
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Lock, Send, MoreHorizontal, Plus, Smile } from "lucide-react";
@@ -28,9 +28,9 @@ function ConversationList({ activeId }: { activeId?: string }) {
   const [busy, setBusy] = useState(false);
   const gesture = useRef<{x:number;y:number} | null>(null);
   const suppress = useRef(false);
-  const convos = store.people.filter((p) => store.matches[p.id])
+  const convos = useMemo(() => store.people.filter((p) => store.matches[p.id])
     .map((p) => ({ p, last: store.messages[p.id]?.at(-1) }))
-    .sort((a, b) => (b.last?.at ?? store.matches[b.p.id].at) - (a.last?.at ?? store.matches[a.p.id].at));
+    .sort((a, b) => (b.last?.at ?? store.matches[b.p.id].at) - (a.last?.at ?? store.matches[a.p.id].at)), [store.people, store.matches, store.messages]);
   if (!convos.length)
     return (
       <div className="scene-panel p-8 text-center">
@@ -105,7 +105,7 @@ export function Chat() {
     followLatest.current = true;
     setHasNewMessages(false);
   };
-  const liveMessages = p ? store.messages[p.id] ?? [] : [];
+  const liveMessages = p ? store.messages[p.id] : undefined;
   const term = search.trim();
   useEffect(() => {
     if (!term) { setSearchTerm(""); return; }
@@ -118,19 +118,22 @@ export function Chat() {
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) => fetchChatMessages(chat!, user!, pageParam, searchTerm, signal),
     getNextPageParam: (page) => page.length === 50 ? page.at(-1)?.id : undefined,
-    gcTime: 0,
-    refetchInterval: 30_000,
+    staleTime: 10_000,
+    gcTime: 45_000,
+    refetchInterval: (query) => (query.state.data?.pages.length ?? 0) < 2 ? 30_000 : false,
   });
-  const allMessages = new Map<string, Msg>();
-  if (term === searchTerm) {
-    for (const page of history.data?.pages ?? []) for (const message of page) allMessages.set(message.id, message);
-  }
-  if (!term) {
-    const oldest = term === searchTerm ? history.data?.pages.at(-1)?.at(-1)?.id : undefined;
-    const current = oldest ? liveMessages.filter((message) => Number(message.id) >= Number(oldest)) : liveMessages.slice(-50);
-    for (const message of current) allMessages.set(message.id, message);
-  }
-  const msgs = [...allMessages.values()].sort((a, b) => Number(a.id) - Number(b.id));
+  const msgs = useMemo(() => {
+    const all = new Map<string, Msg>();
+    if (term === searchTerm) {
+      for (const page of history.data?.pages ?? []) for (const message of page) all.set(message.id, message);
+    }
+    if (!term && liveMessages) {
+      const oldest = history.data?.pages.at(-1)?.at(-1)?.id;
+      const current = oldest ? liveMessages.filter((message) => Number(message.id) >= Number(oldest)) : liveMessages.slice(-50);
+      for (const message of current) all.set(message.id, message);
+    }
+    return [...all.values()].sort((a, b) => Number(a.id) - Number(b.id));
+  }, [term, searchTerm, history.data, liveMessages]);
   const quizResults = new Map<string, string>();
   for (const item of msgs) {
     const result = !item.deleted && readQuizResult(item.text);
@@ -162,7 +165,7 @@ export function Chat() {
     else setHasNewMessages(true);
   }, [id, newest]);
 
-  const latest = liveMessages.filter((m) => m.from === "them" && !m.deleted).at(-1);
+  const latest = liveMessages?.filter((m) => m.from === "them" && !m.deleted).at(-1);
   const { acknowledge } = store;
   const read = id ? store.readThrough[id] ?? 0 : 0;
   useEffect(() => {
@@ -179,22 +182,21 @@ export function Chat() {
   }, [id]);
 
   const signalsKey = ["chat-signals", user, id, chat];
-  const reactionsKey = ["chat-reactions", user, chat, msgs.length];
+  const reactionIds = useMemo(() => msgs.filter((message) => !message.deleted).slice(-150).map(({ id }) => id), [msgs]);
+  const reactionsKey = ["chat-reactions", user, chat, reactionIds];
   const signals = useQuery({
     queryKey: signalsKey, enabled: !!chat && !!id,
-    queryFn: async () => {
-      const { data, error } = await requireSupabase().from("scene_signals").select("scope,updated_at").eq("user_id", id!).in("scope", ["presence", chat!]);
+    queryFn: async ({ signal }) => {
+      const { data, error } = await requireSupabase().from("scene_signals").select("scope,updated_at").eq("user_id", id!).in("scope", ["presence", chat!]).abortSignal(signal);
       if (error) throw error;
       return data;
     },
     refetchInterval: 8000,
   });
   const reactions = useQuery({
-    queryKey: reactionsKey, enabled: !!chat && !!msgs.length,
-    queryFn: async () => {
-      const ids = msgs.filter((m) => !m.deleted).slice(-150).map((m) => m.id);
-      if (!ids.length) return [];
-      const { data, error } = await requireSupabase().from("scene_reactions").select("message_id,user_id,emoji").in("message_id", ids);
+    queryKey: reactionsKey, enabled: !!chat && !!reactionIds.length,
+    queryFn: async ({ signal }) => {
+      const { data, error } = await requireSupabase().from("scene_reactions").select("message_id,user_id,emoji").in("message_id", reactionIds).abortSignal(signal);
       if (error) throw error;
       return data;
     },

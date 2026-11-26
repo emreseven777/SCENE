@@ -21,7 +21,7 @@ function isActive(loc: string, href: string) {
   return href === "/" ? loc === "/" : loc.startsWith(href);
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, warmNavigation }: { children: ReactNode; warmNavigation: (href: string) => void }) {
   const [loc] = useLocation();
   const { matches, me, messages, readThrough, incoming, people } = useStore();
   const user = me?.id;
@@ -58,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {[...NAV, SEARCH].map(({ href, label, icon: Icon }) => {
             const on = isActive(loc, href);
             return (
-              <Link key={href} href={href} aria-current={on ? "page" : undefined} data-testid={`nav-desktop-${href}`} className={cn(
+              <Link key={href} href={href} onFocus={() => warmNavigation(href)} onPointerEnter={(event) => { if (event.pointerType === "mouse") warmNavigation(href); }} onPointerDown={() => warmNavigation(href)} aria-current={on ? "page" : undefined} data-testid={`nav-desktop-${href}`} className={cn(
                 "relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-colors",
                 on ? "bg-secondary text-brand-ink" : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}>
@@ -80,7 +80,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <ThemeToggle />
           </div>
         </header>
-        <motion.main key={loc.split("/")[1]} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.24 }} className={loc.startsWith("/mesajlar/") ? "pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0" : "pb-safe"}>
+        <motion.main key={loc.split("/")[1]} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.16 }} className={loc.startsWith("/mesajlar/") ? "pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0" : "pb-safe"}>
           {children}
         </motion.main>
       </div>
@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {NAV.map(({ href, label, icon: Icon }) => {
             const on = isActive(loc, href);
             return (
-              <Link key={href} href={href} aria-current={on ? "page" : undefined} data-testid={`nav-${label}`} className={cn("relative flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-1.5 text-center text-[10px] font-semibold", on ? "text-brand-ink" : "text-muted-foreground")}>
+              <Link key={href} href={href} onFocus={() => warmNavigation(href)} onPointerEnter={(event) => { if (event.pointerType === "mouse") warmNavigation(href); }} onPointerDown={() => warmNavigation(href)} aria-current={on ? "page" : undefined} data-testid={`nav-${label}`} className={cn("relative flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-1.5 text-center text-[10px] font-semibold", on ? "text-brand-ink" : "text-muted-foreground")}>
                 <span className="relative grid h-8 w-full max-w-12 place-items-center">
                   {on && <motion.span layoutId="tab" className="absolute inset-0 rounded-full bg-secondary" />}
                   <Icon size={19} className="relative" />

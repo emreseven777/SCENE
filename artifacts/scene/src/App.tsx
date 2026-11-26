@@ -1,6 +1,6 @@
 import { MotionConfig } from 'framer-motion';
 import { ThemeProvider } from 'next-themes';
-import { lazy, Suspense, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -13,28 +13,45 @@ import { AuthProvider, useAuth } from '@/lib/auth';
 import { StoreProvider, useStore } from '@/lib/store';
 import { supabaseConfigured } from '@/lib/supabase';
 import { AppShell } from '@/components/app-shell';
-import Discover from '@/pages/discover';
-import Matches from '@/pages/matches';
-import CreateProfile from '@/pages/create-profile';
 import { CompleteIdentity } from '@/pages/complete-identity';
 import { isProvince } from '@/lib/provinces';
-import Notifications from '@/pages/notifications';
 import { DatingFields } from '@/components/dating-profile';
 import { LoginPage, RegisterPage, WelcomePage } from '@/pages/auth';
 
+const loadDiscover = () => import('@/pages/discover');
+const Discover = lazy(loadDiscover);
+const loadMatches = () => import('@/pages/matches');
+const Matches = lazy(loadMatches);
+const CreateProfile = lazy(() => import('@/pages/create-profile'));
+const loadNotifications = () => import('@/pages/notifications');
+const Notifications = lazy(loadNotifications);
 const ForgotPassword = lazy(() => import("@/pages/password-recovery").then((module) => ({ default: module.ForgotPassword })));
 const ResetPassword = lazy(() => import("@/pages/password-recovery").then((module) => ({ default: module.ResetPassword })));
-const Chat = lazy(() => import('@/pages/messages').then((module) => ({ default: module.Chat })));
-const MessagesIndex = lazy(() => import('@/pages/messages').then((module) => ({ default: module.MessagesIndex })));
+const loadMessages = () => import('@/pages/messages');
+const Chat = lazy(() => loadMessages().then((module) => ({ default: module.Chat })));
+const MessagesIndex = lazy(() => loadMessages().then((module) => ({ default: module.MessagesIndex })));
 const CinemaActivities = lazy(() => import('@/pages/cinema-activities'));
 const Community = lazy(() => import('@/pages/community'));
 const Admin = lazy(() => import('@/pages/admin'));
-const Cinema = lazy(() => import('@/pages/cinema'));
-const SearchPage = lazy(() => import('@/pages/search'));
-const Profile = lazy(() => import('@/pages/profile'));
+const loadCinema = () => import('@/pages/cinema');
+const Cinema = lazy(loadCinema);
+const loadSearchPage = () => import('@/pages/search');
+const SearchPage = lazy(loadSearchPage);
+const loadProfile = () => import('@/pages/profile');
+const Profile = lazy(loadProfile);
 const UserPage = lazy(() => import('@/pages/user'));
 const Legal = lazy(() => import('@/pages/legal'));
-const queryClient = new QueryClient();
+
+
+const navigationChunks: Record<string, () => Promise<unknown>> = {
+  "/": loadDiscover, "/sinema": loadCinema, "/begeniler": loadMatches,
+  "/mesajlar": loadMessages, "/profil": loadProfile, "/arama": loadSearchPage,
+  "/bildirimler": loadNotifications,
+};
+
+function warmNavigation(href: string) {
+  void navigationChunks[href]?.().catch(() => undefined);
+}
 
 function FullScreen({ children }: { children: ReactNode }) {
   return <div className="grid min-h-[100dvh] place-items-center px-6 text-center">{children}</div>;
@@ -78,7 +95,7 @@ function SignedInApp() {
   if (!store.me.onboarded && loc !== '/profil/olustur') return <Redirect to="/profil/olustur" />;
 
   return (
-    <AppShell>
+    <AppShell warmNavigation={warmNavigation}>
       <RoutedErrorBoundary>
         <Suspense fallback={<Loading />}>
         <Switch>
@@ -143,25 +160,29 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 
 function SessionStore({ children }: { children: ReactNode }) {
   const { userId } = useAuth();
-  return <StoreProvider key={userId ?? "anonymous"}>{children}</StoreProvider>;
+  return <SessionCache key={userId ?? "anonymous"}>{children}</SessionCache>;
+}
+
+function SessionCache({ children }: { children: ReactNode }) {
+  const [client] = useState(() => new QueryClient());
+  useEffect(() => () => client.clear(), [client]);
+  return <QueryClientProvider client={client}><StoreProvider>{children}</StoreProvider></QueryClientProvider>;
 }
 
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="scene-theme">
       <MotionConfig reducedMotion="user">
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <AuthProvider>
-              <SessionStore>
-                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-                  <Router />
-                </WouterRouter>
-                <Toaster />
-              </SessionStore>
-            </AuthProvider>
-          </TooltipProvider>
-        </QueryClientProvider>
+        <TooltipProvider>
+          <AuthProvider>
+            <SessionStore>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </SessionStore>
+          </AuthProvider>
+        </TooltipProvider>
       </MotionConfig>
     </ThemeProvider>
   );

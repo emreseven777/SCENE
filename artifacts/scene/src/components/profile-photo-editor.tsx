@@ -59,7 +59,7 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
     try {
       const { data, error } = await requireSupabase().storage.from(AVATAR_BUCKET).download(paths[index]);
       if (error) throw error;
-      setPending({ file: new File([data], "profil.jpg", { type: "image/jpeg" }), index, previous: paths });
+      setPending({ file: new File([data], paths[index].split("/").at(-1)!, { type: data.type }), index, previous: paths });
     } catch (error) {
       toast({ title: "Fotoğraf açılamadı", description: turkishError(error), variant: "destructive" });
     } finally {
