@@ -9,7 +9,7 @@ import { requireSupabase, turkishError } from "@/lib/supabase";
 import { useScenePreferences } from "@/lib/scene-preferences";
 import { useToast } from "@/hooks/use-toast";
 import { SceneHeading } from "@/components/scene-brand";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Lock, Send } from "lucide-react";
@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { fetchChatMessages, type Msg, useCommon, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { PersonPhoto } from "@/components/person-photo";
+import { quizResultLabel, readQuizResult } from "@/lib/quiz-result";
 
 function ConversationList({ activeId }: { activeId?: string }) {
   const store = useStore();
@@ -84,6 +85,14 @@ export function Chat() {
   const chat = id ? store.matches[id]?.id : undefined;
   const preferences = useScenePreferences(user);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const followLatest = useRef(true);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+  const scrollToLatest = () => {
+    const list = scrollRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
+    followLatest.current = true;
+    setHasNewMessages(false);
+  };
   const liveMessages = p ? store.messages[p.id] ?? [] : [];
   const term = search.trim();
   useEffect(() => {
@@ -110,6 +119,16 @@ export function Chat() {
     for (const message of current) allMessages.set(message.id, message);
   }
   const msgs = [...allMessages.values()].sort((a, b) => Number(a.id) - Number(b.id));
+  const quizResults = new Map<string, string>();
+  for (const item of msgs) {
+    const result = !item.deleted && readQuizResult(item.text);
+    if (result) quizResults.set(`${item.from}:${result.kind}`, quizResultLabel(result));
+  }
+  const comparisons = (["trivia", "personality"] as const).flatMap((kind) => {
+    const own = quizResults.get(`me:${kind}`);
+    const partner = quizResults.get(`them:${kind}`);
+    return own && partner ? [{ kind, own, partner }] : [];
+  });
   const common = useCommon(p?.favorites ?? []);
   const sharedTitles = common.flatMap((id) => store.titleById(id, p?.id) ?? []);
   const starters = sharedTitles.slice(0, 3).flatMap((title, index) => {
@@ -120,10 +139,16 @@ export function Chat() {
   });
   const newest = !term ? msgs.at(-1)?.id : undefined;
 
-  useEffect(() => {
-    const list = scrollRef.current;
-    if (list && newest) list.scrollTop = list.scrollHeight;
-  }, [newest]);
+  useLayoutEffect(() => {
+    followLatest.current = true;
+    setHasNewMessages(false);
+  }, [id, term]);
+
+  useLayoutEffect(() => {
+    if (!newest) return;
+    if (followLatest.current) scrollToLatest();
+    else setHasNewMessages(true);
+  }, [id, newest]);
 
   const latest = liveMessages.filter((m) => m.from === "them" && !m.deleted).at(-1);
   const { acknowledge } = store;
@@ -220,7 +245,7 @@ export function Chat() {
     const v = text.trim();
     if ((!v && !media) || sending) return;
     setSending(true);
-    try { await store.send(p.id, v, { media: media ?? undefined, replyTo: reply ?? undefined }); setText(""); setMedia(null); setReply(null); } catch { /* error toast already shown; keep the text */ }
+    try { await store.send(p.id, v, { media: media ?? undefined, replyTo: reply ?? undefined }); scrollToLatest(); setText(""); setMedia(null); setReply(null); } catch { /* error toast already shown; keep the text */ }
     finally { setSending(false); }
   };
 
@@ -251,7 +276,12 @@ export function Chat() {
           <input className="mt-2 w-full rounded-lg border bg-card p-2 text-base" type="search" aria-label="Mesaj ara"
             placeholder="Mesajlarda ara" value={search} onChange={(event) => setSearch(event.target.value)} />
         </details>
-        <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5">
+        <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain px-4 py-5"
+          onScroll={(event) => {
+            const list = event.currentTarget;
+            followLatest.current = list.scrollHeight - list.scrollTop - list.clientHeight < 96;
+            if (followLatest.current) setHasNewMessages(false);
+          }}>
           <div className="mx-auto max-w-xs text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Eşleştiniz. Bu sohbeti yalnızca ikiniz görebilirsiniz.</div>
           {!term && !msgs.length && !text.trim() && !media && starters.length > 0 &&
             <div className="mx-auto max-w-md space-y-2 pt-2" aria-label="Ortak favorilerden sohbet başlatıcıları">
@@ -259,6 +289,13 @@ export function Chat() {
                 className="block min-h-11 w-full rounded-xl border bg-muted px-3 py-2 text-left text-sm"
                 onClick={() => setText(prompt)}>{prompt}</button>)}
             </div>}
+          {!term && comparisons.map(({ kind, own, partner }) =>
+            <section key={kind} className="mx-auto max-w-md rounded-xl border bg-muted p-3 text-sm" aria-label="MOVIA Quiz sonuç karşılaştırması">
+              <h2 className="font-semibold">{kind === "trivia" ? "Bilgi yarışması sonuçları" : "Sinema kişiliğiniz"}</h2>
+              <p>Sen · {own}</p>
+              <p>{p.name} · {partner}</p>
+              {kind === "trivia" && <p className="text-xs text-muted-foreground">Her turda sorular değişebilir.</p>}
+            </section>)}
           {term && (term !== searchTerm || history.isPending) && <p role="status" className="text-sm">Mesajlar aranıyor…</p>}
           {history.isError && <p role="alert" className="text-sm">{turkishError(history.error)}</p>}
           {term && term === searchTerm && history.isSuccess && !msgs.length &&
@@ -293,6 +330,9 @@ export function Chat() {
         {deleteId && <div className="flex flex-wrap items-center gap-2 border-t p-2 text-sm">
           <span>Mesaj silinsin mi?</span><Button size="sm" variant="secondary" onClick={() => setDeleteId(null)}>Vazgeç</Button>
           <Button size="sm" variant="destructive" onClick={() => { void store.removeMessage(deleteId).then(() => client.invalidateQueries({ queryKey: ["scene-chat-history", user, chat] })); setDeleteId(null); }}>Mesajı sil</Button>
+        </div>}
+        {hasNewMessages && !term && <div className="flex justify-center border-t p-2">
+          <Button type="button" variant="secondary" size="sm" onClick={scrollToLatest}>Yeni mesajlara git</Button>
         </div>}
         <div className="border-t px-3 pt-1">
           {reply && <div className="flex items-center justify-between gap-2 text-xs"><span className="truncate">Yanıt: {msgs.find((item) => item.id === reply)?.text}</span><Button size="sm" variant="ghost" onClick={() => setReply(null)}>Vazgeç</Button></div>}

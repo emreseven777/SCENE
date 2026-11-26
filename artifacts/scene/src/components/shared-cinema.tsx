@@ -4,10 +4,16 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import type { Title } from "@/lib/catalog";
 import { requireSupabase, turkishError } from "@/lib/supabase";
+import { quizResultLabel, readQuizResult } from "@/lib/quiz-result";
 
 const cardPrefix = "[SCENE:YAPIM] ";
 export const titleMessage = (title: Title) => cardPrefix + title.title;
 export function CinemaMessage({ body }: { body: string }) {
+  const quizResult = readQuizResult(body);
+  if (quizResult) return <div className="rounded-xl border border-current/30 p-3">
+    <p className="text-xs">MOVIA Quiz · Paylaşılan sonuç</p>
+    <p className="font-semibold">{quizResultLabel(quizResult)}</p>
+  </div>;
   if (!body.startsWith(cardPrefix) || !body.slice(cardPrefix.length).trim()) return <p>{body}</p>;
   const title = body.slice(cardPrefix.length).trim();
   return <div className="rounded-xl border border-current/30 p-3">

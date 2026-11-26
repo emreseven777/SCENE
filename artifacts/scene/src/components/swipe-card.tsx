@@ -15,6 +15,7 @@ export function SwipeCard({ children, next, labels, disabled, onSwipe }: {
   const reduced = useReducedMotion();
   const rotation = useTransform(x, [-240, 240], [-16, 16]);
   const gesture = useRef<{ id: number; x: number; y: number } | null>(null);
+  const dragged = useRef(false);
   const working = useRef(false);
   const [direction, setDirection] = useState<SwipeDirection | null>(null);
   const reset = () => {
@@ -57,7 +58,8 @@ export function SwipeCard({ children, next, labels, disabled, onSwipe }: {
         style={{ x, y, rotate: reduced ? 0 : rotation }}
         onPointerDown={(event) => {
           if (disabled || working.current || gesture.current || !event.isPrimary || event.button !== 0 ||
-            (event.target as HTMLElement).closest("button,input,select,[data-no-swipe]")) return;
+            (event.target as Element).closest("a,button:not([data-swipe-tap]),input,select,[data-no-swipe]")) return;
+          dragged.current = false;
           gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
         }}
         onPointerMove={(event) => {
@@ -66,10 +68,19 @@ export function SwipeCard({ children, next, labels, disabled, onSwipe }: {
           const dx = event.clientX - start.x;
           const dy = event.clientY - start.y;
           if (Math.hypot(dx, dy) < 8 && !event.currentTarget.hasPointerCapture(event.pointerId)) return;
-          event.currentTarget.setPointerCapture(event.pointerId);
+          if (!dragged.current) {
+            dragged.current = true;
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }
           x.set(dx);
           y.set(dy);
           setDirection(dy < -25 && -dy > Math.abs(dx) ? "up" : Math.abs(dx) > 25 ? (dx > 0 ? "right" : "left") : null);
+        }}
+        onClickCapture={(event) => {
+          if (dragged.current && event.detail > 0 && (event.target as Element).closest("[data-swipe-tap]")) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
         }}
         onDragStart={(event) => event.preventDefault()}
         onPointerUp={(event) => void finish(event, false)}

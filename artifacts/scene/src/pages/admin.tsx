@@ -48,6 +48,7 @@ export default function Admin() {
   const [decision, setDecision] = useState<{ subject: string; action: Action }>();
   const [reason, setReason] = useState("");
   const [search, setSearch] = useState("");
+  const [stateFilter, setStateFilter] = useState("");
   const rows = useQuery({
     queryKey: ["scene-moderation", session?.user.id, queue, offset],
     enabled: access.data === true,
@@ -75,7 +76,14 @@ export default function Admin() {
   const minimum = queue === "privacy" ? 10 : 5;
   const maximum = queue === "privacy" ? 2000 : 500;
 
-  const visibleRows = (rows.data ?? []).filter((row) => queue === "statistics" || !search.trim() || [row.id, row.name, row.state, row.reported_id].some((value) => String(value ?? "").toLocaleLowerCase("tr-TR").includes(search.trim().toLocaleLowerCase("tr-TR"))));
+  const filterStates = Array.from(new Set((rows.data ?? []).flatMap((row) => row.state ? [row.state] : [])));
+  const query = search.trim().toLocaleLowerCase("tr-TR");
+  const visibleRows = (rows.data ?? []).filter((row) => {
+    if (queue === "statistics") return true;
+    if (stateFilter && row.state !== stateFilter) return false;
+    return !query || [row.id, row.name, row.state, row.reported_id]
+      .some((value) => String(value ?? "").toLocaleLowerCase("tr-TR").includes(query));
+  });
 
   return <main className="scene-page max-w-4xl">
     <h1 className="scene-title mb-4">Yönetim</h1>
@@ -85,15 +93,23 @@ export default function Admin() {
     {access.data && <>
       <nav className="mb-4 flex flex-wrap gap-2" aria-label="Yönetim bölümleri">
         {Object.entries(queues).map(([key, label]) => <Button key={key} variant={queue === key ? "default" : "secondary"} disabled={mutation.isPending} aria-pressed={queue === key}
-          onClick={() => { setQueue(key as Queue); setSearch(""); setOffset(0); setDecision(undefined); mutation.reset(); }}>{label}</Button>)}
+          onClick={() => { setQueue(key as Queue); setSearch(""); setStateFilter(""); setOffset(0); setDecision(undefined); mutation.reset(); }}>{label}</Button>)}
       </nav>
       <div className="scene-panel mb-4 flex flex-wrap items-end gap-3 p-3">
         {queue !== "statistics" && <label className="flex-1 text-sm">Bu sayfadaki kayıtları ara
           <input className="mt-1 w-full rounded-lg border bg-card p-2 text-base" value={search} disabled={mutation.isPending} onChange={(event) => { setSearch(event.target.value); setDecision(undefined); }} placeholder="Ad, kayıt numarası veya durum" />
         </label>}
+        {(filterStates.length > 0 || stateFilter) && <label className="text-sm">Bu sayfadaki durum
+          <select className="mt-1 block h-11 rounded-lg border bg-card px-3 text-base" value={stateFilter} disabled={mutation.isPending}
+            onChange={(event) => { setStateFilter(event.target.value); setDecision(undefined); }}>
+            <option value="">Tümü</option>
+            {Array.from(new Set([...filterStates, ...(stateFilter ? [stateFilter] : [])])).map((state) =>
+              <option key={state} value={state}>{(queue === "privacy" ? requestStatuses[state] : states[state]) ?? state}</option>)}
+          </select>
+        </label>}
         <Button variant="outline" disabled={rows.isFetching || mutation.isPending} onClick={() => void rows.refetch()}>Yenile</Button>
       </div>
-      {search.trim() && rows.data?.length && visibleRows.length === 0 ? <p role="status">Bu sayfada aramana uygun kayıt yok.</p> : null}
+      {(query || stateFilter) && rows.data?.length && visibleRows.length === 0 ? <p role="status">Bu sayfada filtrelere uygun kayıt yok.</p> : null}
       {rows.isPending && <p role="status">Kayıtlar yükleniyor…</p>}
       {rows.isError && <p role="alert">{turkishError(rows.error)}</p>}
       {rows.data?.length === 0 && <p>Bu bölümde kayıt yok.</p>}
@@ -135,8 +151,8 @@ export default function Admin() {
         </form>}
       </article>)}
       {queue !== "statistics" && <div className="flex gap-2">
-        <Button variant="outline" disabled={!offset || mutation.isPending} onClick={() => { setDecision(undefined); setOffset(offset - 25); }}>Önceki</Button>
-        <Button variant="outline" disabled={rows.data?.length !== 25 || mutation.isPending} onClick={() => { setDecision(undefined); setOffset(offset + 25); }}>Sonraki</Button>
+        <Button variant="outline" disabled={!offset || mutation.isPending} onClick={() => { setDecision(undefined); setStateFilter(""); setOffset(offset - 25); }}>Önceki</Button>
+        <Button variant="outline" disabled={rows.data?.length !== 25 || mutation.isPending} onClick={() => { setDecision(undefined); setStateFilter(""); setOffset(offset + 25); }}>Sonraki</Button>
       </div>}
     </>}
   </main>;

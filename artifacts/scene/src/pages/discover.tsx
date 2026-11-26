@@ -38,10 +38,10 @@ function DiscoverPortrait({ person, score, common }: { person: Person; score: nu
       </span>
     </div>
     {photos.length > 1 && <>
-      <button type="button" aria-label="Önceki fotoğraf" disabled={active === 0} onClick={() => setPhotoIndex(active - 1)}
-        className="absolute left-2 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/65 text-white disabled:invisible"><ChevronLeft /></button>
-      <button type="button" aria-label="Sonraki fotoğraf" disabled={active === photos.length - 1} onClick={() => setPhotoIndex(active + 1)}
-        className="absolute right-2 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/65 text-white disabled:invisible"><ChevronRight /></button>
+      <button type="button" aria-label="Önceki fotoğraf" data-swipe-tap disabled={active === 0} onClick={() => setPhotoIndex(active - 1)}
+        className="absolute bottom-20 left-0 top-24 flex w-1/3 items-center justify-start pl-2 text-white focus-visible:outline-white disabled:invisible"><ChevronLeft className="rounded-full bg-black/65 p-2" size={44} /></button>
+      <button type="button" aria-label="Sonraki fotoğraf" data-swipe-tap disabled={active === photos.length - 1} onClick={() => setPhotoIndex(active + 1)}
+        className="absolute bottom-20 right-0 top-24 flex w-1/3 items-center justify-end pr-2 text-white focus-visible:outline-white disabled:invisible"><ChevronRight className="rounded-full bg-black/65 p-2" size={44} /></button>
     </>}
     <Link href={`/kullanici/${person.id}`} data-testid="link-current-profile"
       className="absolute inset-x-0 bottom-0 block min-w-0 px-4 pb-5 pt-6 drop-shadow-sm sm:px-5">

@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { CATALOG } from "@/lib/catalog";
 import { useStore } from "@/lib/store";
+import { cinemaPersonalities, quizResultLabel, quizResultMessage, type QuizResult } from "@/lib/quiz-result";
 
 const quiz = [
   { question: "Baba filminin yönetmeni kimdir?", choices: ["Francis Ford Coppola", "Martin Scorsese", "Quentin Tarantino"], answer: 0 },
@@ -15,22 +16,72 @@ const quiz = [
   { question: "Parazit filminin yönetmeni kimdir?", choices: ["Park Chan-wook", "Bong Joon-ho", "Hayao Miyazaki"], answer: 1 },
   { question: "Friends dizisi ağırlıklı olarak hangi şehirde geçer?", choices: ["New York", "Chicago", "Boston"], answer: 0 },
   { question: "WALL-E hangi stüdyonun animasyon filmidir?", choices: ["DreamWorks", "Studio Ghibli", "Pixar"], answer: 2 },
+  { question: "Arrival filminde Louise Banks’in uzmanlık alanı nedir?", choices: ["Astronomi", "Dilbilim", "Genetik"], answer: 1 },
+  { question: "The Office’in ABD uyarlamasında şirket ne satar?", choices: ["Kâğıt", "Mobilya", "Bilgisayar"], answer: 0 },
+  { question: "Blade Runner 2049 filminin yönetmeni kimdir?", choices: ["Ridley Scott", "David Fincher", "Denis Villeneuve"], answer: 2 },
+  { question: "Dark dizisinin kurgusal kasabasının adı nedir?", choices: ["Hawkins", "Winden", "Twin Peaks"], answer: 1 },
+  { question: "Inception’da Cobb, rüyada olup olmadığını sınamak için hangi nesneyi döndürür?", choices: ["Yüzük", "Zar", "Topaç"], answer: 2 },
+  { question: "Severance dizisindeki şirketin adı nedir?", choices: ["Lumon", "Waystar Royco", "Sterling Cooper"], answer: 0 },
+  { question: "Coco filminde Miguel hangi enstrümanı çalmak ister?", choices: ["Keman", "Gitar", "Piyano"], answer: 1 },
+  { question: "Avatar filmindeki Pandora hangi gezegenin uydusudur?", choices: ["Satürn", "Jüpiter", "Polyphemus"], answer: 2 },
+  { question: "Hababam Sınıfı filminin yönetmeni kimdir?", choices: ["Ertem Eğilmez", "Atıf Yılmaz", "Yavuz Turgul"], answer: 0 },
+  { question: "Sherlock dizisinde Sherlock Holmes’u kim canlandırır?", choices: ["Martin Freeman", "Benedict Cumberbatch", "Andrew Scott"], answer: 1 },
+  { question: "Komşum Totoro hangi animasyon stüdyosunun yapımıdır?", choices: ["Pixar", "Aardman", "Studio Ghibli"], answer: 2 },
+  { question: "Better Call Saul dizisinin merkezindeki avukatın doğum adı nedir?", choices: ["Jimmy McGill", "Howard Hamlin", "Mike Ehrmantraut"], answer: 0 },
+  { question: "Whiplash filminde Andrew hangi enstrümanı çalar?", choices: ["Trompet", "Davul", "Saksafon"], answer: 1 },
+  { question: "Kış Uykusu filminin yönetmeni kimdir?", choices: ["Zeki Demirkubuz", "Reha Erdem", "Nuri Bilge Ceylan"], answer: 2 },
+  { question: "The Last of Us dizisinde Ellie’yi kim canlandırır?", choices: ["Bella Ramsey", "Kaitlyn Dever", "Anna Torv"], answer: 0 },
+  { question: "Amélie filminin yönetmeni kimdir?", choices: ["Michel Gondry", "Jean-Pierre Jeunet", "François Ozon"], answer: 1 },
+  { question: "How I Met Your Mother dizisinde grubun buluştuğu barın adı nedir?", choices: ["Central Perk", "Moe’s", "MacLaren’s"], answer: 2 },
+  { question: "12 Öfkeli Adam’ın 1957 yapımı sinema uyarlamasını kim yönetmiştir?", choices: ["Sidney Lumet", "Alfred Hitchcock", "Billy Wilder"], answer: 0 },
 ];
 const personality = [
   { question: "Bir film gecesinde seni en çok ne çeker?", choices: ["Tuhaf bir evren", "İnsan ilişkileri", "İnce bir mizah"] },
   { question: "Finalde ne bekliyorsun?", choices: ["Şaşırtıcı bir fikir", "Duygusal bir kapanış", "Gülümseten bir an"] },
   { question: "Bir yapımı başkalarına neden önerirsin?", choices: ["Hayal gücü için", "Karakterleri için", "Eğlencesi için"] },
 ];
-const results = ["Bilim kurgu ve fantastik", "Dram ve romantik", "Komedi"];
+function quizRound() {
+  const pool = [...quiz];
+  for (let index = pool.length - 1; index > 0; index--) {
+    const other = Math.floor(Math.random() * (index + 1));
+    [pool[index], pool[other]] = [pool[other], pool[index]];
+  }
+  return pool.slice(0, 10);
+}
 
 export default function CinemaActivities() {
   const store = useStore();
   const [mode, setMode] = useState<"quiz" | "personality">("quiz");
   const [answers, setAnswers] = useState<number[]>([]);
-  const questions = mode === "quiz" ? quiz : personality;
+  const [round, setRound] = useState(quizRound);
+  const questions = mode === "quiz" ? round : personality;
   const current = questions[answers.length];
-  const score = answers.filter((answer, index) => answer === quiz[index]?.answer).length;
-  const counts = results.map((_, index) => answers.filter((value) => value === index).length);
+  const score = answers.filter((answer, index) => answer === round[index]?.answer).length;
+  const counts = cinemaPersonalities.map((_, index) => answers.filter((value) => value === index).length);
+  const result: QuizResult = mode === "quiz" ? { kind: "trivia", correct: score, total: round.length }
+    : { kind: "personality", genres: cinemaPersonalities.filter((_, index) => counts[index] === Math.max(...counts)) };
+  const matches = store.people.filter((person) => store.matches[person.id]);
+  const [recipient, setRecipient] = useState("");
+  const [shared, setShared] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const resetAnswers = (nextMode: "quiz" | "personality") => {
+    setMode(nextMode);
+    if (nextMode === "quiz") setRound(quizRound());
+    setAnswers([]);
+    setShared("");
+  };
+  const share = async () => {
+    if (sharing || !matches.some((person) => person.id === recipient)) return;
+    setSharing(true);
+    try {
+      await store.send(recipient, quizResultMessage(result));
+      setShared(recipient);
+    } catch {
+      // The message store reports the error. Preserve the recipient for retry.
+    } finally {
+      setSharing(false);
+    }
+  };
   const preferredGenres = new Set(store.me?.favorites.flatMap((id) => store.titleById(id)?.genres ?? []));
   const candidates = CATALOG.filter((item) => item.type === "film" && !store.isFav(item.id));
   const relevant = candidates.filter((item) => item.genres.some((genre) => preferredGenres.has(genre)));
@@ -46,8 +97,8 @@ export default function CinemaActivities() {
     <h1 className="scene-title">MOVIA Quiz</h1>
     <p className="text-sm text-muted-foreground">Sinema bilgini keşfet, film zevkini tanı ve haftanın önerilerine göz at.</p>
     <div className="flex flex-wrap gap-2">
-      <Button variant={mode === "quiz" ? "default" : "secondary"} onClick={() => { setMode("quiz"); setAnswers([]); }}>Bilgi yarışması</Button>
-      <Button variant={mode === "personality" ? "default" : "secondary"} onClick={() => { setMode("personality"); setAnswers([]); }}>Sinema kişilik testi</Button>
+      <Button variant={mode === "quiz" ? "default" : "secondary"} disabled={sharing} onClick={() => resetAnswers("quiz")}>Bilgi yarışması</Button>
+      <Button variant={mode === "personality" ? "default" : "secondary"} disabled={sharing} onClick={() => resetAnswers("personality")}>Sinema kişilik testi</Button>
     </div>
     <section className="scene-panel space-y-3 p-4">
       {current ? <>
@@ -57,10 +108,20 @@ export default function CinemaActivities() {
         <div className="grid gap-2">{current.choices.map((choice, index) => <Button key={choice} variant="secondary"
           onClick={() => setAnswers((previous) => previous.length === answers.length ? [...previous, index] : previous)}>{choice}</Button>)}</div>
       </> : <>
-        <h2 className="text-xl font-semibold" role="status">{mode === "quiz" ? `${score} / ${quiz.length} doğru`
-          : results.filter((_, index) => counts[index] === Math.max(...counts)).join(" · ")}</h2>
-        {mode === "quiz" && <ul className="space-y-2 text-sm">{quiz.map((item) => <li key={item.question}>{item.question} <strong>{item.choices[item.answer]}</strong> <span className="text-muted-foreground">· {answers[quiz.indexOf(item)] === item.answer ? "Doğru" : "Yanlış"}</span></li>)}</ul>}
-        <Button variant="secondary" onClick={() => setAnswers([])}>Yeniden başla</Button>
+        <h2 className="text-xl font-semibold" role="status">{quizResultLabel(result)}</h2>
+        {mode === "quiz" && <ul className="space-y-2 text-sm">{round.map((item, index) => <li key={item.question}>{item.question} <strong>{item.choices[item.answer]}</strong> <span className="text-muted-foreground">· {answers[index] === item.answer ? "Doğru" : "Yanlış"}</span></li>)}</ul>}
+        {matches.length > 0 && <div className="flex flex-wrap items-end gap-2">
+          <label className="min-w-0 flex-1 text-sm">Sonucu sohbetinde paylaş
+            <select className="mt-1 block h-11 w-full rounded-lg border bg-card px-2 text-base" value={recipient}
+              disabled={sharing} onChange={(event) => setRecipient(event.target.value)}>
+              <option value="">Bir eşleşme seç</option>
+              {matches.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
+            </select>
+          </label>
+          <Button type="button" disabled={sharing || !recipient || shared === recipient} onClick={() => void share()}>Gönder</Button>
+          {shared && <Link href={`/mesajlar/${shared}`} className="w-full text-sm text-brand-ink underline">Paylaşılan sonucu sohbette gör</Link>}
+        </div>}
+        <Button variant="secondary" disabled={sharing} onClick={() => resetAnswers(mode)}>Yeniden başla</Button>
       </>}
     </section>
     <section className="scene-panel space-y-3 p-4">
