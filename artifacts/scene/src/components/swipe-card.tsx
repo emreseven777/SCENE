@@ -1,14 +1,15 @@
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
-import { Heart, X } from "lucide-react";
+import { Heart, X, Bookmark } from "lucide-react";
 import { motion, useMotionValue, useReducedMotion, useTransform, animate } from "framer-motion";
 
 export type SwipeDirection = "left" | "right" | "up";
 
-export function SwipeCard({ children, next, labels, disabled, horizontalOnly = false, onSwipe }: {
+export function SwipeCard({ children, next, labels, disabled, horizontalOnly = false, cinematicFeedback = false, onSwipe }: {
   children: ReactNode;
   next?: ReactNode;
   labels: Record<"left" | "right", string> & { up?: string };
   horizontalOnly?: boolean;
+  cinematicFeedback?: boolean;
   disabled?: boolean;
   onSwipe: (direction: SwipeDirection) => Promise<void>;
 }) {
@@ -96,11 +97,11 @@ export function SwipeCard({ children, next, labels, disabled, horizontalOnly = f
         onPointerLeave={(event) => { if (!event.currentTarget.hasPointerCapture(event.pointerId)) void finish(event, true); }}
       >
         {children}
-        {direction && (horizontalOnly ? <motion.div key={direction} data-testid="swipe-feedback" aria-hidden="true"
+        {direction && (horizontalOnly || cinematicFeedback ? <motion.div key={direction} data-testid="swipe-feedback" aria-hidden="true"
           initial={reduced ? false : { opacity: 0, scale: .72 }} animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: reduced ? 0 : .16 }}
-          className={`pointer-events-none absolute left-1/2 top-1/2 z-30 grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 bg-black/65 shadow-lg ${direction === "right" ? "border-emerald-300 text-emerald-200" : "border-rose-300 text-rose-200"}`}>
-          {direction === "right" ? <Heart size={48} fill="currentColor" /> : <X size={48} />}
+          className={`pointer-events-none absolute left-1/2 top-1/2 z-30 grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 bg-black/65 shadow-lg ${direction === "right" ? "border-emerald-300 text-emerald-200" : direction === "up" ? "border-violet-300 text-violet-200" : "border-rose-300 text-rose-200"}`}>
+          {direction === "right" ? <Heart size={48} fill="currentColor" /> : direction === "up" ? <Bookmark size={48} /> : <X size={48} />}
         </motion.div> : <span aria-hidden="true" className="pointer-events-none absolute left-4 top-4 z-20 rounded-full border bg-card px-4 py-2 text-sm font-bold text-brand-ink shadow">{labels[direction]}</span>)}
       </motion.div>
     </div>
