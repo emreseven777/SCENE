@@ -33,12 +33,12 @@ function ConversationList({ activeId }: { activeId?: string }) {
       </div>
     );
   return (
-    <ul className="scene-panel divide-y divide-border p-2">
+    <ul className="scene-panel divide-y divide-border/50 p-2 bg-gradient-to-br from-card via-card to-fuchsia-500/10 backdrop-blur-xl">
       {convos.map(({ p, last }) => {
         const unread = (store.messages[p.id] ?? []).filter((m) => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0)).length;
         return (
         <li key={p.id}>
-          <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-muted", activeId === p.id && "bg-muted")}>
+          <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-fuchsia-500/10", activeId === p.id && "bg-muted")}>
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-12 w-12 shrink-0 rounded-full" textClassName="text-lg" />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
@@ -252,8 +252,8 @@ export function Chat() {
   return (
     <div className="mx-auto grid max-w-6xl min-w-0 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-6 lg:px-8 lg:pt-8">
       <aside className="hidden lg:block"><ConversationList activeId={p.id} /></aside>
-      <div className="scene-panel flex h-[calc(100dvh-8.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[18rem] min-w-0 flex-col overflow-hidden lg:h-[calc(100dvh-5rem)]">
-        <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3">
+      <div className="scene-panel bg-gradient-to-br from-pink-500/10 via-background to-violet-500/15 flex h-[calc(100dvh-8.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[18rem] min-w-0 flex-col overflow-hidden lg:h-[calc(100dvh-5rem)]">
+        <div className="flex items-center gap-3 border-b border-border/60 bg-card/75 backdrop-blur-xl px-4 py-3">
           <Link href="/mesajlar" className="lg:hidden" aria-label="Geri" data-testid="link-back-messages"><ArrowLeft size={20} /></Link>
           <Link href={`/kullanici/${p.id}`} className="flex items-center gap-3" data-testid="link-chat-profile">
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-10 w-10 rounded-full" textClassName="text-sm" />
@@ -276,7 +276,7 @@ export function Chat() {
           <input className="mt-2 w-full rounded-lg border bg-card p-2 text-base" type="search" aria-label="Mesaj ara"
             placeholder="Mesajlarda ara" value={search} onChange={(event) => setSearch(event.target.value)} />
         </details>
-        <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain px-4 py-5"
+        <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain px-4 py-5 bg-[radial-gradient(ellipse_at_top_left,rgba(236,72,153,0.09),transparent_60%)]"
           onScroll={(event) => {
             const list = event.currentTarget;
             followLatest.current = list.scrollHeight - list.scrollTop - list.clientHeight < 96;
@@ -307,14 +307,14 @@ export function Chat() {
           <AnimatePresence initial={false}>
             {msgs.map((m) => (
               <motion.div key={m.id} layout initial={{ opacity: 0, y: 10, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={cn("flex flex-col", m.from === "me" ? "items-end" : "items-start")} data-testid={`msg-${m.id}`}>
-                <div className={cn("max-w-[82%] break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed", m.from === "me" ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm bg-muted")}>
+                <div className={cn("max-w-[82%] min-w-0 break-words rounded-[22px] border px-4 py-3 text-sm leading-relaxed shadow-sm backdrop-blur-md", m.from === "me" ? "rounded-br-md border-white/20 bg-gradient-to-br from-pink-700/95 to-violet-800/95 text-white" : "rounded-bl-md border-border/70 bg-card/80 text-foreground")}>
                   {m.replyTo && !m.deleted && <blockquote className="mb-2 line-clamp-2 border-l-2 border-current pl-2 text-xs">{msgs.find((item) => item.id === m.replyTo)?.text ?? "Yanıtlanan mesaj"}</blockquote>}
                   {m.mediaPath && !m.deleted && <ChatAttachment message={m} blur={preferences.data?.blur_photos ?? true} />}
                   <CinemaMessage body={m.text} />
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-muted-foreground">{format(m.at, "HH:mm")}{m.from === "me" && !m.deleted && <> · {m.seen ? "Görüldü" : m.delivered ? "İletildi" : "Gönderildi"}</>}</div>
+                <div className="mt-1 px-1 font-mono text-[10px] text-muted-foreground">{format(m.at, "HH:mm")}{m.from === "me" && !m.deleted && <> · {m.seen ? "Görüldü" : m.delivered ? "İletildi" : "Gönderildi"}</>}</div>
                 {!m.deleted && <details className="mt-1 max-w-full text-xs">
-                  <summary className="cursor-pointer py-1">Mesaj işlemleri {reactions.data?.filter((row) => String(row.message_id) === m.id).map((row) => row.emoji).join(" ")}</summary>
+                  <summary className="cursor-pointer py-1 text-muted-foreground">Mesaj işlemleri {reactions.data?.filter((row) => String(row.message_id) === m.id).map((row) => row.emoji).join(" ")}</summary>
                   <div className="flex flex-wrap gap-1">
                     {["❤️","😂","👍","😮"].map((emoji) => <button key={emoji} type="button" className="min-h-9 min-w-8 rounded-lg bg-muted" aria-label={`${emoji} tepki ver`} onClick={() => void reactTo(m.id, emoji)}>{emoji}</button>)}
                     <button type="button" className="p-2 underline" onClick={() => setReply(m.id)}>Yanıtla</button>
@@ -334,7 +334,7 @@ export function Chat() {
         {hasNewMessages && !term && <div className="flex justify-center border-t p-2">
           <Button type="button" variant="secondary" size="sm" onClick={scrollToLatest}>Yeni mesajlara git</Button>
         </div>}
-        <div className="border-t px-3 pt-1">
+        <div className="border-t border-border/60 bg-card/75 backdrop-blur-xl px-3 pt-1">
           {reply && <div className="flex items-center justify-between gap-2 text-xs"><span className="truncate">Yanıt: {msgs.find((item) => item.id === reply)?.text}</span><Button size="sm" variant="ghost" onClick={() => setReply(null)}>Vazgeç</Button></div>}
           {!text.trim() && !media && <details className="mb-2 text-xs"><summary className="cursor-pointer py-2 text-brand-ink">MOVIA Quiz · Sohbet kartları</summary><div className="flex flex-wrap gap-2">{["Hayatın bir film olsaydı adı ne olurdu?","Birlikte hangi filmi izlemek isterdin?","En sevdiğin film karakteri kim?","Bir filmin finalini değiştirebilseydin hangisi olurdu?"].map(question => <button key={question} type="button" className="rounded-xl border bg-card p-2 text-left" onClick={() => publishTyping(question)}>{question}</button>)}</div></details>}
           {media && <AttachmentPreview media={media} onRemove={() => setMedia(null)} />}
@@ -349,9 +349,9 @@ export function Chat() {
             </details>
           </div>
         </div>
-        <form onSubmit={(e) => void submit(e)} className="flex gap-2 px-3 pb-3">
-          <input value={text} onChange={(e) => publishTyping(e.target.value)} maxLength={2000} placeholder="Bir replik yaz..." data-testid="input-message" className="h-11 min-w-0 flex-1 rounded-full bg-muted px-4 text-base outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-primary" />
-          <motion.button whileTap={{ scale: 0.88 }} type="submit" disabled={(!text.trim() && !media) || sending} aria-label="Gönder" data-testid="button-send" className="grid h-11 w-11 place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"><Send size={17} /></motion.button>
+        <form onSubmit={(e) => void submit(e)} className="flex gap-2 bg-card/75 backdrop-blur-xl px-3 pb-3 pt-2">
+          <input value={text} onChange={(e) => publishTyping(e.target.value)} maxLength={2000} placeholder="Bir replik yaz..." data-testid="input-message" className="h-11 min-w-0 flex-1 rounded-full bg-background/75 backdrop-blur-md shadow-sm px-4 text-base outline-none ring-1 ring-border/80 placeholder:text-muted-foreground focus:ring-primary" />
+          <motion.button whileTap={{ scale: 0.88 }} type="submit" disabled={(!text.trim() && !media) || sending} aria-label="Gönder" data-testid="button-send" className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-pink-700 to-violet-800 text-white shadow-md shadow-fuchsia-500/20 disabled:opacity-40"><Send size={17} /></motion.button>
         </form>
       </div>
     </div>
