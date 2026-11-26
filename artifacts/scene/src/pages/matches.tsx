@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { requireSupabase } from "@/lib/supabase";
 import { cinemaFit, profileCinemaSignals, sharedFavorites } from "@/lib/dating";
 import { SceneHeading } from "@/components/scene-brand";
 import { Link } from "wouter";
@@ -14,6 +16,18 @@ export default function Matches() {
   const store = useStore();
   const { toast } = useToast();
   const mine = store.me?.favorites ?? [];
+  const incomingIds = Object.keys(store.incoming).sort();
+  const incomingComments = useQuery({
+    queryKey: ["scene-like-comments", store.me?.id, incomingIds],
+    enabled: !!store.me && incomingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await requireSupabase().from("likes")
+        .select("liker_id,photo_comment").eq("liked_id", store.me!.id).not("photo_comment", "is", null);
+      if (error?.code === "42703") return {};
+      if (error) throw error;
+      return Object.fromEntries(data.map((like) => [like.liker_id, like.photo_comment])) as Record<string, string>;
+    },
+  });
   const matched = store.people.filter((p) => store.matches[p.id]).sort((a, b) => store.matches[b.id].at - store.matches[a.id].at);
   const pending = store.people.filter((p) => store.liked.includes(p.id) && !store.matches[p.id]);
   const own = profileCinemaSignals(mine, store.me?.discovery_details, (id) => store.titleById(id));
@@ -84,6 +98,9 @@ export default function Matches() {
               <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="size-12 rounded-full" />
               <span>{p.name}{store.incoming[p.id] === "super" && <span className="block text-xs text-brand-ink">Süper beğeni</span>}</span>
             </Link>
+            {incomingComments.data?.[p.id] && <blockquote className="mt-2 break-words border-l-2 border-primary pl-3 text-sm">
+              {incomingComments.data[p.id]}
+            </blockquote>}
           </li>)}
         </ul> : <p className="mt-2 text-sm text-muted-foreground">Yeni beğeni yok.</p>}
       </section>

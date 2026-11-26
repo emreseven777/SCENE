@@ -1,3 +1,4 @@
+import { ProfileVoice } from "@/components/profile-voice";
 import { ProfileDetails, ProfileSafety } from "@/components/dating-profile";
 import { CINEMA_FIT_DESCRIPTION, cinemaFit, profileCinemaSignals } from "@/lib/dating";
 import type { Title } from "@/lib/catalog";
@@ -67,6 +68,7 @@ function UserView({ pid }: { pid: string }) {
         {matched ? <>
           <ProfileAbout person={p} />
           <ProfileDetails person={p} />
+          {store.me && <ProfileVoice member={p.id} viewer={store.me.id} />}
         </> : <p className="text-sm text-muted-foreground">Profil ayrıntıları karşılıklı eşleştiğinizde açılır.</p>}
         <section className="scene-panel p-4 sm:p-6">
           <h2 className="text-xl font-bold">Sinema uyumu</h2>

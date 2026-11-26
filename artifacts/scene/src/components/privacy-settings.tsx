@@ -83,7 +83,9 @@ export function PrivacySettings({ user, photos }: { user: string; photos: readon
           saveFile(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), "movia-kisisel-veriler.json");
           const chat = (data.sent_messages as { media_path?: string | null }[])
             .flatMap(({ media_path }) => media_path ? [{ path: media_path, bucket: "scene-chat" }] : []);
-          setMedia([...photos.map((path) => ({ path, bucket: "scene-avatars" })), ...chat]);
+          const voice = data.profile_voice?.object_path;
+          setMedia([...photos.map((path) => ({ path, bucket: "scene-avatars" })), ...chat,
+            ...(typeof voice === "string" ? [{path: voice, bucket: "scene-chat"}] : [])]);
           setStatus("Veri dosyan hazır.");
         })}>Kişisel verilerimi indir</Button>
         {media.length > 0 && <ul className="space-y-1">{media.map(({ path, bucket }, index) =>

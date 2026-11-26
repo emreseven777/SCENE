@@ -11,6 +11,7 @@ import { CHOICES, GENRES, INTERESTS, OCCUPATIONS } from "@/lib/profile-choices";
 import { PROVINCES, isProvince } from "@/lib/provinces";
 import { ProfileIdentity } from "@/components/profile-identity";
 import { PersonPhoto } from "@/components/person-photo";
+import { useDiscoveryFeed } from "@/lib/discovery-feed";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { MatchOverlay } from "@/components/match-overlay";
@@ -65,6 +66,18 @@ export default function Discover() {
   const [matchPid, setMatchPid] = useState<string | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [filter, setFilter] = useState(emptyFilters);
+  const [photoComment, setPhotoComment] = useState<{ person: string; value: string }>();
+  const [highlighted, setHighlighted] = useState<string>();
+  const feed = useDiscoveryFeed(store.me?.id);
+  const serverFeed = feed.data?.pages[0] != null;
+  const candidates = useMemo(() => serverFeed
+    ? [...new Map(feed.data!.pages.flatMap((page) => page?.profiles ?? []).map((person) => [person.id, person])).values()]
+    : feed.data?.pages[0] === null ? store.people : [],
+    [serverFeed, feed.data, store.people]);
+  const fetchedTitles = useMemo<Record<string, Record<string, Title>>>(() =>
+    Object.assign({}, ...(feed.data?.pages.map((page) => page?.titles ?? {}) ?? [])), [feed.data]);
+  const titleFor = (id: string, owner: string) => fetchedTitles[owner]?.[id] ?? store.titleById(id, owner);
+
 
   const allows = (preference: string | null | undefined, gender: string | null) =>
     !preference || preference === "everyone" || (preference === "women" && gender === "woman") || (preference === "men" && gender === "man");
@@ -72,12 +85,12 @@ export default function Discover() {
   const ownDetails = store.me?.discovery_details;
   const fits = useMemo(() => {
     const own = profileCinemaSignals(mine, ownDetails, (id) => store.titleById(id));
-    return new Map(store.people.map((person) => {
-      const other = profileCinemaSignals(person.favorites, person.discovery_details, (id) => store.titleById(id,person.id));
+    return new Map(candidates.map((person) => {
+      const other = profileCinemaSignals(person.favorites, person.discovery_details, (id) => titleFor(id,person.id));
       return [person.id, cinemaFit(own, other)];
     }));
-  }, [mine, ownDetails, store.people, store.titleById]);
-  const cast = useMemo(() => store.people.filter((p) => p.onboarded && p.age !== null && isProvince(p.city) && !p.discovery_hidden && p.gender && p.looking_for && p.dating_goal
+  }, [mine, ownDetails, candidates, store.titleById, fetchedTitles]);
+  const cast = useMemo(() => candidates.filter((p) => p.onboarded && p.age !== null && isProvince(p.city) && !p.discovery_hidden && p.gender && p.looking_for && p.dating_goal
     && allows(store.me?.looking_for, p.gender) && allows(p.looking_for, store.me?.gender ?? null)
     && (!filter.city || p.city === filter.city) && (!filter.gender || p.gender === filter.gender)
     && (!filter.goal || p.dating_goal === filter.goal) && p.age >= Number(filter.from || 18)
@@ -95,16 +108,37 @@ export default function Discover() {
     && (!filter.photosOnly || !!(p.avatar_path || p.avatar_paths.length))
     && (!movieMatch || (fits.get(p.id)?.score ?? 0) > 0)
     && (!filter.fit || (fits.get(p.id)?.score ?? -1) >= Number(filter.fit))),
-    [store.people, store.me?.looking_for, store.me?.gender, filter, fits, movieMatch, mine]);
+    [candidates, store.me?.looking_for, store.me?.gender, filter, fits, movieMatch, mine]);
   const deck = useMemo(
     () => cast.filter((p) => !store.liked.includes(p.id) && !store.passed.includes(p.id) && !store.matches[p.id])
       .map((p) => ({ p, c: sharedFavorites(mine, p.favorites), score: fits.get(p.id)?.score ?? null,
         sharedExpectation: !!selectedTrait(ownDetails,"relationship") &&
           selectedTrait(ownDetails,"relationship") === selectedTrait(p.discovery_details,"relationship") }))
-      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || Number(b.sharedExpectation) - Number(a.sharedExpectation) || b.c.length - a.c.length || a.p.id.localeCompare(b.p.id)),
-    [cast, store.liked, store.passed, store.matches, mine, fits, ownDetails],
+      .sort((a, b) => serverFeed ? 0 : (b.score ?? -1) - (a.score ?? -1) || Number(b.sharedExpectation) - Number(a.sharedExpectation) || b.c.length - a.c.length || a.p.id.localeCompare(b.p.id)),
+    [cast, store.liked, store.passed, store.matches, mine, fits, ownDetails, serverFeed],
   );
-  const current = deck[0];
+  const current = deck.find(({ p }) => p.id === highlighted) ?? deck[0];
+  const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = feed;
+  useEffect(() => {
+    if (!current && hasNextPage && !isFetchingNextPage && !isError) void fetchNextPage();
+  }, [current, hasNextPage, isFetchingNextPage, isError, fetchNextPage]);
+
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).format();
+  const dailyRank = (id: string) => {
+    let value = 2166136261;
+    for (const char of `${store.me?.id ?? ""}:${day}:${id}`) value = Math.imul(value ^ char.charCodeAt(0), 16777619);
+    return value >>> 0;
+  };
+  const dailySuggestions = serverFeed ? deck.filter(({ c }) => c.length > 0)
+    .sort((a,b) => b.c.length-a.c.length || dailyRank(a.p.id)-dailyRank(b.p.id)).slice(0, 3) : [];
+  const cinemaSoulmate = serverFeed ? deck.filter(({ score, c }) => score !== null && score > 0 && c.length > 0)
+    .reduce<(typeof deck)[number] | undefined>((best, candidate) =>
+      !best || candidate.score! > best.score! ? candidate : best, undefined) : undefined;
+  const showCandidate = (id: string) => {
+    setHighlighted(id);
+    document.getElementById("discover-deck")?.scrollIntoView({block:"start"});
+  };
+
   const commonGenres = current ? fits.get(current.p.id)?.commonGenres ?? [] : [];
   const [dailyFilms, setDailyFilms] = useState<{ title: Title; count: number }[]>([]);
   const [dailyError, setDailyError] = useState(false);
@@ -143,7 +177,7 @@ export default function Discover() {
   const activeFilters = Object.values(filter).filter(Boolean).length;
   const [busy, setBusy] = useState(false);
 
-  const swipe = async (p: Person, direction: DiscoverySwipe) => {
+  const swipe = async (p: Person, direction: DiscoverySwipe, photo?: { path: string; comment: string }) => {
     if (busy) return;
     setBusy(true);
     try {
@@ -151,7 +185,8 @@ export default function Discover() {
         await store.pass(p.id);
         return;
       }
-      const mutual = await store.like(p.id, "like");
+      const mutual = await store.like(p.id, "like", p, fetchedTitles[p.id], photo);
+      if (mutual !== null) setPhotoComment(undefined);
       if (mutual) setMatchPid(p.id);
       else if (mutual === false) {
         toast({ title: `${p.name} beğenildi` });
@@ -208,7 +243,7 @@ export default function Discover() {
       </details>
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
         <div className="relative mx-auto w-full min-w-0 max-w-[28rem] lg:max-w-none"
-          role="region" aria-label="Profil kartı" aria-describedby={current ? "discover-keyboard-help" : undefined}
+          id="discover-deck" role="region" aria-label="Profil kartı" aria-describedby={current ? "discover-keyboard-help" : undefined}
           tabIndex={current ? 0 : undefined} onKeyDown={(event) => {
             if (!current || busy || event.currentTarget !== event.target || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
             event.preventDefault();
@@ -229,6 +264,26 @@ export default function Discover() {
                   <DiscoverPortrait person={current.p} score={current.score} common={current.c.length} />
                 </SwipeCard>
                 <div className="space-y-2 p-2.5 sm:p-3">
+                  {serverFeed && current.p.avatar_path && <details className="rounded-2xl border border-violet/30 bg-secondary/45 p-2.5">
+                    <summary className="cursor-pointer text-sm font-semibold">Ana fotoğrafı yorumla ve beğen</summary>
+                    <form className="mt-2 space-y-2" onSubmit={(event) => {
+                      event.preventDefault();
+                      const comment = photoComment?.person === current.p.id ? photoComment.value.trim() : "";
+                      if (comment.length >= 2 && current.p.avatar_path) {
+                        void swipe(current.p, "right", { path: current.p.avatar_path, comment });
+                      }
+                    }}>
+                      <label className="block text-sm">
+                        Fotoğrafa yorum
+                        <textarea className="mt-1 w-full rounded-xl border bg-card px-3 py-2 text-base"
+                          value={photoComment?.person === current.p.id ? photoComment.value : ""} required maxLength={240}
+                          onChange={(event) => setPhotoComment({person: current.p.id, value: event.target.value})} />
+                      </label>
+                      <Button size="sm" disabled={busy || photoComment?.person !== current.p.id || photoComment.value.trim().length < 2}>
+                        Yorumlu beğeni gönder
+                      </Button>
+                    </form>
+                  </details>}
                   {(commonGenres.length > 0 || current.sharedExpectation) && (
                     <section className="flex items-center gap-2.5 rounded-2xl border border-violet/30 bg-secondary/45 p-2.5">
                       <span className="grid size-9 shrink-0 place-items-center rounded-full bg-violet/20 text-brand-ink"><Sparkles size={18} aria-hidden="true" /></span>
@@ -249,7 +304,7 @@ export default function Discover() {
                       <div data-testid="common-posters" aria-label="Ortak film ve dizi afişleri" role="region" tabIndex={0}
                         className="mt-2 flex w-full min-w-0 snap-x gap-2 overflow-x-auto overscroll-x-contain p-0.5 scrollbar-none">
                         {[...new Set(current.c)].map((id) => {
-                          const title = store.titleById(id, current.p.id);
+                          const title = titleFor(id, current.p.id);
                           return title && <button key={id} type="button" onClick={() => setSelectedTitle(title)} data-testid={`button-title-${id}`}
                             className="relative aspect-[4/5] w-[clamp(3rem,15vw,5rem)] shrink-0 snap-start overflow-hidden rounded-xl border border-violet/40 bg-card focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
                             {title.poster ? <img src={title.poster} alt={title.title} loading="lazy" className="size-full object-cover" />
@@ -275,13 +330,36 @@ export default function Discover() {
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="scene-panel grid min-h-52 place-items-center p-5 text-center">
                 <div>
                   <Sparkles className="mx-auto mb-3 text-brand-ink" /><h2 className="font-display text-2xl font-bold">Şimdilik bu kadar</h2>
-                  <p className="mt-3 text-sm text-muted-foreground">Şimdilik herkesi gördün, yakında yenilenecek.</p>
+                  <p className="mt-3 text-sm text-muted-foreground" role="status">
+                    {feed.isError ? "Profiller yüklenemedi." : feed.isPending || isFetchingNextPage || hasNextPage
+                      ? "Profiller yükleniyor…" : "Şimdilik herkesi gördün, yakında yenilenecek."}
+                  </p>
+                  {feed.isError && <Button className="mt-3" size="sm" onClick={() => void (hasNextPage ? fetchNextPage() : feed.refetch())}>Tekrar dene</Button>}
                 </div>
               </motion.div>
             )}
         </div>
 
         <div className="min-w-0 space-y-4">
+          {cinemaSoulmate && <section className="scene-panel min-w-0 p-3">
+            <h2 className="mb-2 flex items-center gap-2 font-semibold"><Sparkles size={17} aria-hidden="true" />Sinema ruh eşin</h2>
+            <p className="mb-2 text-xs text-muted-foreground">Yüklenen adaylardaki en yüksek sinema uyumu</p>
+            <Button variant="secondary" onClick={() => showCandidate(cinemaSoulmate.p.id)} className="h-auto min-h-11 w-full whitespace-normal">
+              {cinemaSoulmate.p.name} · %{cinemaSoulmate.score}
+            </Button>
+          </section>}
+          {dailySuggestions.length > 0 && <section className="scene-panel min-w-0 p-3">
+            <h2 className="mb-2 font-semibold">Bugünün sana özel önerileri</h2>
+            <ul className="space-y-2">
+              {dailySuggestions.map(({p, c}) => <li key={p.id}>
+                <button type="button" onClick={() => showCandidate(p.id)}
+                  className="flex min-h-11 w-full items-center gap-2 rounded-xl bg-secondary/50 px-2 text-left">
+                  <span className="min-w-0 grow break-words font-semibold">{p.name}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{c.length} ortak favori</span>
+                </button>
+              </li>)}
+            </ul>
+          </section>}
           <section className="scene-panel min-w-0 p-3">
             <h2 className="mb-2 font-semibold">Günün en çok beğenilen filmleri</h2>
             <p className="mb-3 text-xs text-muted-foreground">Bugün favorilere en çok eklenen filmler</p>

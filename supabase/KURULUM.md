@@ -46,7 +46,7 @@ Mevcut `tmdb-catalog` Edge Function’ını bu daldaki kodla yeniden yayımla. �
 
 - Standart Web Push için VAPID anahtar çifti oluştur. Supabase Edge Function secret’larına `SCENE_VAPID_PUBLIC_KEY`, `SCENE_VAPID_PRIVATE_KEY`, `SCENE_VAPID_SUBJECT` (ör. `mailto:destek@alanadin.example`) ve rastgele en az 32 baytlık `SCENE_PUSH_JOB_SECRET` ekle.
 - Web uygulamasının derleme ortamında yalnızca **açık** anahtarı `VITE_SCENE_PUSH_PUBLIC_KEY` olarak ayarla. Özel anahtar, işçi sırrı ve Supabase service role anahtarı tarayıcıya gönderilmez.
-- `scene-push` Edge Function’ını yayımla. Bu işçi kullanıcı JWT’si yerine `x-scene-job-secret` başlığını kontrol eder. Supabase Cron’da dakikada bir işlevin URL’sine POST isteği gönder. Başlık değerini Supabase Vault’tan al. Sırrı sorgu metnine, depoya veya URL’ye yazma. Push metni gönderen adı, mesaj içeriği ve medya bilgisi içermez.
+- `scene-push` Edge Function’ını yayımla. Bu işçi kullanıcı JWT’si yerine `x-scene-job-secret` başlığını kontrol eder. Ağ geçidinin JWT doğrulamasını yalnızca bu işlev için kapat. URL ve işçi sırrı Supabase Vault’a eklendikten sonra [dakikalık zamanlayıcıyı](operations/movia_schedule_push.sql) çalıştır. Geri almak için `select cron.unschedule('movia-scene-push');` çalıştır. Sırrı sorgu metnine, depoya veya URL’ye yazma. Push metni gönderen adı, mesaj içeriği ve medya bilgisi içermez.
 - HTTPS gerekir. iOS 16.4 ve sonrası Safari’de uygulamayı **Ana Ekrana Ekle**, ana ekrandan aç, **Bildirimler → Bu cihazda aç** seçeneğini kullan. Bu kurulum tamamlanana kadar arka plan bildirimleri kapalı kalır.
 
 ### Yayın öncesi canlı test
@@ -62,3 +62,11 @@ Aynı sürümde `tmdb-catalog` Edge Function’ını güncelle. Profildeki film,
 Yayın ortamı için Supabase **Authentication → URL Configuration** bölümünde **Site URL** değerini `https://joinscene.vercel.app/` yap ve bu tam adresi **Redirect URLs** listesine ekle. Gerekli eski ve test yönlendirmelerini koru. Kayıt e-postası, kayıt sırasında kullanılan ortamın adresine döner. Yayından önce test hesabıyla e-posta bağlantısını, profil kaydını, gizlilik seçeneklerini ve Keşfet filtrelerini doğrula.
 
 Yerel veritabanında `supabase/tests/scene_profile_81.sql` dosyası seçim doğrulamasını, burç hesabını ve gizliliği sınar. Yalnızca test veritabanında çalıştır.
+
+### MOVIA 10.0 yayın kapıları
+
+- Üretim migration’larından önce güncel şifreli PostgreSQL ve Storage yedeğini doğrula. Yedeği izole ortamda geri yükle, 10.0 migration’larını tarihlerine göre uygula ve canlıdaki mevcut geçmiş kayıtlarını yeniden uygulama. Eski web sürümünün dağıtım kimliğini kaydet.
+- Supabase Auth’ta yeni parolalar için asgari uzunluğu 12 olarak uygula. Önceki parolalarla giriş ve mevcut yönlendirmeler korunmalı. İzole GoTrue’da API üzerinden kaydı ve parola yenilemeyi kontrol et.
+- Push dağıtımı için Vercel Production’da VAPID açık anahtarı ve Supabase Edge Function/Vault yapılandırması gerekir. Anahtar çiftini paylaşma. Zamanlayıcıyı etkinleştirdikten sonra kontrollü iki hesapta tarayıcı kapalıyken teslimi doğrula.
+- Fiziksel iPhone’da Ana Ekran’dan açılan PWA’yı, Android’de Chrome’u kullan. İzin ver, uygulamayı arka plana al, test hesabından mesaj gönder, bildirime dokunarak sohbet listesine dön. İzni geri çekince yeni mesajın bildirim üretmediğini kontrol et. Her iki cihazda da mikrofonla profil yanıtı kaydet, eşleşilen hesapla oynat ve kaldır.
+- Geri dönüş gerekirse önce eski Vercel dağıtımını etkinleştir. Push yeni duruma bağlıysa `movia-scene-push` işini durdur. Yeni etkileşim tablolarını ve kullanıcı dosyalarını silme.

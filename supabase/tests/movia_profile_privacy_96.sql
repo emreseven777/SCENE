@@ -31,6 +31,13 @@ begin
 end;
 $$;
 
+-- First likes must not depend on selecting the recipient's raw profile.
+reset role;
+update public.profiles set city='İstanbul',gender='woman',looking_for='everyone',dating_goal='friends',onboarded=true
+where id::text like '96000000-%';
+set local role authenticated;
+insert into public.likes(liked_id) values ('96000000-0000-0000-0000-000000000002');
+
 reset role;
 insert into public.matches(user_a,user_b) values
  ('96000000-0000-0000-0000-000000000001','96000000-0000-0000-0000-000000000002');

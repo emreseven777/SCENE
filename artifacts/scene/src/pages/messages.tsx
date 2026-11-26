@@ -1,3 +1,4 @@
+import { CinemaDuel } from "@/components/cinema-duel";
 import { ProfileSafety } from "@/components/dating-profile";
 import { CinemaMessage, SharedCinema } from "@/components/shared-cinema";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -278,6 +279,7 @@ export function Chat() {
         {chat && user && <SharedCinema key={chat} match={chat} viewer={user}
           titles={[...new Set([...common, ...(store.me?.favorites ?? []), ...p.favorites])].flatMap((id) => store.titleById(id) ?? store.titleById(id, p.id) ?? [])}
           onShare={publishTyping} />}
+          {chat && user && <CinemaDuel key={`duel-${chat}`} chat={chat} viewer={user} />}
           <details className="px-4 py-2 text-sm"><summary className="cursor-pointer font-semibold">Güvenlik seçenekleri</summary>
           <ProfileSafety person={p} />
         </details>

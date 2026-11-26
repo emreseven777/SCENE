@@ -53,7 +53,8 @@ export function canOpenProfile(store: Pick<Data, "matches" | "incoming" | "liked
 
 const EMPTY: Data = { me: null, people: [], titles: {}, liked: [], incoming: {}, passed: [], matches: {}, messages: {}, readThrough: {} };
 
-type ProfileRow = Omit<Person, "favorites">;
+export const PROFILE_FIELDS = "id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths,gender,looking_for,dating_goal,discovery_hidden,account_hidden,discovery_details,verified_photo";
+export type ProfileRow = Omit<Person, "favorites">;
 interface MatchRow { id: string; user_a: string; user_b: string; created_at: string }
 interface MessageRow { id: number; match_id: string; sender_id: string; body: string; created_at: string; media_path: string | null; media_kind: Msg["mediaKind"]; reply_to: number | null; deleted_at: string | null; delivered_at: string | null; seen_at: string | null }
 
@@ -67,7 +68,7 @@ interface Ctx extends Data {
   toggleFavorite: (id: string, title?: Title) => boolean;
   savePhotos: (previous: string[], paths: string[], upload?: { index: number; image: Blob }) => Promise<boolean>;
   /** true = new match, false = liked, null = failed (error already shown). */
-  like: (pid: string, kind?: "like" | "super") => Promise<boolean | null>;
+  like: (pid: string, kind?: "like" | "super", candidate?: Person, candidateTitles?: Record<string, Title>, photo?: { path: string; comment: string }) => Promise<boolean | null>;
   unlike: (pid: string) => Promise<boolean>;
   pass: (pid: string) => Promise<boolean>;
   undoSwipe: (pid: string, wasPass: boolean) => Promise<boolean>;
@@ -123,7 +124,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const sb = requireSupabase();
     try {
       const [profiles, favorites, likes, incoming, passes, matches, messages, readMarks] = await Promise.all([
-        sb.from("scene_profiles").select("id,name,city,age,bio,scene,onboarded,avatar_path,avatar_paths,gender,looking_for,dating_goal,discovery_hidden,account_hidden,discovery_details,verified_photo"),
+        sb.from("scene_profiles").select(PROFILE_FIELDS),
         sb.from("favorites").select("user_id,title_id,created_at,title_metadata").order("created_at"),
         sb.from("likes").select("liked_id").eq("liker_id",userId),
         sb.from("likes").select("liker_id,kind").eq("liked_id",userId),
@@ -134,16 +135,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ]);
       for (const r of [profiles, favorites, likes, incoming, passes, matches, messages, readMarks]) if (r.error) throw r.error;
 
+      const rows = profiles.data as ProfileRow[];
+      const profileIds = new Set(rows.map((profile) => profile.id));
+      const known = [userId, ...((likes.data ?? []).map((row) => row.liked_id)), ...(incoming.data ?? []).map((row) => row.liker_id),
+        ...(matches.data as MatchRow[]).map((row) => row.user_a === userId ? row.user_b : row.user_a)];
+      const missing = [...new Set(known)].filter((id) => !profileIds.has(id));
+      const favoriteRows = favorites.data as { user_id: string; title_id: string; title_metadata: unknown }[];
+      const seenFavorites = new Set(favoriteRows.map((item) => `${item.user_id}:${item.title_id}`));
+      for (let offset = 0; offset < missing.length; offset += 24) {
+        const ids = missing.slice(offset, offset + 24);
+        const [extraProfiles, extraFavorites] = await Promise.all([
+          sb.from("scene_profiles").select(PROFILE_FIELDS).in("id", ids),
+          sb.from("favorites").select("user_id,title_id,title_metadata").in("user_id", ids),
+        ]);
+        if (extraProfiles.error || extraFavorites.error) throw extraProfiles.error ?? extraFavorites.error;
+        rows.push(...extraProfiles.data as ProfileRow[]);
+        favoriteRows.push(...extraFavorites.data.filter((item) => !seenFavorites.has(`${item.user_id}:${item.title_id}`)));
+      }
       const favs: Record<string, string[]> = {};
       const titles: Record<string, Record<string, Title>> = {};
-      const favoriteRows = favorites.data as { user_id: string; title_id: string; title_metadata: unknown }[];
       for (const f of favoriteRows) {
         (favs[f.user_id] ??= []).push(f.title_id);
         const title = savedTmdbTitle(f.title_id, f.title_metadata);
         if (title) (titles[f.user_id] ??= {})[title.id] = title;
       }
       const toPerson = (p: ProfileRow): Person => ({ ...p, favorites: favs[p.id] ?? [] });
-      const rows = profiles.data as ProfileRow[];
       const meRow = rows.find((p) => p.id === userId);
 
       const matchMap: Record<string, MatchInfo> = {};
@@ -246,16 +262,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return !has;
   }, [userId]);
 
-  const like = useCallback(async (pid: string, kind: "like" | "super" = "like") => {
+  const like = useCallback(async (pid: string, kind: "like" | "super" = "like", candidate?: Person, candidateTitles?: Record<string, Title>, photo?: { path: string; comment: string }) => {
     const sb = requireSupabase();
     try {
-      const { error } = await sb.from("likes").insert({ liker_id: userId, liked_id: pid, kind });
-      if (error && error.code !== "23505") throw error;
+      const { error } = await sb.from("likes").insert({
+        liker_id: userId, liked_id: pid, kind,
+        ...(photo ? { photo_path: photo.path, photo_comment: photo.comment } : {}),
+      });
+      if (error && (error.code !== "23505" || photo)) throw error;
       const [a, b] = [userId!, pid].sort();
       const { data: m, error: mErr } = await sb.from("matches").select("id,created_at").eq("user_a", a).eq("user_b", b).maybeSingle();
       if (mErr) throw mErr;
       setData((d) => ({
         ...d,
+        people: candidate && !d.people.some((p) => p.id === pid) ? [...d.people, candidate] : d.people,
+        titles: candidateTitles ? { ...d.titles, [pid]: { ...d.titles[pid], ...candidateTitles } } : d.titles,
         liked: d.liked.includes(pid) ? d.liked : [...d.liked, pid],
         passed: d.passed.filter((x) => x !== pid),
         matches: m ? { ...d.matches, [pid]: { id: m.id, at: new Date(m.created_at).getTime() } } : d.matches,

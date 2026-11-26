@@ -13,6 +13,15 @@ export function FilmDate({ chat, user, titles }: { chat: string; user: string; t
   const [date, setDate] = useState("");
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
+  const suggestTonight = (film: string) => {
+    const now = new Date();
+    const tonight = new Date(now);
+    tonight.setHours(20, 0, 0, 0);
+    if (tonight.getTime() <= now.getTime()) tonight.setTime(now.getTime() + 30 * 60_000);
+    setTitle(film);
+    const local = new Date(tonight.getTime() - tonight.getTimezoneOffset() * 60_000);
+    setDate(tonight.getDate() === now.getDate() ? local.toISOString().slice(0, 16) : "");
+  };
   const dates = useQuery({
     queryKey: ["film-dates", chat],
     queryFn: async () => {
@@ -23,6 +32,10 @@ export function FilmDate({ chat, user, titles }: { chat: string; user: string; t
     refetchInterval: 8000,
   });
   const mutate = async (id?: string, state?: "accepted" | "declined") => {
+    if (!id && (!title.trim() || !Number.isFinite(Date.parse(date)) || Date.parse(date) <= Date.now())) {
+      toast({ title: "Bir yapım ve gelecekte bir saat seç.", variant: "destructive" });
+      return;
+    }
     setBusy(true);
     try {
       const result = id
@@ -38,8 +51,15 @@ export function FilmDate({ chat, user, titles }: { chat: string; user: string; t
   return <>
     <Button type="button" variant="ghost" size="icon" className="ml-auto shrink-0" onClick={() => setOpen(true)} aria-label="Film randevuları"><CalendarDays /></Button>
     <Dialog open={open} onOpenChange={setOpen}><DialogContent>
-      <DialogTitle>Film randevuları</DialogTitle>
+      <DialogTitle>MOVIA Date</DialogTitle>
       <DialogDescription>Bir yapım ve buluşma zamanı öner.</DialogDescription>
+      {titles.length > 0 && <section className="space-y-2">
+        <h3 className="font-semibold">Bu akşam ne izliyoruz?</h3>
+        <div className="flex flex-wrap gap-1.5">
+          {[...new Set(titles)].slice(0, 5).map((film) => <Button key={film} type="button" size="sm" variant="outline"
+            className="h-auto min-h-9 max-w-full whitespace-normal" onClick={() => suggestTonight(film)}>{film}</Button>)}
+        </div>
+      </section>}
       <form className="grid gap-2" onSubmit={(event) => { event.preventDefault(); if (!busy) void mutate(); }}>
         <label className="text-sm">Yapım<input className="block w-full rounded-lg border p-2" list="film-date-suggestions" maxLength={160} value={title} required onChange={(event) => setTitle(event.target.value)} /></label>
         <datalist id="film-date-suggestions">{titles.map((item) => <option key={item}>{item}</option>)}</datalist>
