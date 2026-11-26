@@ -3,7 +3,7 @@ import { ProfileDetails, ProfileSafety } from "@/components/dating-profile";
 import { CINEMA_FIT_DESCRIPTION, cinemaFit, profileCinemaSignals } from "@/lib/dating";
 import type { Title } from "@/lib/catalog";
 import { useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { ArrowLeft, Heart, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { canOpenProfile, useCommon, useStore } from "@/lib/store";
@@ -28,6 +28,7 @@ function UserView({ pid }: { pid: string }) {
   const store = useStore();
   const p = store.personById(pid)!;
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const common = useCommon(p.favorites);
   const own = profileCinemaSignals(store.me?.favorites ?? [], store.me?.discovery_details, (id) => store.titleById(id));
   const other = profileCinemaSignals(p.favorites, p.discovery_details, (id) => store.titleById(id, p.id));
@@ -51,7 +52,7 @@ function UserView({ pid }: { pid: string }) {
           {matched ? (
             <Link href={`/mesajlar/${p.id}`} data-testid="link-chat" className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"><MessageCircle size={17} />Mesaj gönder</Link>
           ) : liked ? (
-            <Button variant="secondary" disabled={busy} onClick={async () => { setBusy(true); const ok = await store.unlike(p.id); setBusy(false); if (ok) toast({ title: "Beğeni geri alındı" }); }} data-testid="button-unlike"><Heart size={16} className="mr-2 fill-primary text-brand-ink" />Beğendin — geri al</Button>
+            <Button variant="secondary" disabled={busy} onClick={async () => { setBusy(true); const ok = await store.unlike(p.id); setBusy(false); if (ok) { navigate("/begeniler", { replace: true }); toast({ title: "Beğeni geri alındı" }); } }} data-testid="button-unlike"><Heart size={16} className="mr-2 fill-primary text-brand-ink" />Beğendin — geri al</Button>
           ) : (
             <motion.div whileTap={{ scale: 0.92 }}>
               <Button className="h-11 px-6" disabled={busy} onClick={async () => {
