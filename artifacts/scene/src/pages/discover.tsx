@@ -271,10 +271,10 @@ export default function Discover() {
             <h2 className="mb-2 font-semibold">Günün en çok beğenilen filmleri</h2>
             <p className="mb-3 text-xs text-muted-foreground">Bugün favorilere en çok eklenen filmler</p>
             {dailyFilms.length ? <div className="grid grid-cols-3 gap-2">
-              {dailyFilms.map(({title,count}) => <button key={title.id} type="button" onClick={() => setSelectedTitle(title)} className="min-w-0 text-left">
+              {dailyFilms.map(({title}) => <button key={title.id} type="button" onClick={() => setSelectedTitle(title)} className="min-w-0 text-left">
                 <div className="aspect-[2/3] overflow-hidden rounded-xl bg-secondary">{title.poster ? <img src={title.poster} alt={title.title} loading="lazy" className="size-full object-cover" /> : <Film className="mx-auto mt-4" />}</div>
                 <div className="mt-1 text-sm font-semibold break-words">{title.title}</div>
-                <div className="flex items-center gap-1 text-xs text-brand-ink"><Heart size={12} /> {count} beğeni</div>
+
               </button>)}
             </div> : <p className="text-sm text-muted-foreground">{dailyError ? "Günlük liste şu anda yüklenemiyor." : "Bugün henüz listelenecek film yok."}</p>}
           </section>
