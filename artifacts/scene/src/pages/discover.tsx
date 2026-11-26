@@ -1,5 +1,6 @@
-import type { Title } from "@/lib/catalog";
-import { useMemo, useState } from "react";
+import { byId, savedTmdbTitle, type Title } from "@/lib/catalog";
+import { requireSupabase } from "@/lib/supabase";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { motion } from "framer-motion";
 import { Heart, RotateCcw, Star, X, Film, Sparkles, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
@@ -101,10 +102,40 @@ export default function Discover() {
   );
   const current = deck[0];
   const commonGenres = current ? fits.get(current.p.id)?.commonGenres ?? [] : [];
-  const calendarDay = new Intl.DateTimeFormat("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric" }).format();
-  const eligible = movieMatch ? [] : deck.slice(1).filter((item) => (item.score ?? 0) > 0).slice(0, 9);
-  const daily = Array.from({ length: Math.min(3, eligible.length) },
-    (_, index) => eligible[(Number(calendarDay) * 3 + index) % eligible.length]);
+  const [dailyFilms, setDailyFilms] = useState<{ title: Title; count: number }[]>([]);
+  const [dailyError, setDailyError] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+        const part = (type: string) => day.find((p) => p.type === type)?.value;
+        const start = new Date(`${part("year")}-${part("month")}-${part("day")}T00:00:00+03:00`);
+        const end = new Date(start.getTime() + 86400000);
+        const counts = new Map<string, { title: Title; users: Set<string> }>();
+        for (let offset = 0; ; offset += 500) {
+          const { data, error } = await requireSupabase().from("favorites").select("user_id,title_id,title_metadata").gte("created_at", start.toISOString()).lt("created_at", end.toISOString()).order("user_id").order("title_id").range(offset, offset + 499);
+          if (error) throw error;
+          for (const row of data ?? []) {
+            const title = byId(row.title_id) ?? savedTmdbTitle(row.title_id, row.title_metadata);
+            if (!title || title.type !== "film") continue;
+            const key = title.tmdbId ? `tmdb-movie-${title.tmdbId}` : title.id;
+            const entry = counts.get(key) ?? { title, users: new Set<string>() };
+            entry.users.add(row.user_id);
+            counts.set(key, entry);
+          }
+          if (!data || data.length < 500) break;
+        }
+        if (!cancelled) {
+          setDailyFilms([...counts.values()].map(({title, users}) => ({title, count: users.size})).sort((a,b) => b.count-a.count || a.title.id.localeCompare(b.title.id)).slice(0,3));
+          setDailyError(false);
+        }
+      } catch { if (!cancelled) { setDailyFilms([]); setDailyError(true); } }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 60000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [store.me?.id]);
   const activeFilters = Object.values(filter).filter(Boolean).length;
   const [busy, setBusy] = useState(false);
 
@@ -236,12 +267,17 @@ export default function Discover() {
         </div>
 
         <div className="min-w-0 space-y-4">
-          {daily.length > 0 && <section className="scene-panel min-w-0 p-3">
-            <h2 className="mb-2 font-semibold">Bugünkü önerilerin</h2>
-            <ul className="flex min-w-0 flex-wrap gap-2">{daily.map(({ p, score }) => <li className="min-w-0 max-w-full" key={p.id}>
-              <Link className="block rounded-full bg-secondary px-3 py-2 text-sm font-semibold text-brand-ink [overflow-wrap:anywhere]" href={`/kullanici/${p.id}`}>{p.name} · %{score}</Link>
-            </li>)}</ul>
-          </section>}
+          <section className="scene-panel min-w-0 p-3">
+            <h2 className="mb-2 font-semibold">Günün en çok beğenilen filmleri</h2>
+            <p className="mb-3 text-xs text-muted-foreground">Bugün favorilere en çok eklenen filmler</p>
+            {dailyFilms.length ? <div className="grid grid-cols-3 gap-2">
+              {dailyFilms.map(({title,count}) => <button key={title.id} type="button" onClick={() => setSelectedTitle(title)} className="min-w-0 text-left">
+                <div className="aspect-[2/3] overflow-hidden rounded-xl bg-secondary">{title.poster ? <img src={title.poster} alt={title.title} loading="lazy" className="size-full object-cover" /> : <Film className="mx-auto mt-4" />}</div>
+                <div className="mt-1 text-sm font-semibold break-words">{title.title}</div>
+                <div className="flex items-center gap-1 text-xs text-brand-ink"><Heart size={12} /> {count} beğeni</div>
+              </button>)}
+            </div> : <p className="text-sm text-muted-foreground">{dailyError ? "Günlük liste şu anda yüklenemiyor." : "Bugün henüz listelenecek film yok."}</p>}
+          </section>
         </div>
       </div>
 
