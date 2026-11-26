@@ -37,7 +37,6 @@ export default function Profile() {
   const genreCounts = new Map<string, number>();
   for (const id of me.favorites) for (const genre of new Set(store.titleById(id)?.genres ?? [])) genreCounts.set(genre, (genreCounts.get(genre) ?? 0) + 1);
   const topGenres = [...genreCounts.entries()].sort((a,b) => b[1]-a[1]).slice(0,5);
-  const best = store.people.filter((p) => p.onboarded).map((p) => ({ p, c: p.favorites.filter((f) => me.favorites.includes(f)).length })).sort((a, b) => b.c - a.c)[0];
 
   const save = async () => {
     if (!form.name.trim()) { toast({ title: "İsim boş olamaz", variant: "destructive" }); return; }
@@ -97,7 +96,6 @@ export default function Profile() {
           <div key={l} className="bg-card p-4 text-center"><div className="font-display text-3xl font-bold text-brand-ink">{v}</div><div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{l}</div></div>
         ))}
       </div>
-      {best && best.c > 0 && <p className="mt-3 text-sm text-muted-foreground">En çok ortak noktan: <Link href={`/kullanici/${best.p.id}`} className="text-foreground underline decoration-primary underline-offset-4 [overflow-wrap:anywhere]">{best.p.name}</Link> ({best.c} yapım)</p>}
 
       <section className="mt-10">
         <div className="mb-4 flex items-baseline justify-between">
