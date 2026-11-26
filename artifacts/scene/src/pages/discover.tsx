@@ -59,7 +59,6 @@ export default function Discover() {
   const [matchPid, setMatchPid] = useState<string | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
   const [last, setLast] = useState<{ id: string; direction: SwipeDirection } | null>(null);
-  const [visibleCount, setVisibleCount] = useState(24);
   const [filter, setFilter] = useState(emptyFilters);
 
   const allows = (preference: string | null | undefined, gender: string | null) =>
@@ -106,9 +105,6 @@ export default function Discover() {
   const eligible = movieMatch ? [] : deck.slice(1).filter((item) => (item.score ?? 0) > 0).slice(0, 9);
   const daily = Array.from({ length: Math.min(3, eligible.length) },
     (_, index) => eligible[(Number(calendarDay) * 3 + index) % eligible.length]);
-  const dailyIds = new Set(daily.map(({ p }) => p.id));
-  const members = cast.filter(({ id }) => id !== current?.p.id && !dailyIds.has(id)
-    && (!store.passed.includes(id) || !!store.matches[id]));
   const activeFilters = Object.values(filter).filter(Boolean).length;
   const [busy, setBusy] = useState(false);
 
@@ -246,35 +242,6 @@ export default function Discover() {
               <Link className="block rounded-full bg-secondary px-3 py-2 text-sm font-semibold text-brand-ink [overflow-wrap:anywhere]" href={`/kullanici/${p.id}`}>{p.name} · %{score}</Link>
             </li>)}</ul>
           </section>}
-        <section className="min-w-0">
-          <div className="mb-3 flex items-baseline justify-between">
-            <h3 className="font-display text-2xl font-bold tracking-tight">Movia üyeleri</h3>
-            <span className="font-mono text-[11px] text-muted-foreground">{members.length} kişi</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {members.length === 0 && <p className="col-span-full rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Bu bölümde başka profil yok.</p>}
-            {members.slice(0, visibleCount).map((p, i) => {
-              const c = sharedFavorites(mine, p.favorites).length;
-              const status = store.matches[p.id] ? "Eşleşme" : store.liked.includes(p.id) ? "Beğendin" : null;
-              return (
-                <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                  <Link href={`/kullanici/${p.id}`} data-testid={`link-person-${p.id}`} className="group relative block aspect-[3/4] overflow-hidden rounded-3xl ring-1 ring-border">
-                    <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-full w-full transition duration-500 group-hover:scale-105" textClassName="text-6xl" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
-                    {status && <span className="absolute left-2 top-2 rounded-sm bg-card px-2 py-1 text-[10px] font-semibold text-brand-ink">{status}</span>}
-                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
-                      <div className="min-w-0">
-                        <ProfileIdentity person={p} as="div" size="text-xl sm:text-2xl" />
-                      </div>
-                      <div className="text-right"><div className="font-display text-2xl font-bold leading-none text-peach">{c}</div><div className="text-[9px] text-white">ortak</div></div>
-                    </div>
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </div>
-          {visibleCount < members.length && <Button className="mt-4" variant="secondary" onClick={() => setVisibleCount((count) => count + 24)}>Daha fazla profil göster</Button>}
-        </section>
         </div>
       </div>
 
