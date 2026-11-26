@@ -175,27 +175,27 @@ export default function Discover() {
           {([
             ["city", "İl", Object.fromEntries(PROVINCES.map((name) => [name, name]))],
             ["gender", "Cinsiyet", GENDERS], ["goal", "Tanışma amacı", GOALS],
-          ] as const).map(([key, label, options]) => <label className="min-w-0" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm" value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}><option value="">Tümü</option>{Object.entries(options).map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>)}
-          {([["from", "En düşük yaş", 18], ["to", "En yüksek yaş", 18], ["fit", "En düşük uyum (%)", 0]] as const).map(([key, label, min]) => <label className="min-w-0" key={key}>{label}<input className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm" type="number" min={min} max={key === "fit" ? 100 : undefined} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} /></label>)}
+          ] as const).map(([key, label, options]) => <label className="min-w-0" key={key}><span className="font-bold">{label}</span><select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm" value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}><option value="">Tümü</option>{Object.entries(options).map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>)}
+          {([["from", "En düşük yaş", 18], ["to", "En yüksek yaş", 18], ["fit", "En düşük uyum (%)", 0]] as const).map(([key, label, min]) => <label className="min-w-0" key={key}><span className="font-bold">{label}</span><input className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm" type="number" min={min} max={key === "fit" ? 100 : undefined} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} /></label>)}
           {([
             ["education","Eğitim",CHOICES.education], ["smoking","Sigara",CHOICES.smoking], ["alcohol","Alkol",CHOICES.alcohol],
             ["relationship","İlişki beklentisi",CHOICES.relationship], ["children","Çocuk",CHOICES.children], ["sport","Spor",CHOICES.sport],
             ["genre","Favori tür",Object.fromEntries(GENRES.map((genre) => [genre,genre]))],
             ["interest","İlgi alanı",Object.fromEntries(INTERESTS.map((name) => [name,name]))],
             ["occupation","Meslek",Object.fromEntries(OCCUPATIONS.map((name) => [name,name]))],
-          ] as const).map(([key,label,options]) => <label className="min-w-0" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm"
+          ] as const).map(([key,label,options]) => <label className="min-w-0" key={key}><span className="font-bold">{label}</span><select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm"
             aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
             <option value="">Tümü</option>{Object.entries(options).map(([value,name]) => <option key={value} value={value}>{name}</option>)}
           </select></label>)}
-          {([["heightFrom","En kısa boy"],["heightTo","En uzun boy"]] as const).map(([key,label]) => <label className="min-w-0" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm"
+          {([["heightFrom","En kısa boy"],["heightTo","En uzun boy"]] as const).map(([key,label]) => <label className="min-w-0" key={key}><span className="font-bold">{label}</span><select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base sm:text-sm"
             aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
             <option value="">Tümü</option>{Array.from({ length:111 },(_,i) => i+130).map((height) => <option key={height} value={height}>{height} cm</option>)}
           </select></label>)}
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-          <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={!!filter.shared}
+          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" checked={!!filter.shared}
             onChange={(event) => setFilter({ ...filter, shared: event.target.checked ? "1" : "" })} />Ortak favorisi olanlar</label>
-          <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={!!filter.photosOnly}
+          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" checked={!!filter.photosOnly}
             onChange={(event) => setFilter({ ...filter, photosOnly: event.target.checked ? "1" : "" })} />Fotoğrafı olanlar</label>
         </div>
         {filter.from && filter.to && Number(filter.from) > Number(filter.to) &&
