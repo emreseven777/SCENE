@@ -85,8 +85,8 @@ export default function Cinema() {
   useEffect(() => {
     if (tab !== "deck" || !archive.isSuccess || deck.length > 6 || !catalog.hasNextPage
       || catalog.isFetching || catalog.isFetchNextPageError || prefetched === prefetchKey) return;
-    // Limit automatic requests to pages with a visible card. Empty batches get an explicit load button.
-    if (deck.length) {
+    // Skip already-rated batches automatically, with a bounded automatic scan.
+    if (deck.length || (catalog.data?.pages.length ?? 0) < 30) {
       setPrefetched(prefetchKey);
       void catalog.fetchNextPage();
     }
@@ -158,7 +158,7 @@ export default function Cinema() {
         TMDB şu anda kullanılamıyor. MOVIA arşivi gösteriliyor.{" "}
         <button type="button" className="underline" disabled={catalog.isFetching} onClick={() => void catalog.refetch()}>TMDB’yi tekrar dene</button>
       </p>}
-      {archive.isPending || catalog.isPending ? <p role="status">Katalog yükleniyor…</p> : archive.isSuccess && top ? <>
+      {archive.isPending || catalog.isPending || (!top && catalog.isFetchingNextPage) ? <p role="status">Katalog yükleniyor…</p> : archive.isSuccess && top ? <>
         <SwipeCard key={top.id} labels={swipeLabels} disabled={busy} onSwipe={swipe}
           next={deck[1]?.poster && <img src={deck[1].poster} alt="" className="size-full object-cover" fetchPriority="low" decoding="async" />}>
           <div className="relative mx-auto h-[min(57dvh,32rem)] overflow-hidden rounded-3xl bg-[#201d29] text-white">
