@@ -209,13 +209,13 @@ export function AccountVisibility({ person }: { person: Person }) {
     <div>
       {verification.isError && <p role="alert" className="text-sm">Fotoğraf başvurusu yüklenemedi.</p>}
       {verification.data && <p className="text-sm">
-        {person.verified_photo ? "Ana profil fotoğrafın onaylandı."
+        {person.verified_photo ? "Ana profil fotoğrafın incelendi. Kimlik doğrulaması yapılmadı."
           : verification.data.state === "pending" ? "Fotoğraf başvurun inceleme bekliyor."
           : verification.data.state === "rejected" ? "Son fotoğraf başvurun reddedildi."
           : "Mevcut ana fotoğrafın henüz onaylanmadı."}
       </p>}
       {verification.isSuccess && !person.verified_photo && <>
-        <p className="my-2 text-sm text-muted-foreground">Yönetici mevcut ana profil fotoğrafını inceler. Ana fotoğrafını değiştirirsen yeni fotoğraf için tekrar başvurabilirsin.</p>
+        <p className="my-2 text-sm text-muted-foreground">Yönetici ana profil fotoğrafını inceler. Bu işlem kimlik veya canlılık doğrulaması içermez. Ana fotoğrafını değiştirirsen yeni fotoğraf için tekrar başvurabilirsin.</p>
         <Button variant="secondary" disabled={busy || !person.avatar_path} onClick={async () => {
           setBusy(true);
           try {

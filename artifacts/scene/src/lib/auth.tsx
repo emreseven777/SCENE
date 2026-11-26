@@ -3,6 +3,8 @@ import type { Session } from "@supabase/supabase-js";
 import { LEGAL_VERSION } from "./legal-documents";
 import { supabase } from "./supabase";
 
+export const MIN_NEW_PASSWORD_LENGTH = 12;
+
 interface AuthCtx {
   session: Session | null;
   userId: string | null;

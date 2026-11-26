@@ -7,7 +7,7 @@ import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { CinemaCollage, MoviaMark, SceneBrand, SupportEmail, ThemeToggle } from "@/components/scene-brand";
 import { latestAdultBirthDate } from "@/lib/provinces";
 import { brand } from "@/lib/brand";
-import { useAuth } from "@/lib/auth";
+import { MIN_NEW_PASSWORD_LENGTH, useAuth } from "@/lib/auth";
 import { turkishError } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,7 +146,7 @@ export function RegisterPage() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) { setError("Şifre en az 6 karakter olmalı."); return; }
+    if (password.length < MIN_NEW_PASSWORD_LENGTH) { setError(`Şifre en az ${MIN_NEW_PASSWORD_LENGTH} karakter olmalı.`); return; }
     if (!birthDate || birthDate > latest || !termsAccepted) {
       setError("Üyelik için 18 yaşını doldurmalı ve Kullanım Koşullarını kabul etmelisin.");
       return;
@@ -177,7 +177,7 @@ export function RegisterPage() {
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5"><Label htmlFor="name">İsim</Label><Input id="name" autoComplete="given-name" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} className="h-12 text-base" data-testid="input-register-name" /></div>
         <div className="space-y-1.5"><Label htmlFor="r-email">E-posta</Label><Input id="r-email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 text-base" data-testid="input-register-email" /></div>
-        <div className="space-y-1.5"><Label htmlFor="r-password">Şifre</Label><Input id="r-password" type="password" autoComplete="new-password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 text-base" data-testid="input-register-password" /><p className="text-xs text-muted-foreground">En az 6 karakter.</p></div>
+        <div className="space-y-1.5"><Label htmlFor="r-password">Şifre</Label><Input id="r-password" type="password" autoComplete="new-password" required minLength={MIN_NEW_PASSWORD_LENGTH} value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 text-base" data-testid="input-register-password" /><p className="text-xs text-muted-foreground">En az {MIN_NEW_PASSWORD_LENGTH} karakter.</p></div>
         <div className="space-y-1.5">
           <Label htmlFor="register-birth-date">Doğum tarihi</Label>
           <Input id="register-birth-date" type="date" autoComplete="bday" required max={latest}

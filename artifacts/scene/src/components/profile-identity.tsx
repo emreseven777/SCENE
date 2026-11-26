@@ -14,7 +14,8 @@ export function ProfileIdentity({ person, as: Heading = "h2", size = "text-5xl",
       <Heading data-testid={testId} className={`break-words font-display font-bold leading-none tracking-tight ${size}`}>
         {person.name}{person.age !== null && <span className="whitespace-nowrap font-semibold">, {person.age}</span>}
       </Heading>
-      {person.verified_photo && <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-black/75 px-2 py-1 text-xs">
+      {person.verified_photo && <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-black/75 px-2 py-1 text-xs"
+        title="Yönetici fotoğrafı inceledi. Kimlik doğrulaması yapılmadı.">
         <BadgeCheck aria-hidden="true" className="text-sky-400" size={15} /> Fotoğrafı onaylandı
       </span>}
       <div className={`mt-2 flex items-center gap-1.5 text-white/95 ${cityClassName}`}>

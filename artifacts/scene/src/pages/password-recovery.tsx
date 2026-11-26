@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createRecoveryClient, requireSupabase } from "@/lib/supabase";
+import { MIN_NEW_PASSWORD_LENGTH } from "@/lib/auth";
 import { Frame } from "./auth";
 
 function recoveryError(error: { code?: string; status?: number }, fallback: string) {
@@ -110,6 +111,10 @@ export function ResetPassword() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!client || busy) return;
+    if (password.length < MIN_NEW_PASSWORD_LENGTH) {
+      setError(`Şifre en az ${MIN_NEW_PASSWORD_LENGTH} karakter olmalı.`);
+      return;
+    }
     if (password !== confirm) {
       setError("Girdiğin şifreler aynı olmalı.");
       return;
@@ -141,9 +146,9 @@ export function ResetPassword() {
     </> : <>
       {client ? <form onSubmit={submit} className="grid gap-3">
         <Label htmlFor="new-password">Yeni şifre</Label>
-        <Input id="new-password" type="password" required minLength={6} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        <Input id="new-password" type="password" required minLength={MIN_NEW_PASSWORD_LENGTH} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} />
         <Label htmlFor="confirm-password">Yeni şifreyi tekrar gir</Label>
-        <Input id="confirm-password" type="password" required minLength={6} autoComplete="new-password" value={confirm} onChange={(event) => setConfirm(event.target.value)} />
+        <Input id="confirm-password" type="password" required minLength={MIN_NEW_PASSWORD_LENGTH} autoComplete="new-password" value={confirm} onChange={(event) => setConfirm(event.target.value)} />
         <Button disabled={busy}>Şifreyi güncelle</Button>
       </form> : link ? <Button onClick={() => void verify()} disabled={busy}>Bağlantıyı doğrula</Button> :
         !error && <p role="alert">Bağlantı geçersiz veya süresi dolmuş. Yeni bir bağlantı iste.</p>}

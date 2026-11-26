@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "git": { "deploymentEnabled": { "feat/scene-8-3-kvkk": false, "feat/movia-9-0": false } },
+  "git": { "deploymentEnabled": { "feat/scene-8-3-kvkk": false, "feat/movia-9-0": false, "feat/movia-10-0": false } },
   "routes": [
+    { "src": "/(.*)", "headers": { "Content-Security-Policy": "default-src 'self'; script-src 'self' 'sha256-iU3PDG5sIYUcS0xcA1uM+OJA5v3LtVTWZOsWdGPZljc=' 'sha256-9qYeitKIFNYTJumXk5LpiPBuernJIgq8MGEA7zSmBFw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://image.tmdb.org https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'", "Permissions-Policy": "camera=(self), microphone=(self), geolocation=()" }, "continue": true },
     { "handle": "filesystem" },
     { "src": "/(giris|kayit|sifremi-unuttum|sifre-yenile|profil|eslesmeler|begeniler|arama|sinema|mesajlar|kullanici|bildirimler|yonetim|kurallar)(/.*)?", "dest": "/index.html" }
   ]
