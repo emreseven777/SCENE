@@ -16,7 +16,7 @@ export default function Legal() {
       {selected && <Link href="/kurallar">Tüm belgeler</Link>}
     </nav>
     <h1 className="scene-title">{document?.title ?? "Movia hukuki belgeleri"}</h1>
-    <p role="note" className="scene-panel border-primary/30 p-4 text-sm">Uzman incelemesi bekleyen taslak · {LEGAL_VERSION}. Köşeli parantezli alanlar yayın öncesi doldurulacak.</p>
+    <p role="note" className="scene-panel border-primary/30 p-4 text-sm">İşletmecinin kabul ettiği taslak · {LEGAL_VERSION}. Bağımsız hukuki inceleme tamamlanmadı.</p>
     {!document && <ul className="scene-panel divide-y">{legalDocuments.map((item) =>
       <li key={item.id}><Link href={`/kurallar?belge=${item.id}`} className="block p-4 font-semibold text-brand-ink underline">{item.title}</Link></li>)}</ul>}
     {document && <article className="scene-panel space-y-5 p-5">

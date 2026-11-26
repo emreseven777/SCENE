@@ -6,12 +6,18 @@ Hukuki belge taslaklarının tek kaynağı uygulamadaki [belge dosyası](../arti
 
 ## İşletmeci kararı ve yayın talebi
 
-26 Kasım 2026’da proje sahibi, MOVIA DATING’in gerçek kişi işletmecisi ve veri
-sorumlusu olarak Emre İşkil’i onayladı ve mevcut kullanıcılar ile veriler
-korunarak canlı yayın talebini verdi. Bu kayıt, işletmeci kimliğini ve yayın
-talebini belgeler. Yedi metin taslak aşamasında. Bağımsız hukuki inceleme,
-m.6 ve m.9 dayanakları ile tebligat ve hesap dışı başvuru kanalları için bu
-onay bir sonuç kaydı oluşturmaz.
+26 Kasım 2026’da gerçek kişi işletmeci ve veri sorumlusu Emre İşkil, uygulamada
+yer alan yedi belge taslağını (`8.3-draft.1`) kabul etti. Proje sahibi,
+`79adacc` temelindeki 8.3 ve 9.0 çalışmalarının, mevcut kullanıcılar ve
+veriler korunarak, MOVIA DATING adıyla ve https://joinmovia.vercel.app ana
+adresiyle tek üretim yayını olarak dağıtılmasını açıkça onayladı. Onay,
+güvenli migration ve dağıtımı, parola yenilemeyi, Türkçe e-posta şablonlarını
+ve tamamlanan 9.0 özelliklerini kapsar. Onaylanan taslakların değişmez
+kopyası [yayın adayında](https://github.com/emreseven777/SCENE/blob/79adacc1482b557ed32b900d23b3f730703c77d1/artifacts/scene/src/lib/legal-documents.ts) saklanır.
+
+Kayıt, proje sahibinin yayın onayıdır. Bağımsız avukat incelemesi
+tamamlanmadı. KVKK m.6 ve m.9 dayanakları, hesap dışı başvuru kanalı ve
+belgelerin yürürlük tarihi henüz doğrulanmadı.
 
 ## İşletmeci ve karar gerektiren konular
 
