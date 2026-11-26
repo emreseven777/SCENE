@@ -30,33 +30,31 @@ function avatarQuery(userId: string | null, avatarPath: string | null) {
   });
 }
 
-export function usePreloadPortraits(first?: string | null, second?: string | null) {
+export function usePreloadPortraits(first?: string | null, second?: string | null, third?: string | null) {
   const { userId } = useAuth();
   const client = useQueryClient();
   useEffect(() => {
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
     if (!userId || connection?.saveData || connection?.effectiveType?.includes("2g")) return;
     let active = true;
-    const images: HTMLImageElement[] = [];
     const timer = window.setTimeout(() => {
       if (document.visibilityState !== "visible") return;
-      for (const path of new Set([first, second])) {
+      for (const path of new Set([first, second, third])) {
         if (!path) continue;
         void client.fetchQuery(avatarQuery(userId, path)).then((url) => {
           if (!active) return;
           const image = new Image();
           image.fetchPriority = "low";
-          images.push(image);
           image.src = url;
         }).catch(() => { /* The visible portrait can retry independently. */ });
       }
-    }, 450);
+    }, 80);
     return () => {
       active = false;
       window.clearTimeout(timer);
-      for (const image of images) if (!image.complete) image.removeAttribute("src");
+      // Allow already-started image downloads to finish for the next card.
     };
-  }, [client, userId, first, second]);
+  }, [client, userId, first, second, third]);
 }
 
 export function PersonPhoto({ id, name, avatarPath, className, textClassName, contain = false, priority = false }: { id: string; name: string; avatarPath: string | null; className?: string; textClassName?: string; contain?: boolean; priority?: boolean }) {
