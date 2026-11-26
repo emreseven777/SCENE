@@ -4,6 +4,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-quer
 import { AttachmentControls, AttachmentPreview, ChatAttachment, type PendingMedia } from "@/components/chat-experience";
 import { FilmDate } from "@/components/film-date";
 import { ReportProfile } from "@/components/report-profile";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { requireSupabase, turkishError } from "@/lib/supabase";
 import { useScenePreferences } from "@/lib/scene-preferences";
@@ -21,6 +22,11 @@ import { quizResultLabel, readQuizResult } from "@/lib/quiz-result";
 
 function ConversationList({ activeId }: { activeId?: string }) {
   const store = useStore();
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{id:string; name:string} | null>(null);
+  const [busy, setBusy] = useState(false);
+  const gesture = useRef<{x:number;y:number} | null>(null);
+  const suppress = useRef(false);
   const convos = store.people.filter((p) => store.matches[p.id])
     .map((p) => ({ p, last: store.messages[p.id]?.at(-1) }))
     .sort((a, b) => (b.last?.at ?? store.matches[b.p.id].at) - (a.last?.at ?? store.matches[a.p.id].at));
@@ -37,8 +43,10 @@ function ConversationList({ activeId }: { activeId?: string }) {
       {convos.map(({ p, last }) => {
         const unread = (store.messages[p.id] ?? []).filter((m) => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0)).length;
         return (
-        <li key={p.id}>
-          <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-muted", activeId === p.id && "bg-muted")}>
+        <li key={p.id} className="relative overflow-hidden rounded-xl">
+          {revealed === p.id && <button type="button" className="absolute inset-y-0 right-0 w-32 bg-red-700 text-white text-xs font-bold" onClick={() => setConfirm({id:p.id,name:p.name})}>Eşleşmeyi kaldır</button>}
+          <div className="relative flex items-center bg-card transition-transform" style={{transform: revealed === p.id ? "translateX(-128px)" : undefined, touchAction:"pan-y"}} onTouchStart={e => {gesture.current={x:e.touches[0].clientX,y:e.touches[0].clientY}; suppress.current=false;}} onTouchEnd={e => {const start=gesture.current; gesture.current=null; if(!start)return; const dx=e.changedTouches[0].clientX-start.x; const dy=e.changedTouches[0].clientY-start.y; if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.5){suppress.current=true;setRevealed(dx<0?p.id:null);}}} onClickCapture={e => {if(suppress.current){e.preventDefault();e.stopPropagation();suppress.current=false;}}}>
+          <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-muted", activeId === p.id && "bg-muted")}>
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-12 w-12 shrink-0 rounded-full" textClassName="text-lg" />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
@@ -49,8 +57,11 @@ function ConversationList({ activeId }: { activeId?: string }) {
               <p className={cn("truncate text-sm font-semibold", last?.from === "them" ? "text-foreground/80" : "text-muted-foreground")}>{last ? `${last.from === "me" ? "Sen: " : ""}${last.text}` : "Yeni eşleşme. Selam ver."}</p>
             </div>
           </Link>
+          <button type="button" aria-label={`${p.name} sohbet seçenekleri`} className="shrink-0 p-2" onClick={() => setRevealed(revealed===p.id?null:p.id)}><MoreHorizontal size={20}/></button>
+          </div>
         </li>
       ); })}
+      {confirm && <Dialog open onOpenChange={open => {if(!open&&!busy)setConfirm(null);}}><DialogContent><DialogTitle>{confirm.name} ile eşleşmeyi kaldır?</DialogTitle><DialogDescription>Eşleşmeniz sona erecek ve artık mesajlaşamayacaksınız.</DialogDescription><Button variant="destructive" disabled={busy} onClick={async()=>{setBusy(true);try{if(await store.unmatch(confirm.id)){setConfirm(null);setRevealed(null);}}finally{setBusy(false);}}}>Eşleşmeyi kaldır</Button><Button variant="outline" disabled={busy} onClick={()=>setConfirm(null)}>Vazgeç</Button></DialogContent></Dialog>}
     </ul>
   );
 }
