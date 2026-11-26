@@ -14,7 +14,7 @@ export function ProfileIdentity({ person, as: Heading = "h2", size = "text-5xl",
         {person.name}{person.age !== null && <span className="whitespace-nowrap font-semibold">, {person.age}</span>}
       </Heading>
       {person.verified_photo && <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-black/75 px-2 py-1 text-xs">
-        <BadgeCheck aria-hidden="true" size={15} /> Fotoğrafı onaylandı
+        <BadgeCheck aria-hidden="true" className="text-sky-400" size={15} /> Fotoğrafı onaylandı
       </span>}
       <div className="mt-2 flex items-center gap-1 text-xs text-white/90">
         <MapPin size={14} aria-hidden="true" className="shrink-0" />
