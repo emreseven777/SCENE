@@ -28,9 +28,17 @@ export const legalDocuments = [
     id: "kosullar",
     title: "Kullanım Koşulları",
     sections: [
-      ["Hizmet ve üyelik", `Hizmetin gerçek kişi işletmecisi ${dataController.name}’dir. Genel iletişim e-postası ${brand.contactEmail}. ${brand.name}, 18 yaşını dolduran kişilere açık sinema temalı tanışma hizmetidir. Doğru bilgi ver, hesabını ve oturum bilgilerini koru.`],
+      ["Hizmet ve üyelik", `${brand.name}, 18 yaşını dolduran kişilere açık sinema temalı tanışma hizmetidir. Doğru bilgi ver, hesabını ve oturum bilgilerini koru.`],
       ["İçerik ve önlemler", "Yalnızca paylaşmaya yetkili olduğun içeriği yükle. Hizmetin sunulması için içeriğin ilgili üyelere ve gerekli teknik hizmet sağlayıcılarına iletilmesi gerekir. Topluluk kuralları ihlalinde gerekçeye uygun içerik kaldırma, askıya alma ve hesap kısıtlaması uygulanabilir."],
       ["Sona erme ve haklar", "Profil üzerinden hesabı kapatabilirsin. Uygulanabilir zorunlu haklar saklıdır. Değişikliklerin duyuru şekli ve uyuşmazlık iletişim kanalı [yayın öncesi tamamlanacak]."],
+    ],
+  },
+  {
+    id: "yasal-bilgiler",
+    title: "Yasal Bilgiler",
+    sections: [
+      ["İşletmeci", `${brand.name} hizmetinin işletmecisi ${dataController.name}’dir (gerçek kişi).`],
+      ["Tebligat adresi", dataController.postalAddress],
     ],
   },
   {

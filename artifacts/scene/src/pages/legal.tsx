@@ -26,6 +26,9 @@ export default function Legal() {
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-sm leading-relaxed text-foreground/85">{content}</p>
       </section>)}
+      {document.id === "kosullar" && <p className="text-sm">
+        <Link href="/kurallar?belge=yasal-bilgiler" className="font-semibold text-brand-ink underline">Yasal Bilgiler</Link>
+      </p>}
     </article>}
     <footer className="text-sm text-muted-foreground">İletişim ve destek · <SupportEmail /></footer>
   </main>;
