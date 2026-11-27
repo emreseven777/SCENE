@@ -197,15 +197,19 @@ export function RegisterPage() {
   }
 
   return (
-    <Frame title={`${brand.name}’e katıl`} description="Favori filmlerini paylaş, ortak hikâyeleri keşfet.">
-      <form onSubmit={submit} className="space-y-4">
-        <div className="space-y-1.5"><Label htmlFor="name">İsim</Label><Input id="name" autoComplete="given-name" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} className="h-12 text-base" data-testid="input-register-name" /></div>
-        <div className="space-y-1.5"><Label htmlFor="r-email">E-posta</Label><Input id="r-email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 text-base" data-testid="input-register-email" /></div>
-        <div className="space-y-1.5"><Label htmlFor="r-password">Şifre</Label><Input id="r-password" type="password" autoComplete="new-password" required minLength={MIN_NEW_PASSWORD_LENGTH} value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 text-base" data-testid="input-register-password" /><p className="text-xs text-muted-foreground">En az {MIN_NEW_PASSWORD_LENGTH} karakter.</p></div>
+    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col justify-center px-4 py-[max(12px,env(safe-area-inset-top))] text-white" style={{background:"linear-gradient(180deg,#260d1cbb,#180e15 55%),url(/2E8C2DB8-E721-4812-90CB-154D27282CE5.png) center top / cover no-repeat"}}>
+      <div className="mb-3 flex justify-center"><SceneBrand /></div>
+      <section className="rounded-3xl border border-white/15 bg-[#260d1c]/90 p-4">
+      <h1 className="text-center text-2xl font-black">MOVIA’ya <span className="text-[#ff739c]">katıl.</span></h1>
+      <p className="mb-3 mt-1 text-center text-xs text-white/75">Favori filmlerini paylaş, ortak hikâyeleri keşfet.</p>
+      <form onSubmit={submit} className="space-y-2">
+        <div className="space-y-1.5"><Label htmlFor="name">İsim</Label><Input id="name" autoComplete="given-name" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} className="h-11 w-full min-w-0 border-white/25 bg-white/10 text-base text-white" data-testid="input-register-name" /></div>
+        <div className="space-y-1.5"><Label htmlFor="r-email">E-posta</Label><Input id="r-email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-11 w-full min-w-0 border-white/25 bg-white/10 text-base text-white" data-testid="input-register-email" /></div>
+        <div className="space-y-1.5"><Label htmlFor="r-password">Şifre</Label><Input id="r-password" type="password" autoComplete="new-password" required minLength={MIN_NEW_PASSWORD_LENGTH} value={password} onChange={(e) => setPassword(e.target.value)} className="h-11 w-full min-w-0 border-white/25 bg-white/10 text-base text-white" data-testid="input-register-password" /><p className="text-xs text-muted-foreground">En az {MIN_NEW_PASSWORD_LENGTH} karakter.</p></div>
         <div className="space-y-1.5">
           <Label htmlFor="register-birth-date">Doğum tarihi</Label>
           <Input id="register-birth-date" type="date" autoComplete="bday" required max={latest}
-            value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-12 text-base" />
+            value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-11 w-full min-w-0 border-white/25 bg-white/10 text-base text-white" />
           <p className="text-xs text-muted-foreground">{brand.name} 18 yaş ve üzeri içindir. Profilde yalnızca yaşın gösterilir.</p>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-brand-ink">
@@ -221,11 +225,12 @@ export function RegisterPage() {
           </div>
         </div>
         {error && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm" data-testid="text-register-error">{error}</p>}
-        <Button type="submit" disabled={busy} className="h-12 w-full text-base" data-testid="button-register">{busy ? <Loader2 className="animate-spin" size={18} /> : "Hesap oluştur"}</Button>
+        <Button type="submit" disabled={busy} className="h-11 w-full rounded-full bg-gradient-to-r from-[#ff3975] to-[#a91e4b] text-base font-bold text-white" data-testid="button-register">{busy ? <Loader2 className="animate-spin" size={18} /> : "Hesap oluştur"}</Button>
       </form>
-      <Link href="/kurallar" className="mt-4 block text-center text-sm text-brand-ink underline">Kullanım koşulları, topluluk kuralları ve gizlilik</Link>
-      <p className="mt-6 text-center text-sm text-muted-foreground">Zaten hesabın var mı? <Link href="/giris" className="font-semibold text-foreground underline decoration-primary underline-offset-4" data-testid="link-to-login">Giriş yap</Link></p>
+      <Link href="/kurallar" className="mt-2 block text-center text-sm text-brand-ink underline">Kullanım koşulları, topluluk kuralları ve gizlilik</Link>
+      <p className="mt-3 text-center text-sm text-muted-foreground">Zaten hesabın var mı? <Link href="/giris" className="font-semibold text-foreground underline decoration-primary underline-offset-4" data-testid="link-to-login">Giriş yap</Link></p>
       <p className="mt-3 text-center text-[11px] text-muted-foreground">E-posta adresin diğer kullanıcılara gösterilmez.</p>
-    </Frame>
+      </section>
+    </main>
   );
 }
