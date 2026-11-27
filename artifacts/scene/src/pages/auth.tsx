@@ -208,8 +208,8 @@ export function RegisterPage() {
         <div className="space-y-1.5"><Label htmlFor="r-password">Şifre</Label><Input id="r-password" type="password" autoComplete="new-password" required minLength={MIN_NEW_PASSWORD_LENGTH} value={password} onChange={(e) => setPassword(e.target.value)} className="h-11 w-full min-w-0 border-white/25 bg-white/10 text-base text-white" data-testid="input-register-password" /><p className="text-xs text-muted-foreground">En az {MIN_NEW_PASSWORD_LENGTH} karakter.</p></div>
         <div className="space-y-1.5">
           <Label htmlFor="register-birth-date">Doğum tarihi</Label>
-          <Input id="register-birth-date" type="date" autoComplete="bday" required max={latest}
-            value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-11 w-full min-w-0 border-white/25 bg-white/10 text-base text-white" />
+          <input id="register-birth-date" type="date" autoComplete="bday" required max={latest}
+            value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="movia-birth-date block h-11 rounded-xl border border-white/25 bg-white/10 px-3 text-base text-white" />
           <p className="text-xs text-muted-foreground">{brand.name} 18 yaş ve üzeri içindir. Profilde yalnızca yaşın gösterilir.</p>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-brand-ink">
