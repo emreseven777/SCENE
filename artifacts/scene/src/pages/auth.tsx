@@ -53,12 +53,12 @@ export function WelcomePage() {
   const features = [{label:"FİLMLER",Icon:Clapperboard},{label:"DİZİLER",Icon:Tv},{label:"ARKADAŞLIK",Icon:Users},{label:"FLÖRT",Icon:Heart}];
   return <main className="fixed inset-0 mx-auto flex h-[100dvh] w-full max-w-lg flex-col overflow-hidden text-center text-white" style={{background:"radial-gradient(ellipse at 0% 72%, #650d29 0%, transparent 45%), radial-gradient(ellipse at 100% 80%, #510b24 0%, transparent 45%), #180e15"}}>
     <div className="relative min-h-0 flex-1">
-      <img src="/2E8C2DB8-E721-4812-90CB-154D27282CE5.png" alt="Sinema salonunda birbirine bakan çift" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
+      <img src="/2E8C2DB8-E721-4812-90CB-154D27282CE5.png" alt="Sinema salonunda birbirine bakan çift" fetchPriority="high" className="absolute inset-x-0 bottom-0 top-[clamp(48px,9dvh,90px)] h-[calc(100%-clamp(48px,9dvh,90px))] w-full object-cover object-[center_25%]" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-[#180e15]" />
-      <div className="relative flex flex-col items-center pt-[max(12px,env(safe-area-inset-top))]">
-        <div className="relative grid size-12 place-items-center"><Heart className="absolute size-12 fill-[#f73c72] text-[#f73c72]" /><Play className="relative size-5 fill-[#241019] text-[#241019]" /></div>
-        <span className="text-[clamp(32px,9vw,48px)] font-black leading-none tracking-tight">MOVIA</span>
-        <span className="mt-1 text-xs font-medium tracking-[.42em]">DATING</span>
+      <div className="relative flex flex-col items-center pt-[max(4px,env(safe-area-inset-top))]">
+        <div className="relative grid size-8 place-items-center"><Heart className="absolute size-8 fill-[#f73c72] text-[#f73c72]" /><Play className="relative size-3.5 fill-[#241019] text-[#241019]" /></div>
+        <span className="text-[clamp(24px,6.5vw,34px)] font-black leading-none tracking-tight">MOVIA</span>
+        <span className="mt-0.5 text-[9px] font-medium tracking-[.42em]">DATING</span>
       </div>
     </div>
     <div className="relative z-10 -mt-8 shrink-0 px-5">
