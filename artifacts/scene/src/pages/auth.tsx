@@ -123,6 +123,7 @@ export function LoginPage() {
   const [, go] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword,setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -136,13 +137,13 @@ export function LoginPage() {
 
   return (
     <main className="relative isolate mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col justify-end overflow-hidden px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(12px,env(safe-area-inset-top))] text-white" style={{background:"linear-gradient(180deg,rgba(24,14,21,.12) 0%,rgba(24,14,21,.48) 30%,#260d1c 66%,#180e15 100%),url(/2E8C2DB8-E721-4812-90CB-154D27282CE5.png) center top / cover no-repeat"}}>
-      <div className="flex flex-1 flex-col items-center justify-start pt-2"><SceneBrand /></div>
+      <div className="flex flex-1 flex-col items-center justify-start pt-2"><div className="relative grid size-10 place-items-center"><Heart className="absolute size-10 fill-pink-500 text-pink-500"/><Play className="relative size-4 fill-white text-white"/></div><span className="text-3xl font-black text-white">MOVIA</span><span className="text-xs tracking-[.4em]">DATING</span></div>
       <section className="w-full rounded-3xl border border-white/15 bg-[#260d1c]/85 p-4 backdrop-blur-md">
       <h1 className="text-center text-3xl font-black tracking-tight">Tekrar <span className="text-[#ff739c]">hoş geldin.</span></h1>
       <p className="mb-3 mt-1 text-center text-sm text-white/75">Favori hikâyelerinden başlayan sohbetlere geri dön.</p>
       <form onSubmit={submit} className="space-y-2">
         <div className="space-y-1.5"><Label htmlFor="email">E-posta</Label><Input id="email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-11 border-white/25 bg-white/10 text-base text-white" data-testid="input-login-email" /></div>
-        <div className="space-y-1.5"><Label htmlFor="password">Şifre</Label><Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-11 border-white/25 bg-white/10 text-base text-white" data-testid="input-login-password" /></div>
+        <div className="space-y-1.5"><Label htmlFor="password">Şifre</Label><div className="relative"><Input id="password" type={showPassword?"text":"password"} autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-11 border-white/25 bg-white/10 text-base text-white" style={{paddingRight:"5rem"}} data-testid="input-login-password" /><button type="button" aria-label={showPassword?"Şifreyi gizle":"Şifreyi göster"} onClick={()=>setShowPassword(v=>!v)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-[#351729] px-2 py-1 text-xs font-bold text-white">{showPassword?"Gizle":"Göster"}</button></div></div>
         <Link href="/sifremi-unuttum" className="inline-flex min-h-8 items-center text-sm font-bold text-[#ff91b2] underline">Şifremi unuttum</Link>
         {error && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm" data-testid="text-login-error">{error}</p>}
         <Button type="submit" disabled={busy} className="h-12 w-full rounded-full bg-gradient-to-r from-[#ff3975] to-[#a91e4b] text-base font-bold text-white" data-testid="button-login">{busy ? <Loader2 className="animate-spin" size={18} /> : "Giriş yap"}</Button>
