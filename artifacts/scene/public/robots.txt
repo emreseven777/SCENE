@@ -1,2 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /mesajlar
+Disallow: /profil
+Disallow: /begeniler
+Disallow: /eslesmeler
+Disallow: /admin
+Sitemap: https://joinmovia.vercel.app/sitemap.xml
