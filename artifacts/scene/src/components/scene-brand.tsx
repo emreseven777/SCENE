@@ -17,7 +17,7 @@ export function SceneBrand({ className }: { className?: string }) {
   return (
     <Link href="/" aria-label={`${brand.name} ana sayfa`} data-testid="link-logo" className={cn("inline-flex w-fit items-center gap-2.5", className)}>
       <MoviaMark className="size-10 shrink-0 rounded-xl shadow-md" />
-      <span className="font-serif text-[clamp(.83rem,3.8vw,1.35rem)] font-bold tracking-[0.08em] text-brand-ink">{brand.name}</span>
+      <span className="font-sans text-[clamp(1.1rem,5vw,1.6rem)] font-extrabold tracking-tight text-brand-ink">{brand.name}</span>
     </Link>
   );
 }
@@ -45,7 +45,7 @@ return <div aria-hidden="true" className={cn("relative grid min-h-64 place-items
 
 export function SceneHeading({ title, description }: { title: string; description?: string }) {
   return (
-    <header className="mb-6 max-w-2xl">
+    <header className="mb-3 max-w-2xl">
       <h1 className="scene-title">{title}</h1>
       {description && <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">{description}</p>}
     </header>

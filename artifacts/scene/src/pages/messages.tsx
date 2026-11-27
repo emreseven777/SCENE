@@ -1,3 +1,4 @@
+import { VerifiedBadge } from "@/components/profile-identity";
 import { CinemaDuel } from "@/components/cinema-duel";
 import { ProfileSafety } from "@/components/dating-profile";
 import { CinemaMessage, SharedCinema } from "@/components/shared-cinema";
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { PersonPhoto } from "@/components/person-photo";
 import { quizResultLabel, readQuizResult } from "@/lib/quiz-result";
 
-function ConversationList({ activeId }: { activeId?: string }) {
+function ConversationList({ activeId, filter = 'all' }: { activeId?: string; filter?: 'all' | 'matches' | 'unread' }) {
   const store = useStore();
   const [revealed, setRevealed] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{id:string; name:string} | null>(null);
@@ -31,7 +32,8 @@ function ConversationList({ activeId }: { activeId?: string }) {
   const convos = useMemo(() => store.people.filter((p) => store.matches[p.id])
     .map((p) => ({ p, last: store.messages[p.id]?.at(-1) }))
     .sort((a, b) => (b.last?.at ?? store.matches[b.p.id].at) - (a.last?.at ?? store.matches[a.p.id].at)), [store.people, store.matches, store.messages]);
-  if (!convos.length)
+  const visible = convos.filter(({p,last}) => filter === 'all' || (filter === 'matches' ? !last : (store.messages[p.id] ?? []).some(m => m.from === 'them' && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0))));
+  if (!visible.length)
     return (
       <div className="scene-panel p-8 text-center">
         <div className="font-display text-2xl font-bold">Henüz sohbet yok</div>
@@ -40,18 +42,18 @@ function ConversationList({ activeId }: { activeId?: string }) {
       </div>
     );
   return (
-    <ul className="scene-panel divide-y divide-border p-2">
-      {convos.map(({ p, last }) => {
+    <ul className="grid gap-2">
+      {visible.map(({ p, last }) => {
         const unread = (store.messages[p.id] ?? []).filter((m) => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0)).length;
         return (
         <li key={p.id} className="relative overflow-hidden rounded-xl">
           {revealed === p.id && <button type="button" className="absolute inset-y-0 right-0 w-32 bg-red-700 text-white text-xs font-bold" onClick={() => setConfirm({id:p.id,name:p.name})}>Eşleşmeyi kaldır</button>}
-          <div className="relative flex items-center bg-card transition-transform" style={{transform: revealed === p.id ? "translateX(-128px)" : undefined, touchAction:"pan-y"}} onTouchStart={e => {gesture.current={x:e.touches[0].clientX,y:e.touches[0].clientY}; suppress.current=false;}} onTouchEnd={e => {const start=gesture.current; gesture.current=null; if(!start)return; const dx=e.changedTouches[0].clientX-start.x; const dy=e.changedTouches[0].clientY-start.y; if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.5){suppress.current=true;setRevealed(dx<0?p.id:null);}}} onClickCapture={e => {if(suppress.current){e.preventDefault();e.stopPropagation();suppress.current=false;}}}>
-          <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-muted", activeId === p.id && "bg-muted")}>
-            <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-12 w-12 shrink-0 rounded-full" textClassName="text-lg" />
+          <div className="relative flex items-center rounded-2xl border border-white/10 bg-card transition-transform" style={{transform: revealed === p.id ? "translateX(-128px)" : undefined, touchAction:"pan-y"}} onTouchStart={e => {gesture.current={x:e.touches[0].clientX,y:e.touches[0].clientY}; suppress.current=false;}} onTouchEnd={e => {const start=gesture.current; gesture.current=null; if(!start)return; const dx=e.changedTouches[0].clientX-start.x; const dy=e.changedTouches[0].clientY-start.y; if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.5){suppress.current=true;setRevealed(dx<0?p.id:null);}}} onClickCapture={e => {if(suppress.current){e.preventDefault();e.stopPropagation();suppress.current=false;}}}>
+          <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-muted", activeId === p.id && "bg-muted")}>
+            <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-[68px] w-[68px] shrink-0 rounded-full ring-1 ring-white/15" textClassName="text-xl" />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="font-semibold">{p.name}</span>
+                <span className="font-semibold">{p.name}{p.verified_photo && <VerifiedBadge />}</span>
                 {unread > 0 && <span aria-label={`${unread} okunmamış mesaj`} className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground">{unread}</span>}
                 {last && <span className="font-mono text-[10px] text-muted-foreground">{format(last.at, "HH:mm")}</span>}
               </div>
@@ -68,11 +70,15 @@ function ConversationList({ activeId }: { activeId?: string }) {
 }
 
 export function MessagesIndex() {
+  const [filter,setFilter] = useState<"all" | "matches" | "unread">("all");
+  const store = useStore();
+  const people = store.people.filter(p => store.matches[p.id]);
+  const counts = [people.length, people.filter(p => !store.messages[p.id]?.length).length, people.filter(p => (store.messages[p.id] ?? []).some(m => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0))).length];
   return (
-    <div className="scene-page">
-      <SceneHeading title="Mesajlar" description="Sohbetlerini yalnızca sen ve eşleştiğin kişi görebilir." />
-
-      <ConversationList />
+    <div className="scene-page movia-night min-h-[85dvh]">
+      <div className="mb-2 flex items-center justify-between gap-2"><SceneHeading title="Mesajlar" description="Eşleşmelerinle sohbet et, ortak hikâyelerde buluş." /><div aria-hidden="true" className="relative h-28 w-32 shrink-0 -translate-y-3 drop-shadow-xl"><svg aria-hidden="true" viewBox="0 0 180 150" className="h-full w-full"><defs><linearGradient id="clap" x2="1" y2="1"><stop stopColor="#65505c"/><stop offset="1" stopColor="#160d17"/></linearGradient><linearGradient id="bucket"><stop stopColor="#b81736"/><stop offset=".5" stopColor="#ff4860"/><stop offset="1" stopColor="#85102b"/></linearGradient><radialGradient id="corn"><stop stopColor="#fff8ce"/><stop offset=".65" stopColor="#f7d57e"/><stop offset="1" stopColor="#bc782e"/></radialGradient></defs><g transform="translate(12 34) rotate(-17 65 45)"><rect width="125" height="79" rx="4" fill="url(#clap)" stroke="#80606e"/><path d="M0 0H125V18H0Z" fill="#30232f"/>{Array.from({length:5},(_,i)=><path key={i} d={`M${i*25} 0h12l12 18h-12z`} fill="#e7d7dd"/>)}<g transform="rotate(-12 0 0)"><rect y="-17" width="125" height="15" rx="2" fill="#34242e"/>{Array.from({length:5},(_,i)=><path key={i} d={`M${i*25} -17h12l12 15h-12z`} fill="#e7d7dd"/>)}</g><path d="M10 35H115M10 52H115M10 65H115M45 35V65M83 35V65" stroke="#b39aa6" opacity=".55"/><text x="12" y="30" fill="#e5d1d9" fontSize="9" fontWeight="bold">MOVIA • CINEMA</text></g><g transform="translate(78 55)">{Array.from({length:45},(_,i)=><circle key={i} cx={9+(i*23)%79} cy={12+((i*17)%29)} r={5+i%4} fill="url(#corn)" stroke="#eac078" strokeWidth=".5"/>)}<path d="M0 34Q48 46 96 34L82 91Q48 101 14 91Z" fill="url(#bucket)"/><path d="M13 38L24 94 36 96 30 42ZM48 44L48 98 61 97 66 42ZM82 38L73 95 82 91 96 34Z" fill="#f6bc52"/><path d="M0 34Q48 46 96 34" fill="none" stroke="#ffd797" strokeWidth="4"/></g></svg></div></div>
+      <div className="mb-3 grid grid-cols-3 gap-1">{(["all","matches","unread"] as const).map((key,i)=><button key={key} type="button" aria-pressed={filter===key} onClick={()=>setFilter(key)} className={`flex items-center justify-center gap-1 rounded-full px-1 py-2 text-[11px] font-bold ${filter===key?"bg-gradient-to-r from-pink-600 to-rose-600 text-white":"bg-card"}`}>{["Tümü","Eşleşmeler","Okunmamış"][i]} <span className="grid min-w-5 h-5 place-items-center rounded-full bg-white px-1 text-[10px] font-extrabold text-[#43162e]">{counts[i]}</span></button>)}</div>
+      <ConversationList filter={filter} />
     </div>
   );
 }
@@ -264,15 +270,15 @@ export function Chat() {
   };
 
   return (
-    <div className="mx-auto grid max-w-6xl min-w-0 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-6 lg:px-8 lg:pt-8">
+    <div className="mx-auto grid h-full min-h-0 max-w-6xl min-w-0 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-6 lg:px-8 lg:pt-8">
       <aside className="hidden lg:block"><ConversationList activeId={p.id} /></aside>
-      <div className="scene-panel relative isolate !border-white/15 !bg-[#241936] !text-white bg-[radial-gradient(ellipse_at_0%_40%,#773453_0%,transparent_55%),radial-gradient(ellipse_at_100%_90%,#49305f_0%,transparent_60%)] flex h-[calc(100dvh-8.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[18rem] min-w-0 flex-col overflow-hidden lg:h-[calc(100dvh-5rem)]">
+      <div className="scene-panel relative isolate !border-white/15 !bg-[#241936] !text-white bg-[radial-gradient(ellipse_at_0%_40%,#773453_0%,transparent_55%),radial-gradient(ellipse_at_100%_90%,#49305f_0%,transparent_60%)] flex h-full min-h-[18rem] min-w-0 flex-col overflow-hidden lg:h-[calc(100dvh-5rem)]">
         <div className="flex items-center gap-2 border-b border-white/15 bg-white/10 backdrop-blur-xl px-3 py-2">
           <Link href="/mesajlar" className="lg:hidden" aria-label="Geri" data-testid="link-back-messages"><ArrowLeft size={20} /></Link>
           <Link href={`/kullanici/${p.id}`} className="flex items-center gap-3" data-testid="link-chat-profile">
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-10 w-10 rounded-full" textClassName="text-sm" />
             <div>
-              <div className="font-semibold leading-tight">{p.name}</div>
+              <div className="font-semibold leading-tight">{p.name}{p.verified_photo && <VerifiedBadge />}</div>
               <div className="text-[11px] text-white/75">{isTyping ? "Yazıyor…" : online ? "Çevrimiçi" : presence ? `Son görülme: ${new Date(presence.updated_at).toLocaleString("tr-TR")}` : `${common.length} ortak favori`}</div>
             </div>
           </Link>

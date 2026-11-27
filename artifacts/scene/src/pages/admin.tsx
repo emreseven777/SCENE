@@ -185,10 +185,10 @@ export default function Admin() {
               <img key={review.data.url} src={review.data.url} alt="İnceleme için gönderilen ana profil fotoğrafı"
                 className="max-h-72 rounded-xl object-contain" referrerPolicy="no-referrer"
                 onLoad={() => setReviewLoaded(true)} onError={() => setReviewLoaded(false)} />
-              {row.id !== session?.user.id && <Button size="sm" disabled={!reviewLoaded || mutation.isPending} onClick={() => {
+              {String(row.id) !== session?.user.id && <Button className="bg-emerald-600 text-white hover:bg-emerald-700" size="sm" disabled={!reviewLoaded || mutation.isPending} onClick={() => {
                 mutation.reset(); setReason("");
                 setDecision({ subject: String(row.id), action: { name: "approve_photo_review", label: "Ana fotoğrafı onayla" } });
-              }}>Ana fotoğrafı onayla</Button>}
+              }}>Fotoğrafı onayla</Button>}{String(row.id) === session?.user.id && <p className="text-sm text-muted-foreground">Kendi başvurun başka bir yetkili yönetici tarafından onaylanmalıdır.</p>}
             </>}
           </>}
         </div>}

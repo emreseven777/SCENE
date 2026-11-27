@@ -11,7 +11,9 @@ export function MatchOverlay({ pid, onClose }: { pid: string | null; onClose: ()
 }
 
 function Inner({ pid, onClose }: { pid: string; onClose: () => void }) {
-  const p = useStore().personById(pid)!;
+  const store = useStore();
+  const p = store.personById(pid)!;
+  const me = store.me;
   const common = useCommon(p.favorites);
   const [, go] = useLocation();
   return (
@@ -23,7 +25,7 @@ function Inner({ pid, onClose }: { pid: string; onClose: () => void }) {
         </motion.h2>
         <div className="relative mx-auto mt-8 flex h-36 w-full max-w-64 justify-center">
           <motion.div className="absolute left-4 h-36 w-28 -rotate-6 overflow-hidden scene-gradient rounded-2xl ring-2 ring-card" initial={{ x: -80, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3, type: "spring" }}>
-            <div className="grid h-full place-items-center font-display text-3xl font-bold text-primary-foreground">Sen</div>
+            <PersonPhoto id={me?.id ?? "self"} name={me?.name ?? "Sen"} avatarPath={me?.avatar_path ?? null} className="h-full w-full" textClassName="text-4xl" />
           </motion.div>
           <motion.div className="absolute right-4 h-36 w-28 rotate-6 overflow-hidden rounded-2xl ring-2 ring-card" initial={{ x: 80, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3, type: "spring" }}>
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-full w-full" textClassName="text-4xl" />
