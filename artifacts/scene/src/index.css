@@ -381,3 +381,7 @@ html, body { overscroll-behavior-y: none; }
 html:not(.dark) body, html.dark body { background-image: radial-gradient(ellipse at top right,#591c3b,#24101f 65%); background-attachment: fixed; }
 .movia-night { background: transparent; }
 input[type=date] { min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box; }
+
+.movia-birth-date { display:block; appearance:none; -webkit-appearance:none; width:100% !important; max-width:100% !important; min-width:0 !important; box-sizing:border-box !important; }
+.movia-birth-date::-webkit-date-and-time-value { min-width:0; text-align:left; margin:0; }
+.movia-birth-date::-webkit-datetime-edit { min-width:0; padding:0; }
