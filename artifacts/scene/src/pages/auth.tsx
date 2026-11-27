@@ -51,8 +51,8 @@ export function ComingSoonStores() {
 
 export function WelcomePage() {
   const features = [{label:"FİLMLER",Icon:Clapperboard},{label:"DİZİLER",Icon:Tv},{label:"ARKADAŞLIK",Icon:Users},{label:"FLÖRT",Icon:Heart}];
-  return <main className="relative mx-auto min-h-[100dvh] w-full max-w-lg overflow-hidden text-center text-white" style={{background:"radial-gradient(ellipse at 0% 72%, #650d29 0%, transparent 45%), radial-gradient(ellipse at 100% 80%, #510b24 0%, transparent 45%), #180e15"}}>
-    <div className="relative h-[clamp(280px,43dvh,470px)]">
+  return <main className="fixed inset-0 mx-auto flex h-[100dvh] w-full max-w-lg flex-col overflow-hidden text-center text-white" style={{background:"radial-gradient(ellipse at 0% 72%, #650d29 0%, transparent 45%), radial-gradient(ellipse at 100% 80%, #510b24 0%, transparent 45%), #180e15"}}>
+    <div className="relative min-h-0 flex-1">
       <img src="/2E8C2DB8-E721-4812-90CB-154D27282CE5.png" alt="Sinema salonunda birbirine bakan çift" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-[#180e15]" />
       <div className="relative flex flex-col items-center pt-[max(12px,env(safe-area-inset-top))]">
@@ -61,23 +61,23 @@ export function WelcomePage() {
         <span className="mt-1 text-xs font-medium tracking-[.42em]">DATING</span>
       </div>
     </div>
-    <div className="relative z-10 -mt-12 px-5">
+    <div className="relative z-10 -mt-8 shrink-0 px-5">
       <div className="grid grid-cols-4 divide-x divide-[#f35b86]/40">
         {features.map(({label,Icon})=><div key={label} className="flex flex-col items-center gap-1.5"><Icon className="size-7 text-[#ff739c]" strokeWidth={1.7}/><span className="text-[10px] font-bold tracking-wide">{label}</span></div>)}
       </div>
-      <h1 className="mt-5 text-[clamp(25px,7vw,36px)] font-extrabold leading-[1.12] tracking-tight">Aynı hikâyeleri seven insanlarla <span className="text-[#ff4279]">eşleş.</span></h1>
-      <p className="mx-auto mt-3 max-w-sm text-[14px] leading-relaxed text-white/80">Favori film ve dizilerin üzerinden arkadaşlık, sohbet ve belki daha fazlası...</p>
-      <div aria-hidden="true" className="my-4 flex justify-center gap-2"><span className="size-2 rounded-full bg-[#ff4279]"/><span className="size-2 rounded-full bg-white/20"/><span className="size-2 rounded-full bg-white/20"/></div>
-      <div className="grid gap-3">
-        <Link href="/kayit" className="relative flex min-h-14 items-center justify-center gap-3 rounded-full border border-[#ff759c] bg-gradient-to-br from-[#ff3975] to-[#a91e4b] px-8 text-lg font-bold text-white shadow-lg"><UserPlus className="size-6"/>Hemen Kayıt Ol<ArrowRight className="absolute right-5 size-5"/></Link>
-        <Link href="/giris" className="flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/90 bg-black/10 text-base font-bold text-white"><LogIn className="size-5"/>Giriş Yap</Link>
+      <h1 className="mt-[clamp(8px,1.8dvh,20px)] text-[clamp(22px,6.5vw,36px)] font-extrabold leading-[1.12] tracking-tight">Aynı hikâyeleri seven insanlarla <span className="text-[#ff4279]">eşleş.</span></h1>
+      <p className="mx-auto mt-2 max-w-sm text-[clamp(12px,1.8dvh,14px)] leading-relaxed text-white/80">Favori film ve dizilerin üzerinden arkadaşlık, sohbet ve belki daha fazlası...</p>
+      <div aria-hidden="true" className="my-[clamp(6px,1.4dvh,16px)] flex justify-center gap-2"><span className="size-2 rounded-full bg-[#ff4279]"/><span className="size-2 rounded-full bg-white/20"/><span className="size-2 rounded-full bg-white/20"/></div>
+      <div className="grid gap-2">
+        <Link href="/kayit" className="relative flex min-h-[clamp(42px,6.5dvh,56px)] items-center justify-center gap-3 rounded-full border border-[#ff759c] bg-gradient-to-br from-[#ff3975] to-[#a91e4b] px-8 text-lg font-bold text-white shadow-lg"><UserPlus className="size-6"/>Hemen Kayıt Ol<ArrowRight className="absolute right-5 size-5"/></Link>
+        <Link href="/giris" className="flex min-h-[clamp(38px,5.8dvh,48px)] items-center justify-center gap-3 rounded-full border border-white/90 bg-black/10 text-base font-bold text-white"><LogIn className="size-5"/>Giriş Yap</Link>
       </div>
-      <section aria-label="Uygulama mağazaları" className="mt-4 grid grid-cols-2 gap-3">
+      <section aria-label="Uygulama mağazaları" className="mt-3 grid grid-cols-2 gap-3">
         {upcomingStores.map(({name,logo})=><div key={name} className="flex items-center justify-center gap-2 rounded-xl border border-[#ff4279] bg-black/20 px-2 py-2.5 shadow-[0_0_12px_#ff427933]"><img src={logo} alt="" className="size-7 shrink-0" style={name==="App Store"?{filter:"brightness(0) invert(1)"}:undefined}/><div className="text-left"><p className="text-xs font-bold">{name}</p><p className="text-[11px] text-white/75">Çok Yakında</p></div></div>)}
       </section>
     </div>
-    <div aria-hidden="true" className="relative mt-5 h-16 overflow-hidden"><div className="absolute -left-8 top-4 flex w-[120%] -rotate-6 justify-around border-y-[6px] border-dashed border-[#c52659] bg-[#6d1534]/60 py-2 text-[#ff4279]"><Clapperboard/><Play className="fill-current"/><Clapperboard/><Play className="fill-current"/></div></div>
-    <footer className="relative flex flex-wrap justify-center gap-4 px-4 pb-[max(16px,env(safe-area-inset-bottom))] text-xs text-white/65"><Link href="/kurallar" className="underline">Hukuki belgeler</Link><SupportEmail/><ThemeToggle/></footer>
+    <div aria-hidden="true" className="relative mt-2 h-[clamp(24px,5dvh,64px)] shrink-0 overflow-hidden"><div className="absolute -left-8 top-4 flex w-[120%] -rotate-6 justify-around border-y-[6px] border-dashed border-[#c52659] bg-[#6d1534]/60 py-2 text-[#ff4279]"><Clapperboard/><Play className="fill-current"/><Clapperboard/><Play className="fill-current"/></div></div>
+    <div className="shrink-0 pb-[env(safe-area-inset-bottom)]" />
   </main>;
 }
 
