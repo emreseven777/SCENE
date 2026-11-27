@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { PersonPhoto } from "@/components/person-photo";
 import { quizResultLabel, readQuizResult } from "@/lib/quiz-result";
 
-function ConversationList({ activeId }: { activeId?: string }) {
+function ConversationList({ activeId, filter = 'all' }: { activeId?: string; filter?: 'all' | 'matches' | 'unread' }) {
   const store = useStore();
   const [revealed, setRevealed] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{id:string; name:string} | null>(null);
@@ -31,7 +31,8 @@ function ConversationList({ activeId }: { activeId?: string }) {
   const convos = useMemo(() => store.people.filter((p) => store.matches[p.id])
     .map((p) => ({ p, last: store.messages[p.id]?.at(-1) }))
     .sort((a, b) => (b.last?.at ?? store.matches[b.p.id].at) - (a.last?.at ?? store.matches[a.p.id].at)), [store.people, store.matches, store.messages]);
-  if (!convos.length)
+  const visible = convos.filter(({p,last}) => filter === 'all' || (filter === 'matches' ? !last : (store.messages[p.id] ?? []).some(m => m.from === 'them' && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0))));
+  if (!visible.length)
     return (
       <div className="scene-panel p-8 text-center">
         <div className="font-display text-2xl font-bold">Henüz sohbet yok</div>
@@ -40,14 +41,14 @@ function ConversationList({ activeId }: { activeId?: string }) {
       </div>
     );
   return (
-    <ul className="scene-panel divide-y divide-border p-2">
-      {convos.map(({ p, last }) => {
+    <ul className="grid gap-2">
+      {visible.map(({ p, last }) => {
         const unread = (store.messages[p.id] ?? []).filter((m) => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0)).length;
         return (
         <li key={p.id} className="relative overflow-hidden rounded-xl">
           {revealed === p.id && <button type="button" className="absolute inset-y-0 right-0 w-32 bg-red-700 text-white text-xs font-bold" onClick={() => setConfirm({id:p.id,name:p.name})}>Eşleşmeyi kaldır</button>}
-          <div className="relative flex items-center bg-card transition-transform" style={{transform: revealed === p.id ? "translateX(-128px)" : undefined, touchAction:"pan-y"}} onTouchStart={e => {gesture.current={x:e.touches[0].clientX,y:e.touches[0].clientY}; suppress.current=false;}} onTouchEnd={e => {const start=gesture.current; gesture.current=null; if(!start)return; const dx=e.changedTouches[0].clientX-start.x; const dy=e.changedTouches[0].clientY-start.y; if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.5){suppress.current=true;setRevealed(dx<0?p.id:null);}}} onClickCapture={e => {if(suppress.current){e.preventDefault();e.stopPropagation();suppress.current=false;}}}>
-          <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-muted", activeId === p.id && "bg-muted")}>
+          <div className="relative flex items-center rounded-2xl border border-white/10 bg-card transition-transform" style={{transform: revealed === p.id ? "translateX(-128px)" : undefined, touchAction:"pan-y"}} onTouchStart={e => {gesture.current={x:e.touches[0].clientX,y:e.touches[0].clientY}; suppress.current=false;}} onTouchEnd={e => {const start=gesture.current; gesture.current=null; if(!start)return; const dx=e.changedTouches[0].clientX-start.x; const dy=e.changedTouches[0].clientY-start.y; if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.5){suppress.current=true;setRevealed(dx<0?p.id:null);}}} onClickCapture={e => {if(suppress.current){e.preventDefault();e.stopPropagation();suppress.current=false;}}}>
+          <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-muted", activeId === p.id && "bg-muted")}>
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-12 w-12 shrink-0 rounded-full" textClassName="text-lg" />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
@@ -68,11 +69,15 @@ function ConversationList({ activeId }: { activeId?: string }) {
 }
 
 export function MessagesIndex() {
+  const [filter,setFilter] = useState<"all" | "matches" | "unread">("all");
+  const store = useStore();
+  const people = store.people.filter(p => store.matches[p.id]);
+  const counts = [people.length, people.filter(p => !store.messages[p.id]?.length).length, people.filter(p => (store.messages[p.id] ?? []).some(m => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0))).length];
   return (
-    <div className="scene-page">
-      <SceneHeading title="Mesajlar" description="Sohbetlerini yalnızca sen ve eşleştiğin kişi görebilir." />
-
-      <ConversationList />
+    <div className="scene-page movia-night min-h-[85dvh]">
+      <SceneHeading title="Mesajlar" description="Eşleşmelerinle sohbet et, ortak hikâyelerde buluş." />
+      <div className="mb-3 grid grid-cols-3 gap-1">{(["all","matches","unread"] as const).map((key,i)=><button key={key} type="button" aria-pressed={filter===key} onClick={()=>setFilter(key)} className={`rounded-full px-1 py-2 text-xs font-bold ${filter===key?"bg-gradient-to-r from-pink-600 to-violet-600 text-white":"bg-card"}`}>{["Tümü","Eşleşmeler","Okunmamış"][i]} · {counts[i]}</button>)}</div>
+      <ConversationList filter={filter} />
     </div>
   );
 }
