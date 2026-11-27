@@ -1,3 +1,4 @@
+import { VerifiedBadge } from "@/components/profile-identity";
 import { CinemaDuel } from "@/components/cinema-duel";
 import { ProfileSafety } from "@/components/dating-profile";
 import { CinemaMessage, SharedCinema } from "@/components/shared-cinema";
@@ -52,7 +53,7 @@ function ConversationList({ activeId, filter = 'all' }: { activeId?: string; fil
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-[68px] w-[68px] shrink-0 rounded-full ring-1 ring-white/15" textClassName="text-xl" />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="font-semibold">{p.name}</span>
+                <span className="font-semibold">{p.name}{p.verified_photo && <VerifiedBadge />}</span>
                 {unread > 0 && <span aria-label={`${unread} okunmamış mesaj`} className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground">{unread}</span>}
                 {last && <span className="font-mono text-[10px] text-muted-foreground">{format(last.at, "HH:mm")}</span>}
               </div>
@@ -277,7 +278,7 @@ export function Chat() {
           <Link href={`/kullanici/${p.id}`} className="flex items-center gap-3" data-testid="link-chat-profile">
             <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-10 w-10 rounded-full" textClassName="text-sm" />
             <div>
-              <div className="font-semibold leading-tight">{p.name}</div>
+              <div className="font-semibold leading-tight">{p.name}{p.verified_photo && <VerifiedBadge />}</div>
               <div className="text-[11px] text-white/75">{isTyping ? "Yazıyor…" : online ? "Çevrimiçi" : presence ? `Son görülme: ${new Date(presence.updated_at).toLocaleString("tr-TR")}` : `${common.length} ortak favori`}</div>
             </div>
           </Link>
