@@ -14,7 +14,7 @@ import { SceneHeading } from "@/components/scene-brand";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Lock, Send, MoreHorizontal, Plus, Smile, Clapperboard, Popcorn } from "lucide-react";
+import { ArrowLeft, Lock, Send, MoreHorizontal, Plus, Smile } from "lucide-react";
 import { format } from "date-fns";
 import { canOpenProfile, fetchChatMessages, type Msg, useCommon, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -75,8 +75,8 @@ export function MessagesIndex() {
   const counts = [people.length, people.filter(p => !store.messages[p.id]?.length).length, people.filter(p => (store.messages[p.id] ?? []).some(m => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0))).length];
   return (
     <div className="scene-page movia-night min-h-[85dvh]">
-      <div className="flex items-center justify-between gap-2"><SceneHeading title="Mesajlar" description="Eşleşmelerinle sohbet et, ortak hikâyelerde buluş." /><div aria-hidden="true" className="flex shrink-0 items-center text-pink-400"><Clapperboard size={28}/><Popcorn size={32}/></div></div>
-      <div className="mb-3 grid grid-cols-3 gap-1">{(["all","matches","unread"] as const).map((key,i)=><button key={key} type="button" aria-pressed={filter===key} onClick={()=>setFilter(key)} className={`rounded-full px-1 py-2 text-xs font-bold ${filter===key?"bg-gradient-to-r from-pink-600 to-violet-600 text-white":"bg-card"}`}>{["Tümü","Eşleşmeler","Okunmamış"][i]} · {counts[i]}</button>)}</div>
+      <div className="flex items-center justify-between gap-2"><SceneHeading title="Mesajlar" description="Eşleşmelerinle sohbet et, ortak hikâyelerde buluş." /><div aria-hidden="true" className="relative h-24 w-28 shrink-0"><span className="absolute right-3 top-0 -rotate-12 text-[58px] leading-none drop-shadow-lg">🎬</span><span className="absolute bottom-0 right-0 text-[62px] leading-none drop-shadow-lg">🍿</span></div></div>
+      <div className="mb-3 grid grid-cols-3 gap-1">{(["all","matches","unread"] as const).map((key,i)=><button key={key} type="button" aria-pressed={filter===key} onClick={()=>setFilter(key)} className={`flex items-center justify-center gap-1 rounded-full px-1 py-2 text-[11px] font-bold ${filter===key?"bg-gradient-to-r from-pink-600 to-rose-600 text-white":"bg-card"}`}>{["Tümü","Eşleşmeler","Okunmamış"][i]} <span className="grid min-w-5 h-5 place-items-center rounded-full bg-white px-1 text-[10px] font-extrabold text-[#43162e]">{counts[i]}</span></button>)}</div>
       <ConversationList filter={filter} />
     </div>
   );
