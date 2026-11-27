@@ -14,7 +14,7 @@ import { SceneHeading } from "@/components/scene-brand";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Lock, Send, MoreHorizontal, Plus, Smile } from "lucide-react";
+import { ArrowLeft, Lock, Send, MoreHorizontal, Plus, Smile, Clapperboard, Popcorn } from "lucide-react";
 import { format } from "date-fns";
 import { canOpenProfile, fetchChatMessages, type Msg, useCommon, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -75,7 +75,7 @@ export function MessagesIndex() {
   const counts = [people.length, people.filter(p => !store.messages[p.id]?.length).length, people.filter(p => (store.messages[p.id] ?? []).some(m => m.from === "them" && !m.deleted && Number(m.id) > (store.readThrough[p.id] ?? 0))).length];
   return (
     <div className="scene-page movia-night min-h-[85dvh]">
-      <SceneHeading title="Mesajlar" description="Eşleşmelerinle sohbet et, ortak hikâyelerde buluş." />
+      <div className="flex items-center justify-between gap-2"><SceneHeading title="Mesajlar" description="Eşleşmelerinle sohbet et, ortak hikâyelerde buluş." /><div aria-hidden="true" className="flex shrink-0 items-center text-pink-400"><Clapperboard size={28}/><Popcorn size={32}/></div></div>
       <div className="mb-3 grid grid-cols-3 gap-1">{(["all","matches","unread"] as const).map((key,i)=><button key={key} type="button" aria-pressed={filter===key} onClick={()=>setFilter(key)} className={`rounded-full px-1 py-2 text-xs font-bold ${filter===key?"bg-gradient-to-r from-pink-600 to-violet-600 text-white":"bg-card"}`}>{["Tümü","Eşleşmeler","Okunmamış"][i]} · {counts[i]}</button>)}</div>
       <ConversationList filter={filter} />
     </div>
