@@ -52,18 +52,21 @@ function ComingSoonStores() {
 export function WelcomePage() {
 return <main className="ivory-welcome mx-auto flex min-h-[100dvh] max-w-lg flex-col px-6 text-center">
 <div className="flex justify-end pt-[max(1rem,env(safe-area-inset-top))]"><ThemeToggle /></div>
-<div className="my-auto flex flex-col items-center py-8">
+<div className="my-auto flex flex-col items-center py-4">
 <div className="flex flex-col items-center gap-3">
-<MoviaMark className="size-28 rounded-[2rem] shadow-xl" />
+<MoviaMark className="size-20 rounded-[1.5rem] shadow-xl" />
 <span className="font-serif text-[clamp(1.8rem,8.1vw,3.1rem)] font-bold leading-none tracking-[.04em] text-[#790e25]">{brand.name}</span>
 </div>
 <p className="mt-6 text-xs font-semibold uppercase tracking-[.24em] text-[#a47a40]">Sinema • Arkadaşlık • Flört</p>
 <h1 className="mt-4 font-serif text-[clamp(2rem,8vw,3rem)] font-bold leading-tight text-[#790e25]">{brand.slogan}</h1>
 <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#653a36]">Favori filmlerini paylaş. Seninle aynı hikâyeleri seven insanlarla tanış.</p>
-<div className="mt-8 w-full rounded-2xl border border-[#d5b57c] bg-[#fffaf0] p-5 shadow-sm">
+<div className="relative mt-6 w-full overflow-hidden rounded-[1.75rem] border border-[#d5b57c]/70 shadow-xl">
+<img src="/2E8C2DB8-E721-4812-90CB-154D27282CE5.png" alt="Sinema salonunda birbirine gülümseyen çift" className="aspect-[5/4] w-full object-cover object-[center_48%]" fetchPriority="high" />
+<div className="bg-[#fffaf0] p-4">
 <div className="text-3xl text-[#810e28]">♡</div>
 <p className="mt-2 font-serif text-xl font-bold text-[#790e25]">İki kişilik bir hikâye</p>
 <p className="mt-2 text-xs leading-relaxed text-[#653a36]">Ortak filmler · Yeni eşleşmeler · Sinema randevuları</p>
+</div>
 </div>
 </div>
 <div className="grid gap-3">
