@@ -124,26 +124,26 @@ export default function Cinema() {
       return title ?? [];
     });
 
-  return <div className="scene-page max-w-3xl">
+  return <div className="scene-page max-w-3xl pt-1">
     <SceneHeading title="Sinema Salonu" description="Favorilerini seç, izleyeceklerini sıraya koy." />
-    <div className="mb-3 flex items-center gap-2">
+    <div className="mb-2 flex items-center gap-2">
       <Button size="sm" variant={type === "film" && tab === "deck" ? "default" : "secondary"} onClick={() => { setType("film"); setTab("deck"); setMenu(null); }}>Film</Button>
       <Button size="sm" variant={type === "dizi" && tab === "deck" ? "default" : "secondary"} onClick={() => { setType("dizi"); setTab("deck"); setMenu(null); }}>Dizi</Button>
       <Button asChild size="sm" variant="ghost" className="ml-auto"><Link href="/arama">Arşivde ara</Link></Button>
     </div>
-    <div className="mb-3 grid grid-cols-2 gap-2">
+    <div className="mb-2 grid grid-cols-2 gap-2">
       <Button size="sm" variant="secondary" aria-expanded={menu === "collection"} onClick={() => setMenu(menu === "collection" ? null : "collection")}><Library />Koleksiyonum<ChevronDown /></Button>
       <Button size="sm" variant="secondary" aria-expanded={menu === "club"} onClick={() => setMenu(menu === "club" ? null : "club")}><Popcorn />Sinema Kulübü<ChevronDown /></Button>
     </div>
-    {menu === "collection" && <div className="scene-panel mb-3 grid gap-1 p-2">
+    {menu === "collection" && <div className="scene-panel mb-2 grid gap-1 p-2">
       <Button variant="ghost" onClick={() => { setTab("deck"); setMenu(null); }}>Salona dön</Button>
       {Object.entries(choices).map(([key, label]) => <Button key={key} variant={tab === key ? "secondary" : "ghost"} onClick={() => { setTab(key as Choice); setMenu(null); }}>{label}</Button>)}
     </div>}
-    {menu === "club" && <div className="scene-panel mb-3 grid gap-1 p-2">
+    {menu === "club" && <div className="scene-panel mb-2 grid gap-1 p-2">
       <Button asChild variant="ghost"><Link href="/sinema/topluluk">Topluluk odaları</Link></Button>
       <Button asChild variant="ghost"><Link href="/sinema/etkinlikler">Etkinlikler · Quiz ve bilgi yarışması</Link></Button>
     </div>}
-    {tab !== "deck" && <h2 className="mb-3 text-xl font-bold">{choices[tab]}</h2>}
+    {tab !== "deck" && <h2 className="mb-2 text-xl font-bold">{choices[tab]}</h2>}
     {menu === "collection" && archive.isSuccess && <details className="scene-panel mb-4 p-4">
       <summary className="cursor-pointer font-semibold">Sinema istatistiklerim ve başarılarım</summary>
       <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -159,13 +159,13 @@ export default function Cinema() {
     </details>}
     {archive.isError && <p role="alert">Tercihlerin yüklenemedi. <button className="underline" onClick={() => void archive.refetch()}>Tekrar dene</button></p>}
     {tab === "deck" ? <>
-      <details className="scene-panel mb-3 p-3"><summary className="flex cursor-pointer list-none items-center gap-2 font-bold"><SlidersHorizontal size={16} /> Filtreler <ChevronDown className="ml-auto" size={16} /></summary><div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+      <details className="scene-panel mb-2 p-2"><summary className="flex cursor-pointer list-none items-center gap-2 font-bold"><SlidersHorizontal size={16} /> Filtreler <ChevronDown className="ml-auto" size={16} /></summary><div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
         <label><span className="font-bold">Yapım</span><select className="mt-1 w-full rounded-lg border bg-card p-2" value={type} onChange={(e) => setType(e.target.value as TitleType)}><option value="film">Film</option><option value="dizi">Dizi</option></select></label>
         <label><span className="font-bold">Tür</span><select className="mt-1 w-full rounded-lg border bg-card p-2" value={genre} onChange={(e) => setGenre(e.target.value)}><option value="">Tümü</option>{genres.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
         <label><span className="font-bold">Yıl</span><select className="mt-1 w-full rounded-lg border bg-card p-2" value={year} onChange={(e) => setYear(e.target.value)}><option value="">Tümü</option>{Array.from({ length: new Date().getFullYear() - 1887 }, (_, i) => new Date().getFullYear() - i).map((y) => <option key={y}>{y}</option>)}</select></label>
         <label><span className="font-bold">Sıralama</span><select disabled={usingArchive} className="mt-1 w-full rounded-lg border bg-card p-2" value={usingArchive ? "archive" : sort} onChange={(e) => setSort(e.target.value)}>{usingArchive && <option value="archive">Arşiv sırası</option>}<option value="popularity.desc">Popüler</option><option value="vote_average.desc">En yüksek puan</option></select></label>
       </div></details>
-      {usingArchive && <p role="status" className="mb-3 text-sm text-muted-foreground">
+      {usingArchive && <p role="status" className="mb-2 text-sm text-muted-foreground">
         TMDB şu anda kullanılamıyor. MOVIA arşivi gösteriliyor.{" "}
         <button type="button" className="underline" disabled={catalog.isFetching} onClick={() => void catalog.refetch()}>TMDB’yi tekrar dene</button>
       </p>}
