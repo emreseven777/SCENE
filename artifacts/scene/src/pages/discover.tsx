@@ -6,14 +6,14 @@ import { motion } from "framer-motion";
 import { Heart, X, Film, Clapperboard, Sparkles, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { useStore, type Person } from "@/lib/store";
 import { SwipeCard } from "@/components/swipe-card";
-import { cinemaFit, GENDERS, GOALS, profileCinemaSignals, profileGenres, selectedTrait, sharedFavorites } from "@/lib/dating";
-import { CHOICES, GENRES, INTERESTS, OCCUPATIONS } from "@/lib/profile-choices";
-import { PROVINCES, isProvince } from "@/lib/provinces";
+import { cinemaFit, GENDERS, profileCinemaSignals, selectedTrait, sharedFavorites } from "@/lib/dating";
+import { isProvince } from "@/lib/provinces";
 import { ProfileIdentity } from "@/components/profile-identity";
 import { PersonPhoto, usePreloadPortraits } from "@/components/person-photo";
 import { useDiscoveryFeed } from "@/lib/discovery-feed";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { MatchOverlay } from "@/components/match-overlay";
 import { TitleDetail } from "@/components/title-detail";
 
@@ -59,7 +59,15 @@ function DiscoverPortrait({ person, score, common }: { person: Person; score: nu
   </div>;
 }
 
-const emptyFilters = { city: "", gender: "", goal: "", from: "", to: "", fit: "", heightFrom: "", heightTo: "", education: "", smoking: "", alcohol: "", relationship: "", children: "", sport: "", genre: "", shared: "", photosOnly: "", interest: "", occupation: "" };
+const genderOptions = [
+  { value: "", label: "Tümü" },
+  { value: "woman", label: GENDERS.woman },
+  { value: "man", label: GENDERS.man },
+] as const;
+const minAge = 18;
+const maxAge = 99;
+const defaultAgeRange = [minAge, maxAge];
+const ageThumbLabels = ["En düşük yaş", "En yüksek yaş"];
 
 export default function Discover() {
   const store = useStore();
@@ -67,7 +75,10 @@ export default function Discover() {
   const { toast } = useToast();
   const [matchPid, setMatchPid] = useState<string | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(null);
-  const [filter, setFilter] = useState(emptyFilters);
+  const [gender, setGender] = useState<(typeof genderOptions)[number]["value"]>("");
+  const [ageRange, setAgeRange] = useState(defaultAgeRange);
+  const [fromAge, toAge] = ageRange;
+  const maxAgeLabel = toAge === maxAge ? `${maxAge}+` : toAge;
   const [photoComment, setPhotoComment] = useState<{ person: string; value: string }>();
   const feed = useDiscoveryFeed(store.me?.id);
   const serverFeed = !!feed.data && !feed.data.pages[0]?.legacy;
@@ -92,23 +103,10 @@ export default function Discover() {
   }, [mine, ownDetails, candidates, store.titleById, fetchedTitles]);
   const cast = useMemo(() => candidates.filter((p) => p.onboarded && p.age !== null && isProvince(p.city) && !p.discovery_hidden && p.gender && p.looking_for && p.dating_goal
     && allows(store.me?.looking_for, p.gender) && allows(p.looking_for, store.me?.gender ?? null)
-    && (!filter.city || p.city === filter.city) && (!filter.gender || p.gender === filter.gender)
-    && (!filter.goal || p.dating_goal === filter.goal) && p.age >= Number(filter.from || 18)
-    && (!filter.to || p.age <= Number(filter.to))
-    && (!filter.occupation || selectedTrait(p.discovery_details,"occupation") === filter.occupation)
-    && (!filter.interest || (Array.isArray(p.discovery_details?.interests) && p.discovery_details.interests.includes(filter.interest)))
-    && (!filter.genre || profileGenres(p.discovery_details).includes(filter.genre))
-    && (!filter.heightFrom || Number(selectedTrait(p.discovery_details,"height")) >= Number(filter.heightFrom))
-    && (!filter.heightTo || (Number(selectedTrait(p.discovery_details,"height")) >= 130 && Number(selectedTrait(p.discovery_details,"height")) <= Number(filter.heightTo)))
-    && Object.keys(CHOICES).every((field) => {
-      const wanted = filter[field as keyof typeof CHOICES];
-      return !wanted || selectedTrait(p.discovery_details,field) === wanted;
-    })
-    && (!filter.shared || sharedFavorites(mine, p.favorites).length >= Number(filter.shared))
-    && (!filter.photosOnly || !!(p.avatar_path || p.avatar_paths.length))
-    && (!movieMatch || (fits.get(p.id)?.score ?? 0) > 0)
-    && (!filter.fit || (fits.get(p.id)?.score ?? -1) >= Number(filter.fit))),
-    [candidates, store.me?.looking_for, store.me?.gender, filter, fits, movieMatch, mine]);
+    && (!gender || p.gender === gender)
+    && p.age >= fromAge && (toAge === maxAge || p.age <= toAge)
+    && (!movieMatch || (fits.get(p.id)?.score ?? 0) > 0)),
+    [candidates, store.me?.looking_for, store.me?.gender, gender, fromAge, toAge, fits, movieMatch]);
   const deck = useMemo(
     () => cast.filter((p) => !store.liked.includes(p.id) && !store.passed.includes(p.id) && !store.matches[p.id])
       .map((p) => ({ p, c: sharedFavorites(mine, p.favorites), score: fits.get(p.id)?.score ?? null,
@@ -162,7 +160,7 @@ export default function Discover() {
     const timer = window.setInterval(refresh, 60000);
     return () => { cancelled = true; abort.abort(); window.clearTimeout(initial); window.clearInterval(timer); };
   }, [store.me?.id]);
-  const activeFilters = Object.values(filter).filter(Boolean).length;
+  const activeFilters = Number(gender !== "") + Number(fromAge !== minAge || toAge !== maxAge);
   const [busy, setBusy] = useState(false);
 
   const swipe = async (p: Person, direction: DiscoverySwipe, photo?: { path: string; comment: string }) => {
@@ -192,41 +190,39 @@ export default function Discover() {
       </header>
 
       <details className="scene-panel group min-w-0 px-3 py-1 sm:px-4">
-        <summary className="flex min-h-8 cursor-pointer list-none items-center gap-2 font-semibold [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-8 cursor-pointer list-none items-center gap-2 font-bold [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal size={16} /> Keşfet filtreleri
           {activeFilters > 0 && <span className="rounded-full bg-secondary px-2 text-xs text-brand-ink">{activeFilters}</span>}
           <ChevronDown size={17} className="ml-auto transition-transform group-open:rotate-180" />
         </summary>
-        <div className="mt-2 grid grid-cols-2 gap-2 pb-2 text-sm sm:grid-cols-3">
-          {([
-            ["city", "İl", Object.fromEntries(PROVINCES.map((name) => [name, name]))],
-            ["gender", "Cinsiyet", GENDERS], ["goal", "Tanışma amacı", GOALS],
-          ] as const).map(([key, label, options]) => <label className="min-w-0 font-bold" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base font-normal sm:text-sm" value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })}><option value="">Tümü</option>{Object.entries(options).map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>)}
-          {([["from", "En düşük yaş", 18], ["to", "En yüksek yaş", 18], ["fit", "En düşük uyum (%)", 0]] as const).map(([key, label, min]) => <label className="min-w-0 font-bold" key={key}>{label}<input className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base font-normal sm:text-sm" type="number" min={min} max={key === "fit" ? 100 : undefined} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} /></label>)}
-          {([
-            ["education","Eğitim",CHOICES.education], ["smoking","Sigara",CHOICES.smoking], ["alcohol","Alkol",CHOICES.alcohol],
-            ["relationship","İlişki beklentisi",CHOICES.relationship], ["children","Çocuk",CHOICES.children], ["sport","Spor",CHOICES.sport],
-            ["genre","Favori tür",Object.fromEntries(GENRES.map((genre) => [genre,genre]))],
-            ["interest","İlgi alanı",Object.fromEntries(INTERESTS.map((name) => [name,name]))],
-            ["occupation","Meslek",Object.fromEntries(OCCUPATIONS.map((name) => [name,name]))],
-          ] as const).map(([key,label,options]) => <label className="min-w-0 font-bold" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base font-normal sm:text-sm"
-            aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
-            <option value="">Tümü</option>{Object.entries(options).map(([value,name]) => <option key={value} value={value}>{name}</option>)}
-          </select></label>)}
-          {([["heightFrom","En kısa boy"],["heightTo","En uzun boy"]] as const).map(([key,label]) => <label className="min-w-0 font-bold" key={key}>{label}<select className="mt-1 w-full min-w-0 rounded-lg border bg-card p-2 text-base font-normal sm:text-sm"
-            aria-label={label} value={filter[key]} onChange={(event) => setFilter({ ...filter,[key]:event.target.value })}>
-            <option value="">Tümü</option>{Array.from({ length:111 },(_,i) => i+130).map((height) => <option key={height} value={height}>{height} cm</option>)}
-          </select></label>)}
+        <div className="grid gap-3 pb-1 pt-2 sm:grid-cols-2 sm:gap-5">
+          <fieldset className="min-w-0">
+            <legend className="text-sm font-bold">Cinsiyet</legend>
+            <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-secondary p-1">
+              {genderOptions.map(({ value, label }) => (
+                <label key={value} className="relative cursor-pointer">
+                  <input type="radio" name="discover-gender" value={value} checked={gender === value}
+                    onChange={() => setGender(value)} className="peer sr-only" />
+                  <span className="flex min-h-8 items-center justify-center rounded-lg px-1 text-sm font-semibold text-secondary-foreground transition-colors peer-checked:bg-card peer-checked:text-foreground peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-ring">
+                    {label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div role="group" aria-labelledby="discover-age-label" className="min-w-0">
+            <div className="flex items-center justify-between gap-2 text-sm">
+              <span id="discover-age-label" className="font-bold">Yaş aralığı</span>
+              <span className="font-semibold tabular-nums text-brand-ink">{fromAge} – {maxAgeLabel}</span>
+            </div>
+            <Slider className="mt-1.5 h-10" min={minAge} max={maxAge} value={ageRange}
+              thumbLabels={ageThumbLabels} onValueChange={setAgeRange} />
+          </div>
         </div>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" checked={!!filter.shared}
-            onChange={(event) => setFilter({ ...filter, shared: event.target.checked ? "1" : "" })} />Ortak favorisi olanlar</label>
-          <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" checked={!!filter.photosOnly}
-            onChange={(event) => setFilter({ ...filter, photosOnly: event.target.checked ? "1" : "" })} />Fotoğrafı olanlar</label>
-        </div>
-        {filter.from && filter.to && Number(filter.from) > Number(filter.to) &&
-          <p role="status" className="pb-2 text-sm text-destructive">En düşük yaş, en yüksek yaşı geçemez.</p>}
-        {activeFilters > 0 && <Button size="sm" variant="ghost" onClick={() => setFilter(emptyFilters)}>Filtreleri temizle</Button>}
+        {activeFilters > 0 && <Button size="sm" variant="ghost" onClick={() => {
+          setGender("");
+          setAgeRange(defaultAgeRange);
+        }}>Filtreleri temizle</Button>}
       </details>
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
         <div className="relative mx-auto w-full min-w-0 max-w-[28rem] lg:max-w-none"
