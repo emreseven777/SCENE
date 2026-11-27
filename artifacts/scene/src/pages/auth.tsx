@@ -135,17 +135,22 @@ export function LoginPage() {
   };
 
   return (
-    <Frame title="Tekrar hoş geldin." description="Favori hikâyelerinden başlayan sohbetlere geri dön.">
-      <form onSubmit={submit} className="space-y-4">
-        <div className="space-y-1.5"><Label htmlFor="email">E-posta</Label><Input id="email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 text-base" data-testid="input-login-email" /></div>
-        <div className="space-y-1.5"><Label htmlFor="password">Şifre</Label><Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 text-base" data-testid="input-login-password" /></div>
-        <Link href="/sifremi-unuttum" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-ink underline">Şifremi unuttum</Link>
+    <main className="relative isolate mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col justify-end overflow-hidden px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(12px,env(safe-area-inset-top))] text-white" style={{background:"linear-gradient(180deg,rgba(24,14,21,.12) 0%,rgba(24,14,21,.48) 30%,#260d1c 66%,#180e15 100%),url(/2E8C2DB8-E721-4812-90CB-154D27282CE5.png) center top / cover no-repeat"}}>
+      <div className="flex flex-1 flex-col items-center justify-start pt-2"><SceneBrand /></div>
+      <section className="w-full rounded-3xl border border-white/15 bg-[#260d1c]/85 p-4 backdrop-blur-md">
+      <h1 className="text-center text-3xl font-black tracking-tight">Tekrar <span className="text-[#ff739c]">hoş geldin.</span></h1>
+      <p className="mb-3 mt-1 text-center text-sm text-white/75">Favori hikâyelerinden başlayan sohbetlere geri dön.</p>
+      <form onSubmit={submit} className="space-y-2">
+        <div className="space-y-1.5"><Label htmlFor="email">E-posta</Label><Input id="email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-11 border-white/25 bg-white/10 text-base text-white" data-testid="input-login-email" /></div>
+        <div className="space-y-1.5"><Label htmlFor="password">Şifre</Label><Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-11 border-white/25 bg-white/10 text-base text-white" data-testid="input-login-password" /></div>
+        <Link href="/sifremi-unuttum" className="inline-flex min-h-8 items-center text-sm font-bold text-[#ff91b2] underline">Şifremi unuttum</Link>
         {error && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm" data-testid="text-login-error">{error}</p>}
-        <Button type="submit" disabled={busy} className="h-12 w-full text-base" data-testid="button-login">{busy ? <Loader2 className="animate-spin" size={18} /> : "Giriş yap"}</Button>
+        <Button type="submit" disabled={busy} className="h-12 w-full rounded-full bg-gradient-to-r from-[#ff3975] to-[#a91e4b] text-base font-bold text-white" data-testid="button-login">{busy ? <Loader2 className="animate-spin" size={18} /> : "Giriş yap"}</Button>
       </form>
-      <Link href="/kurallar" className="mt-4 block text-center text-sm text-brand-ink underline">KVKK ve hukuki belgeler</Link>
-      <p className="mt-6 text-center text-sm text-muted-foreground">Hesabın yok mu? <Link href="/kayit" className="font-semibold text-foreground underline decoration-primary underline-offset-4" data-testid="link-to-register">Kayıt ol</Link></p>
-    </Frame>
+      <Link href="/kurallar" className="mt-2 block text-center text-xs text-white/75 underline">KVKK ve hukuki belgeler</Link>
+      <p className="mt-3 text-center text-sm text-white/85">Hesabın yok mu? <Link href="/kayit" className="font-bold text-[#ff91b2] underline decoration-primary underline-offset-4" data-testid="link-to-register">Kayıt ol</Link></p>
+    </section>
+    </main>
   );
 }
 
