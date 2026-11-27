@@ -49,7 +49,7 @@ function ConversationList({ activeId, filter = 'all' }: { activeId?: string; fil
           {revealed === p.id && <button type="button" className="absolute inset-y-0 right-0 w-32 bg-red-700 text-white text-xs font-bold" onClick={() => setConfirm({id:p.id,name:p.name})}>Eşleşmeyi kaldır</button>}
           <div className="relative flex items-center rounded-2xl border border-white/10 bg-card transition-transform" style={{transform: revealed === p.id ? "translateX(-128px)" : undefined, touchAction:"pan-y"}} onTouchStart={e => {gesture.current={x:e.touches[0].clientX,y:e.touches[0].clientY}; suppress.current=false;}} onTouchEnd={e => {const start=gesture.current; gesture.current=null; if(!start)return; const dx=e.changedTouches[0].clientX-start.x; const dy=e.changedTouches[0].clientY-start.y; if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.5){suppress.current=true;setRevealed(dx<0?p.id:null);}}} onClickCapture={e => {if(suppress.current){e.preventDefault();e.stopPropagation();suppress.current=false;}}}>
           <Link href={`/mesajlar/${p.id}`} data-testid={`link-convo-${p.id}`} className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-muted", activeId === p.id && "bg-muted")}>
-            <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-12 w-12 shrink-0 rounded-full" textClassName="text-lg" />
+            <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="h-[68px] w-[68px] shrink-0 rounded-full ring-1 ring-white/15" textClassName="text-xl" />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-semibold">{p.name}</span>
