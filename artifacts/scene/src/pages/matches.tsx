@@ -8,14 +8,11 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { useToast } from "@/hooks/use-toast";
 import { PersonPhoto } from "@/components/person-photo";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function Matches() {
   const [tab,setTab] = useState<"matched" | "incoming" | "pending">("matched");
   const store = useStore();
-  const { toast } = useToast();
   const mine = store.me?.favorites ?? [];
   const incomingIds = Object.keys(store.incoming).sort();
   const incomingComments = useQuery({
@@ -53,24 +50,6 @@ export default function Matches() {
             return (
               <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 4) * 0.04 }} className="scene-panel group relative flex flex-col overflow-hidden !rounded-2xl !border-2 !border-[#a75b80] shadow-lg" data-testid={`card-match-${p.id}`}>
                 <Link href={`/kullanici/${p.id}`} className="relative block w-full overflow-hidden"><PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-[5/6] w-full" textClassName="text-5xl" /><span className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-pink-600 text-white"><Heart size={18} fill="currentColor"/></span><span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/65 to-transparent px-2 pb-2 pt-10 pr-12 text-sm font-bold text-white">{p.name}{p.age !== null ? `, ${p.age}` : ""}{p.verified_photo && <VerifiedBadge />}<span className="block truncate text-xs font-normal">{p.city}</span></span>{score!==null && <span className="absolute bottom-2 right-2 grid size-10 place-items-center rounded-full border-[3px] border-pink-400 bg-black/60 text-xs font-bold text-white">%{score}</span>}</Link>
-                <div className="flex justify-end gap-2 px-2 py-1">
-                    <Link href={`/mesajlar/${p.id}`} aria-label="Sohbet" data-testid={`link-chat-${p.id}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground">Sohbet</Link>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <button data-testid={`button-unmatch-${p.id}`} aria-label="Eşleşmeyi kaldır" className="text-xs text-muted-foreground">Kaldır</button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="border-border bg-card">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{p.name} ile eşleşmeyi kaldır?</AlertDialogTitle>
-                          <AlertDialogDescription>İkinizin de profillere ve bu sohbete erişimi kapanır. Eşleşme yeniden kurulamaz.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Vazgeç</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => { void store.unmatch(p.id).then((ok) => ok && toast({ title: "Eşleşme kaldırıldı" })); }} data-testid="button-confirm-unmatch">Kaldır</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                </div>
               </motion.div>
             );
           })}
@@ -101,9 +80,9 @@ export default function Matches() {
           <div className="mt-3 grid grid-cols-2 gap-2">
             {pending.map((p) => (
               <div key={p.id} className="scene-panel overflow-hidden p-1 text-center">
-                <Link href={`/kullanici/${p.id}`} data-testid={`link-pending-${p.id}`}><PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-square w-full rounded-xl" textClassName="text-4xl" /></Link>
+                <Link href={`/kullanici/${p.id}`} className="block pb-2" data-testid={`link-pending-${p.id}`}><PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-square w-full rounded-xl" textClassName="text-4xl" />
                 <div className="mt-1 text-sm font-bold">{p.name}{p.age !== null ? `, ${p.age}` : ""}{p.verified_photo && <VerifiedBadge />}<span className="block text-xs text-muted-foreground">{p.city}</span></div>
-                <button onClick={() => { void store.unlike(p.id).then((ok) => ok && toast({ title: "Beğeni geri alındı" })); }} data-testid={`button-unlike-${p.id}`} className="text-[11px] text-muted-foreground underline-offset-2 hover:text-brand-ink hover:underline">Geri al</button>
+                </Link>
               </div>
             ))}
           </div>
