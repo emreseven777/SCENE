@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { CENTER_CROP, drawAvatar, encodeAvatar } from "@/lib/avatars";
+import { avatarCrop, CENTER_CROP, drawAvatar, type AvatarUpload } from "@/lib/avatars";
+import { isLowResolution, makePhotoThumbnail, openPhoto, preparePhoto } from "@/lib/photo-source";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
-export function PhotoCropDialog({ file, onClose, onSave }: {
+export function PhotoCropDialog({ file, cropOnly = false, onClose, onSave }: {
   file: File;
   onClose: () => void;
-  onSave: (blob: Blob) => Promise<void>;
+  cropOnly?: boolean;
+  onSave: (photo: AvatarUpload) => Promise<void>;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -15,19 +17,13 @@ export function PhotoCropDialog({ file, onClose, onSave }: {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    const source = new Image();
     let current = true;
-    source.src = url;
-    void source.decode().then(() => {
+    void openPhoto(file).then((source) => {
       if (current) setImage(source);
-    }, () => {
-      if (current) setError("Fotoğraf açılamadı. JPEG veya PNG biçiminde bir fotoğraf seç.");
+    }, (error: Error) => {
+      if (current) setError(error.message);
     });
-    return () => {
-      current = false;
-      URL.revokeObjectURL(url);
-    };
+    return () => { current = false; };
   }, [file]);
 
   useEffect(() => {
@@ -40,14 +36,19 @@ export function PhotoCropDialog({ file, onClose, onSave }: {
     }
   }, [image, crop]);
 
-  async function save() {
-    if (!canvas.current || !image) return;
+  async function save(cropped: boolean) {
+    if (!image || busy) return;
     setBusy(true);
     setError("");
     try {
-      await onSave(await encodeAvatar(canvas.current));
-    } catch {
-      setError("Fotoğraf kaydedilemedi. Tekrar deneyebilirsin.");
+      const region = cropped ? avatarCrop(image, crop) : undefined;
+      const photo = await preparePhoto(file, image, region);
+      const thumbnail = await makePhotoThumbnail(image, region ?? {
+        x: 0, y: 0, width: image.naturalWidth, height: image.naturalHeight,
+      });
+      await onSave({ image: photo, thumbnail, keepPrevious: cropOnly });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Fotoğraf kaydedilemedi. Tekrar deneyebilirsin.");
     } finally {
       setBusy(false);
     }
@@ -56,8 +57,8 @@ export function PhotoCropDialog({ file, onClose, onSave }: {
   return (
     <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
       <DialogContent className="max-h-[90dvh] w-[calc(100%_-_2rem)] overflow-y-auto rounded-xl border-border bg-card p-4 sm:p-6">
-        <DialogTitle>Fotoğrafı kırp</DialogTitle>
-        <DialogDescription>Kaydırıcılarla kadrajı ayarla. Fotoğraf burada gördüğün gibi kaydolur.</DialogDescription>
+        <DialogTitle>{cropOnly ? "Fotoğrafı kırp" : "Fotoğrafı ekle"}</DialogTitle>
+        <DialogDescription>{cropOnly ? "Kaydırıcılarla yeni kadrajı ayarla." : "Fotoğrafı tam kadrajıyla kaydedebilir veya kaydırıcılarla kırpma alanını ayarlayabilirsin."}</DialogDescription>
         <canvas ref={canvas} width={512} height={512} aria-label="Kırpma önizlemesi" className="mx-auto aspect-square w-full max-w-[min(100%,40dvh,19rem)] rounded-lg bg-black" />
         {!image && !error && <p role="status" className="text-sm">Fotoğraf açılıyor…</p>}
         {image && (
@@ -74,10 +75,15 @@ export function PhotoCropDialog({ file, onClose, onSave }: {
             ))}
           </div>
         )}
+        {image && isLowResolution(avatarCrop(image, crop).width, avatarCrop(image, crop).height)
+          && <p role="status" className="text-sm text-brand-ink">{isLowResolution(image.naturalWidth, image.naturalHeight)
+            ? "Fotoğrafın çözünürlüğü düşük. Büyük ekranda net görünmeyebilir."
+            : "Bu kırpma düşük çözünürlüklü görünebilir."}</p>}
         {error && <p role="alert" className="text-sm text-brand-ink">{error}</p>}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
           <Button variant="ghost" onClick={onClose} disabled={busy}>Vazgeç</Button>
-          <Button onClick={() => void save()} disabled={!image || busy}>{busy ? "Kaydediliyor…" : "Kırp ve kaydet"}</Button>
+          <Button variant={cropOnly ? "default" : "secondary"} onClick={() => void save(true)} disabled={!image || busy}>Kırp ve kaydet</Button>
+          {!cropOnly && <Button onClick={() => void save(false)} disabled={!image || busy}>Tam kadrajı kaydet</Button>}
         </div>
       </DialogContent>
     </Dialog>

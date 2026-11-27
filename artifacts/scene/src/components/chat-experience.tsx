@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { downloadPrivateObject, turkishError } from "@/lib/supabase";
 import { CHAT_BUCKET, prepareChatPhoto } from "@/lib/chat-media";
+import { PHOTO_ACCEPT } from "@/lib/photo-source";
 import { useToast } from "@/hooks/use-toast";
 import type { Msg } from "@/lib/store";
 
@@ -43,7 +44,12 @@ export function AttachmentControls({ disabled, onPick, audioOnly = false }: { di
   }, []);
 
   const choose = async (file: File) => {
-    try { onPick({ file: await prepareChatPhoto(file), kind: "photo" }); }
+    try {
+      const photo = await prepareChatPhoto(file);
+      if (!mounted.current) return;
+      if (photo.lowResolution) toast({ title: "Fotoğrafın çözünürlüğü düşük", description: "Büyük ekranda net görünmeyebilir." });
+      onPick({ file: photo.file, kind: "photo" });
+    }
     catch (error) { toast({ title: "Fotoğraf açılamadı", description: turkishError(error), variant: "destructive" }); }
   };
 
@@ -78,7 +84,7 @@ export function AttachmentControls({ disabled, onPick, audioOnly = false }: { di
 
   return <div className="flex items-center gap-1">
     {!audioOnly && <>
-    {[gallery, camera].map((ref, index) => <input key={index} ref={ref} type="file" accept="image/*" capture={index ? "environment" : undefined}
+    {[gallery, camera].map((ref, index) => <input key={index} ref={ref} type="file" accept={PHOTO_ACCEPT} capture={index ? "environment" : undefined}
       hidden onChange={(event) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) void choose(file); }} />)}
     <Button type="button" size="icon" variant="ghost" disabled={disabled || recording} aria-label="Galeriden fotoğraf veya GIF seç" onClick={() => gallery.current?.click()}><ImagePlus /></Button>
     <Button type="button" size="icon" variant="ghost" disabled={disabled || recording} aria-label="Kamerayla fotoğraf çek" onClick={() => camera.current?.click()}><Camera /></Button>
@@ -104,21 +110,32 @@ export function ChatAttachment({ message, blur }: { message: Msg; blur: boolean 
   const [revealed, setRevealed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const hidden = blur && message.from === "them" && message.mediaKind === "photo" && !revealed;
+  const attachment = useRef<HTMLDivElement>(null);
+  const [nearby, setNearby] = useState(false);
+  useEffect(() => {
+    const node = attachment.current;
+    if (!node || hidden || nearby || message.mediaKind !== "photo") return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) setNearby(true);
+    }, { rootMargin: "180px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hidden, message.mediaKind, nearby]);
   const file = useQuery({
     queryKey: ["chat-media", message.mediaPath],
-    enabled: !!message.mediaPath && !hidden,
+    enabled: !!message.mediaPath && !hidden && (message.mediaKind !== "photo" || nearby),
     queryFn: ({ signal }) => downloadPrivateObject(CHAT_BUCKET, message.mediaPath!, signal),
     gcTime: 0, retry: false,
   });
   const url = useObjectUrl(file.data);
   if (hidden) return <button className="min-h-24 w-full rounded-xl bg-muted px-4 text-sm text-foreground" onClick={() => setRevealed(true)}>Fotoğraf gizlendi · Görüntüle</button>;
   if (file.isError) return <p className="text-sm">Dosya yüklenemedi.</p>;
-  if (!url) return <p className="text-sm">Dosya yükleniyor…</p>;
+  if (!url) return <div ref={attachment} className="text-sm">Dosya yükleniyor…</div>;
   if (message.mediaKind === "audio") return <audio controls src={url} className="max-w-full" />;
   return <>
-    <button aria-label="Fotoğrafı büyüt" onClick={() => setExpanded(true)}><img alt="Sohbet fotoğrafı" src={url} className="max-h-60 rounded-xl object-contain" /></button>
+    <button aria-label="Fotoğrafı büyüt" onClick={() => setExpanded(true)}><img alt="Sohbet fotoğrafı" src={url} decoding="async" className="max-h-60 rounded-xl object-contain" /></button>
     <Dialog open={expanded} onOpenChange={setExpanded}><DialogContent className="max-w-5xl bg-[#201d29] text-white">
-      <DialogTitle className="sr-only">Sohbet fotoğrafı</DialogTitle><img src={url} alt="Sohbet fotoğrafı" className="mx-auto max-h-[85dvh] w-full object-contain" />
+      <DialogTitle className="sr-only">Sohbet fotoğrafı</DialogTitle><img src={url} alt="Sohbet fotoğrafı" decoding="async" className="mx-auto max-h-[85dvh] w-full object-contain" />
     </DialogContent></Dialog>
   </>;
 }

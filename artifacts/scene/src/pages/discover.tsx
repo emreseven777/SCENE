@@ -24,7 +24,7 @@ function DiscoverPortrait({ person, score, common }: { person: Person; score: nu
   const photos = [...new Set([person.avatar_path, ...person.avatar_paths].filter((path): path is string => !!path))];
   const active = Math.min(photoIndex, Math.max(0, photos.length - 1));
 
-  usePreloadPortraits(photos[active + 1], photos[active - 1]);
+  usePreloadPortraits(photos[active + 1]);
 
   return <div className="relative h-[clamp(23rem,62svh,38rem)] overflow-hidden rounded-t-[1.45rem] bg-muted lg:h-[36rem]"
     data-testid="discover-portrait">
@@ -116,8 +116,8 @@ export default function Discover() {
     [cast, store.liked, store.passed, store.matches, mine, fits, ownDetails, serverFeed],
   );
   const current = deck[0];
-  const upcoming = deck.filter(({ p }) => p.id !== current?.p.id).slice(0, 3);
-  usePreloadPortraits(upcoming[0]?.p.avatar_path, upcoming[1]?.p.avatar_path, upcoming[2]?.p.avatar_path);
+  const upcoming = deck[1];
+  usePreloadPortraits(upcoming?.p.avatar_path);
   const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = feed;
   useEffect(() => {
     if (deck.length <= 3 && hasNextPage && !isFetchingNextPage && !isError) void fetchNextPage();

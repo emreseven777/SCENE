@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { AVATAR_BUCKET } from "@/lib/avatars";
+import { AVATAR_BUCKET, avatarThumbnail } from "@/lib/avatars";
 import { requireSupabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -15,12 +15,18 @@ function hueFor(id: string) {
   return h;
 }
 
-function avatarQuery(userId: string | null, avatarPath: string | null) {
+function avatarQuery(userId: string | null, avatarPath: string | null, thumbnailPath: string | null = null) {
   return queryOptions({
-    queryKey: ["profile-avatar", userId, avatarPath],
+    queryKey: ["profile-avatar", userId, avatarPath, thumbnailPath],
     enabled: !!userId && !!avatarPath,
     queryFn: async () => {
-      const { data, error } = await requireSupabase().storage.from(AVATAR_BUCKET).createSignedUrl(avatarPath!, 60);
+      const bucket = requireSupabase().storage.from(AVATAR_BUCKET);
+      if (thumbnailPath) {
+        const thumbnail = await bucket.createSignedUrl(thumbnailPath, 60);
+        if (!thumbnail.error) return thumbnail.data.signedUrl;
+        // An unavailable thumbnail must pass the same authorization as the original.
+      }
+      const { data, error } = await bucket.createSignedUrl(avatarPath!, 60);
       if (error) throw error;
       return data.signedUrl;
     },
@@ -30,42 +36,58 @@ function avatarQuery(userId: string | null, avatarPath: string | null) {
   });
 }
 
-export function usePreloadPortraits(first?: string | null, second?: string | null, third?: string | null) {
+export function usePreloadPortraits(first?: string | null) {
   const { userId } = useAuth();
   const client = useQueryClient();
   useEffect(() => {
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
-    if (!userId || connection?.saveData || connection?.effectiveType?.includes("2g")) return;
+    if (!userId || !first || connection?.saveData || (connection?.effectiveType && connection.effectiveType !== "4g")) return;
     let active = true;
     const timer = window.setTimeout(() => {
       if (document.visibilityState !== "visible") return;
-      for (const path of new Set([first, second, third])) {
-        if (!path) continue;
-        void client.fetchQuery(avatarQuery(userId, path)).then((url) => {
-          if (!active) return;
-          const image = new Image();
-          image.fetchPriority = "low";
-          image.src = url;
-        }).catch(() => { /* The visible portrait can retry independently. */ });
-      }
+      void client.fetchQuery(avatarQuery(userId, first)).then((url) => {
+        if (!active) return;
+        const image = new Image();
+        image.fetchPriority = "low";
+        image.src = url;
+      }).catch(() => { /* The visible portrait can retry independently. */ });
     }, 80);
     return () => {
       active = false;
       window.clearTimeout(timer);
       // Allow already-started image downloads to finish for the next card.
     };
-  }, [client, userId, first, second, third]);
+  }, [client, userId, first]);
 }
 
 export function PersonPhoto({ id, name, avatarPath, className, textClassName, contain = false, priority = false }: { id: string; name: string; avatarPath: string | null; className?: string; textClassName?: string; contain?: boolean; priority?: boolean }) {
   const { userId } = useAuth();
+  const element = useRef<HTMLDivElement>(null);
+  const [small, setSmall] = useState<boolean | null>(null);
+  const thumbnail = avatarPath && !priority && !contain ? avatarThumbnail(avatarPath) : null;
+  useEffect(() => {
+    const node = element.current;
+    if (!node || !thumbnail) return;
+    const measure = () => {
+      const side = Math.max(node.clientWidth, node.clientHeight);
+      setSmall(side > 0 && side <= 104 && side * window.devicePixelRatio <= 320);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [thumbnail]);
+
   const [brokenUrl, setBrokenUrl] = useState("");
-  const { data: url, refetch } = useQuery(avatarQuery(userId, avatarPath));
-  useEffect(() => setBrokenUrl(""), [avatarPath, userId]);
+  const [failedThumbnail, setFailedThumbnail] = useState<string | null>(null);
+  const selectedThumbnail = small && thumbnail !== failedThumbnail ? thumbnail : null;
+  const { data: url, refetch } = useQuery(avatarQuery(userId, thumbnail && small === null ? null : avatarPath, selectedThumbnail));
+  useEffect(() => { setBrokenUrl(""); setFailedThumbnail(null); }, [avatarPath, userId]);
   const visible = !!url && url !== brokenUrl;
   const tint = hueFor(id) % 60;
   return (
     <div
+      ref={element}
       role="img"
       aria-label={name}
       className={cn("relative grid place-items-center overflow-hidden font-display font-bold uppercase", className)}
@@ -75,7 +97,11 @@ export function PersonPhoto({ id, name, avatarPath, className, textClassName, co
       {!visible && <span className={cn("relative text-white drop-shadow-md", textClassName)}>{initials(name)}</span>}
       {visible && url && (
         <img alt="" src={url} loading={priority ? "eager" : "lazy"} decoding="async" fetchPriority={priority ? "high" : "auto"}
-          onError={() => { setBrokenUrl(url); if (brokenUrl !== url && !brokenUrl) void refetch(); }} className={cn("absolute inset-0 h-full w-full", contain ? "object-contain object-top" : "object-cover")} />
+          onError={() => {
+            setBrokenUrl(url);
+            if (selectedThumbnail) setFailedThumbnail(selectedThumbnail);
+            else if (!brokenUrl) void refetch();
+          }} className={cn("absolute inset-0 h-full w-full", contain ? "object-contain object-top" : "object-cover")} />
       )}
     </div>
   );

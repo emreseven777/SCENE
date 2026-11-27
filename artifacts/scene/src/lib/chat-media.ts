@@ -1,3 +1,4 @@
+import { isLowResolution, openPhoto, preparePhoto, stripGifMetadata } from "./photo-source";
 import { requireSupabase } from "./supabase";
 
 export const CHAT_BUCKET = "scene-chat";
@@ -7,29 +8,15 @@ const audioExtensions: Record<string, string> = {
 };
 
 export async function prepareChatPhoto(file: File) {
-  if (file.type === "image/gif") {
+  if (file.type === "image/gif" || /\.gif$/i.test(file.name)) {
     if (file.size > 8 * 1024 * 1024) throw new Error("En fazla 8 MB boyutunda GIF seç.");
-    const signature = new TextDecoder().decode(await file.slice(0, 6).arrayBuffer());
-    if (signature !== "GIF87a" && signature !== "GIF89a") throw new Error("Geçerli bir GIF seç.");
-    return file;
+    return { file: await stripGifMetadata(file), lowResolution: false };
   }
-  if (file.size > 24 * 1024 * 1024) throw new Error("En fazla 24 MB boyutunda fotoğraf seç.");
-  const url = URL.createObjectURL(file);
-  try {
-    const img = new Image();
-    img.src = url;
-    await img.decode();
-    const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Fotoğraf işlenemedi.");
-    context.fillStyle = "white";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return await new Promise<Blob>((resolve, reject) => canvas.toBlob((image) => image ? resolve(image) : reject(new Error("Fotoğraf işlenemedi.")), "image/jpeg", 0.85));
-  } finally { URL.revokeObjectURL(url); }
+  const image = await openPhoto(file);
+  return {
+    file: await preparePhoto(file, image, undefined, true),
+    lowResolution: isLowResolution(image.naturalWidth, image.naturalHeight),
+  };
 }
 
 export async function uploadChatMedia(match: string, user: string, file: Blob, kind: "photo" | "audio") {

@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import { ArrowDown, ArrowUp, Camera, Eye, ImagePlus, Star } from "lucide-react";
-import { AVATAR_BUCKET, MAX_PROFILE_PHOTOS } from "@/lib/avatars";
+import { AVATAR_BUCKET, MAX_PROFILE_PHOTOS, type AvatarUpload } from "@/lib/avatars";
+import { PHOTO_ACCEPT } from "@/lib/photo-source";
 import { useStore, type Person } from "@/lib/store";
 import { requireSupabase, turkishError } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -18,12 +19,12 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
   const input = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
   const selection = useRef({ index: 0, previous: person.avatar_paths });
-  const [pending, setPending] = useState<{ file: File; index: number; previous: string[] } | null>(null);
+  const [pending, setPending] = useState<{ file: File; index: number; previous: string[]; cropOnly?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(false);
   const paths = person.avatar_paths;
 
-  async function persist(previous: string[], next: string[], upload?: { index: number; image: Blob }) {
+  async function persist(previous: string[], next: string[], upload?: AvatarUpload & { index: number }) {
     setBusy(true);
     try {
       const cleaned = await savePhotos(previous, next, upload);
@@ -32,6 +33,7 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
         description: cleaned ? undefined : "Önceki dosya depodan silinemedi.",
       });
     } catch (error) {
+      if (upload) throw new Error(turkishError(error));
       toast({ title: "Fotoğraf işlemi tamamlanamadı", description: turkishError(error), variant: "destructive" });
     } finally {
       setBusy(false);
@@ -59,7 +61,7 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
     try {
       const { data, error } = await requireSupabase().storage.from(AVATAR_BUCKET).download(paths[index]);
       if (error) throw error;
-      setPending({ file: new File([data], paths[index].split("/").at(-1)!, { type: data.type }), index, previous: paths });
+      setPending({ file: new File([data], paths[index].split("/").at(-1)!, { type: data.type }), index, previous: paths, cropOnly: true });
     } catch (error) {
       toast({ title: "Fotoğraf açılamadı", description: turkishError(error), variant: "destructive" });
     } finally {
@@ -81,9 +83,9 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
         <Button variant="secondary" onClick={() => setPreview(true)}><Eye size={16} />Profil önizleme</Button>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">İlk fotoğraf profil kartında görünür. Oklarla sıralamayı değiştirebilirsin.</p>
-      <input ref={input} type="file" accept="image/*,.heic,.heif" className="hidden"
+      <input ref={input} type="file" accept={PHOTO_ACCEPT} className="hidden"
         aria-label="Galeriden profil fotoğrafı seç" onChange={choosePhoto} />
-      <input ref={camera} type="file" accept="image/*" capture="user" className="hidden"
+      <input ref={camera} type="file" accept={PHOTO_ACCEPT} capture="user" className="hidden"
         aria-label="Kameradan profil fotoğrafı çek" onChange={choosePhoto} />
       {paths.length > 0 && (
         <ol className="mt-4 grid gap-2 md:grid-cols-2">
@@ -123,8 +125,8 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
       </div>}
       {busy && <p role="status" className="mt-2 text-sm text-muted-foreground">Kaydediliyor…</p>}
       {pending && (
-        <PhotoCropDialog file={pending.file} onClose={() => setPending(null)} onSave={async (image) => {
-          await persist(pending.previous, pending.previous, { index: pending.index, image });
+        <PhotoCropDialog file={pending.file} cropOnly={pending.cropOnly} onClose={() => setPending(null)} onSave={async (photo) => {
+          await persist(pending.previous, pending.previous, { index: pending.index, ...photo });
           setPending(null);
         }} />
       )}
@@ -134,7 +136,7 @@ export function ProfilePhotoEditor({ person }: { person: Person }) {
             <DialogTitle>Profil önizleme</DialogTitle>
             <DialogDescription>Profilinin diğer üyelere nasıl göründüğüne bak.</DialogDescription>
           </div>
-          <ProfilePortrait person={person} />
+          <ProfilePortrait person={person} preview />
           <div className="space-y-3 px-4 pb-5"><ProfileAbout person={person} /><ProfileDetails person={person} publicPreview /></div>
         </DialogContent>
       </Dialog>

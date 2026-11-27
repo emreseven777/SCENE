@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { requireSupabase, turkishError } from "./supabase";
 import { CHAT_BUCKET, uploadChatMedia } from "./chat-media";
 import type { ProfileDetailsData } from "./profile-choices";
-import { AVATAR_BUCKET, MAX_PROFILE_PHOTOS } from "./avatars";
+import { AVATAR_BUCKET, MAX_PROFILE_PHOTOS, avatarThumbnail, newAvatarPath, type AvatarUpload } from "./avatars";
 import { byId, savedTmdbTitle, type Title } from "./catalog";
 import { useAuth } from "./auth";
 import { toast } from "@/hooks/use-toast";
@@ -75,7 +75,7 @@ interface Ctx extends Data {
   isFav: (id: string) => boolean;
   titleById: (id: string, ownerId?: string) => Title | undefined;
   toggleFavorite: (id: string, title?: Title) => boolean;
-  savePhotos: (previous: string[], paths: string[], upload?: { index: number; image: Blob }) => Promise<boolean>;
+  savePhotos: (previous: string[], paths: string[], upload?: AvatarUpload & { index: number }) => Promise<boolean>;
   /** true = new match, false = liked, null = failed (error already shown). */
   like: (pid: string, kind?: "like" | "super", candidate?: Person, candidateTitles?: Record<string, Title>, photo?: { path: string; comment: string }) => Promise<boolean | null>;
   unlike: (pid: string) => Promise<boolean>;
@@ -395,12 +395,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setData((d) => d.me ? { ...d, me: { ...d.me, ...patch } } : d);
   }, [userId]);
 
-  const savePhotos = useCallback(async (previous: string[], paths: string[], upload?: { index: number; image: Blob }) => {
+  const savePhotos = useCallback(async (previous: string[], paths: string[], upload?: AvatarUpload & { index: number }) => {
     if (!userId || dataRef.current.me?.id !== userId) throw new Error("Tekrar giriş yap.");
     const bucket = requireSupabase().storage.from(AVATAR_BUCKET);
     const next = [...paths];
-    const format = upload?.image.type === "image/webp" ? "webp" : "jpg";
-    const uploadedPath = upload ? `${userId}/${crypto.randomUUID()}.${format}` : null;
+    const uploadedPath = upload ? newAvatarPath(userId, upload.image, !!upload.thumbnail) : null;
+    const thumbnailPath = uploadedPath && avatarThumbnail(uploadedPath);
     if (upload && uploadedPath) next[upload.index] = uploadedPath;
     if (next.length > MAX_PROFILE_PHOTOS) throw new Error("En fazla 6 fotoğraf ekleyebilirsin.");
 
@@ -410,6 +410,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           contentType: upload.image.type, cacheControl: "60",
         });
         if (error) throw error;
+        if (upload.thumbnail && thumbnailPath) {
+          const { error: thumbnailError } = await bucket.upload(thumbnailPath, upload.thumbnail, {
+            contentType: "image/webp", cacheControl: "60",
+          });
+          if (thumbnailError) throw thumbnailError;
+        }
       }
       const { data: row, error } = await requireSupabase().from("profiles")
         .update({ avatar_paths: next })
@@ -422,14 +428,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setData((data) => data.me?.id === userId ? { ...data, me: { ...data.me, ...row } } : data);
     } catch (error) {
       // Storage RLS prevents cleanup from deleting a photo that was actually saved.
-      if (uploadedPath) await bucket.remove([uploadedPath]).catch(() => undefined);
+      if (uploadedPath) await bucket.remove(thumbnailPath ? [uploadedPath, thumbnailPath] : [uploadedPath]).catch(() => undefined);
       await refresh();
       throw error;
     }
 
-    const removed = previous.filter((path) => !next.includes(path));
+    const removed = upload?.keepPrevious ? [] : previous.filter((path) => !next.includes(path));
     if (!removed.length) return true;
-    const cleanup = await bucket.remove(removed).catch(() => null);
+    const cleanup = await bucket.remove(removed.flatMap((path) => {
+      const thumbnail = avatarThumbnail(path);
+      return thumbnail ? [path, thumbnail] : [path];
+    })).catch(() => null);
     return !!cleanup && !cleanup.error;
   }, [userId, refresh]);
 
