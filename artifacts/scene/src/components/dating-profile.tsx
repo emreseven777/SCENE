@@ -108,11 +108,15 @@ export function ProfileDetails({ person, publicPreview = false }: { person: Pers
   const viewer = useStore().me?.id;
   const preferences = useScenePreferences(publicPreview ? viewer : undefined);
   const details = useVisibleProfileDetails(viewer, person.id);
+  const visibleDetail = (key: string) =>
+    (!publicPreview || (preferences.data?.public_details && (key !== "sign" || preferences.data?.details.sign === "automatic")))
+      ? profileLabel(key, details.data?.details[key]) : undefined;
   const fields = [
     ["Cinsiyet", GENDERS[person.gender as keyof typeof GENDERS]],
-    ["Tanışmak istediği", LOOKING_FOR[person.looking_for as keyof typeof LOOKING_FOR]],
+    ["Boy", visibleDetail("height") ?? "Belirtilmemiş"],
     ["Tanışma amacı", GOALS[person.dating_goal as keyof typeof GOALS]],
-    ...Object.entries(detailLabels).filter(([key]) => structuredFields.has(key)).map(([key, label]) => [
+    ["İlişki beklentisi", visibleDetail("relationship") ?? "Belirtilmemiş"],
+    ...Object.entries(detailLabels).filter(([key]) => structuredFields.has(key) && key !== "height" && key !== "relationship").map(([key, label]) => [
       label,
       (!publicPreview || (preferences.data?.public_details && (key !== "sign" || preferences.data?.details.sign === "automatic")))
         ? profileLabel(key, details.data?.details[key]) : undefined,
