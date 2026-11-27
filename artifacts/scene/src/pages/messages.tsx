@@ -269,9 +269,9 @@ export function Chat() {
   };
 
   return (
-    <div className="mx-auto grid max-w-6xl min-w-0 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-6 lg:px-8 lg:pt-8">
+    <div className="mx-auto grid h-full min-h-0 max-w-6xl min-w-0 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-6 lg:px-8 lg:pt-8">
       <aside className="hidden lg:block"><ConversationList activeId={p.id} /></aside>
-      <div className="scene-panel relative isolate !border-white/15 !bg-[#241936] !text-white bg-[radial-gradient(ellipse_at_0%_40%,#773453_0%,transparent_55%),radial-gradient(ellipse_at_100%_90%,#49305f_0%,transparent_60%)] flex h-[calc(100dvh-8.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[18rem] min-w-0 flex-col overflow-hidden lg:h-[calc(100dvh-5rem)]">
+      <div className="scene-panel relative isolate !border-white/15 !bg-[#241936] !text-white bg-[radial-gradient(ellipse_at_0%_40%,#773453_0%,transparent_55%),radial-gradient(ellipse_at_100%_90%,#49305f_0%,transparent_60%)] flex h-full min-h-[18rem] min-w-0 flex-col overflow-hidden lg:h-[calc(100dvh-5rem)]">
         <div className="flex items-center gap-2 border-b border-white/15 bg-white/10 backdrop-blur-xl px-3 py-2">
           <Link href="/mesajlar" className="lg:hidden" aria-label="Geri" data-testid="link-back-messages"><ArrowLeft size={20} /></Link>
           <Link href={`/kullanici/${p.id}`} className="flex items-center gap-3" data-testid="link-chat-profile">
