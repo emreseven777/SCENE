@@ -4,10 +4,11 @@ import { CINEMA_FIT_DESCRIPTION, cinemaFit, profileCinemaSignals } from "@/lib/d
 import type { Title } from "@/lib/catalog";
 import { useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
-import { ArrowLeft, Heart, MessageCircle } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { canOpenProfile, useCommon, useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Poster } from "@/components/poster";
 import { TitleDetail } from "@/components/title-detail";
@@ -48,11 +49,13 @@ function UserView({ pid }: { pid: string }) {
       </div>
 
       <div className="mt-6 space-y-8">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="space-y-3">
+        <div className={matched ? "grid grid-cols-2 gap-2" : "flex items-center gap-2"}>
           {matched ? (
-            <Link href={`/mesajlar/${p.id}`} data-testid="link-chat" className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"><MessageCircle size={17} />Mesaj gönder</Link>
+            <><Link href={`/mesajlar/${p.id}`} data-testid="link-chat" className="inline-flex min-h-11 items-center justify-center gap-1 rounded-full bg-primary px-2 text-xs font-bold text-primary-foreground"><MessageCircle size={16} />Mesaj gönder</Link>
+            <AlertDialog><AlertDialogTrigger asChild><Button variant="outline" className="h-auto min-h-11 rounded-full px-2 text-xs font-bold" disabled={busy}><X size={16}/>Eşleşmeyi kaldır</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Eşleşmeyi kaldır?</AlertDialogTitle><AlertDialogDescription>İkinizin de profillere ve bu sohbete erişimi kapanır. Eşleşme yeniden kurulamaz.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={async () => { setBusy(true); try { if (await store.unmatch(p.id)) { navigate("/begeniler", { replace: true }); toast({ title: "Eşleşme kaldırıldı" }); } } finally { setBusy(false); } }}>Kaldır</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></>
           ) : liked ? (
-            <Button variant="secondary" disabled={busy} onClick={async () => { setBusy(true); const ok = await store.unlike(p.id); setBusy(false); if (ok) { navigate("/begeniler", { replace: true }); toast({ title: "Beğeni geri alındı" }); } }} data-testid="button-unlike"><Heart size={16} className="mr-2 fill-primary text-brand-ink" />Beğendin — geri al</Button>
+            <AlertDialog><AlertDialogTrigger asChild><Button variant="outline" className="min-h-11 w-full rounded-full font-bold" disabled={busy} data-testid="button-unlike"><Heart size={16} className="mr-2 text-brand-ink" />Beğeniyi geri al</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Beğeniyi geri al?</AlertDialogTitle><AlertDialogDescription>Bu kişiye gönderdiğin beğeni kaldırılacak.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={async () => { setBusy(true); try { if (await store.unlike(p.id)) { navigate("/begeniler", { replace: true }); toast({ title: "Beğeni geri alındı" }); } } finally { setBusy(false); } }}>Geri al</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
           ) : (
             <motion.div whileTap={{ scale: 0.92 }}>
               <Button className="h-11 px-6" disabled={busy} onClick={async () => {
@@ -63,7 +66,8 @@ function UserView({ pid }: { pid: string }) {
               }} data-testid="button-like-user"><Heart size={17} className="mr-2" fill="currentColor" />Beğen</Button>
             </motion.div>
           )}
-          <div className="rounded-md border border-primary/30 px-4 py-2.5"><span className="font-display text-2xl font-bold text-brand-ink" data-testid="text-user-common">{common.length}</span> <span className="text-sm text-muted-foreground">ortak film ve dizi</span></div>
+          </div>
+          <div className="rounded-xl border border-primary/30 px-4 py-2.5"><span className="font-display text-2xl font-bold text-brand-ink" data-testid="text-user-common">{common.length}</span> <span className="text-sm text-muted-foreground">ortak film ve dizi</span></div>
         </div>
 
         {matched ? <>
