@@ -1,3 +1,4 @@
+import { VerifiedBadge } from "@/components/profile-identity";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { requireSupabase } from "@/lib/supabase";
@@ -51,7 +52,7 @@ export default function Matches() {
             const { score } = cinemaFit(own, signals);
             return (
               <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 4) * 0.04 }} className="scene-panel group relative flex flex-col overflow-hidden !rounded-2xl !border-2 !border-[#a75b80] shadow-lg" data-testid={`card-match-${p.id}`}>
-                <Link href={`/kullanici/${p.id}`} className="relative block w-full overflow-hidden"><PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-[5/6] w-full" textClassName="text-5xl" /><span className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-pink-600 text-white"><Heart size={18} fill="currentColor"/></span><span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/65 to-transparent px-2 pb-2 pt-10 pr-12 text-sm font-bold text-white">{p.name}{p.age !== null ? `, ${p.age}` : ""}<span className="block truncate text-xs font-normal">{p.city}</span></span>{score!==null && <span className="absolute bottom-2 right-2 grid size-10 place-items-center rounded-full border-[3px] border-pink-400 bg-black/60 text-xs font-bold text-white">%{score}</span>}</Link>
+                <Link href={`/kullanici/${p.id}`} className="relative block w-full overflow-hidden"><PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-[5/6] w-full" textClassName="text-5xl" /><span className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-pink-600 text-white"><Heart size={18} fill="currentColor"/></span><span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/65 to-transparent px-2 pb-2 pt-10 pr-12 text-sm font-bold text-white">{p.name}{p.age !== null ? `, ${p.age}` : ""}{p.verified_photo && <VerifiedBadge />}<span className="block truncate text-xs font-normal">{p.city}</span></span>{score!==null && <span className="absolute bottom-2 right-2 grid size-10 place-items-center rounded-full border-[3px] border-pink-400 bg-black/60 text-xs font-bold text-white">%{score}</span>}</Link>
                 <div className="flex justify-end gap-2 px-2 py-1">
                     <Link href={`/mesajlar/${p.id}`} aria-label="Sohbet" data-testid={`link-chat-${p.id}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground">Sohbet</Link>
                     <AlertDialog>
@@ -83,7 +84,7 @@ export default function Matches() {
           {store.people.filter((p) => store.incoming[p.id] && !store.matches[p.id]).map((p) => <li key={p.id} className="scene-panel overflow-hidden p-1">
             <Link className="relative block overflow-hidden rounded-xl" href={`/kullanici/${p.id}`}>
               <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-square w-full" />
-              <Heart className="absolute right-2 top-2 fill-pink-500 text-pink-500" size={20}/>{(() => { const {score}=cinemaFit(own,profileCinemaSignals(p.favorites,p.discovery_details,id=>store.titleById(id,p.id))); return score===null?null:<span className="absolute bottom-2 right-2 z-10 grid size-10 place-items-center rounded-full border-2 border-pink-400 bg-[#25132f] text-xs font-bold text-white">%{score}</span>; })()}<span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-2 pr-12 pt-8 font-bold text-white">{p.name}{p.age !== null ? `, ${p.age}` : ""}<span className="block text-xs">{p.city}</span>{store.incoming[p.id] === "super" && <span className="block text-xs text-brand-ink">Süper beğeni</span>}</span>
+              <Heart className="absolute right-2 top-2 fill-pink-500 text-pink-500" size={20}/>{(() => { const {score}=cinemaFit(own,profileCinemaSignals(p.favorites,p.discovery_details,id=>store.titleById(id,p.id))); return score===null?null:<span className="absolute bottom-2 right-2 z-10 grid size-10 place-items-center rounded-full border-2 border-pink-400 bg-[#25132f] text-xs font-bold text-white">%{score}</span>; })()}<span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-2 pr-12 pt-8 font-bold text-white">{p.name}{p.age !== null ? `, ${p.age}` : ""}{p.verified_photo && <VerifiedBadge />}<span className="block text-xs">{p.city}</span>{store.incoming[p.id] === "super" && <span className="block text-xs text-brand-ink">Süper beğeni</span>}</span>
             </Link>
             {incomingComments.data?.[p.id] && <blockquote className="mt-2 break-words border-l-2 border-primary pl-3 text-sm">
               {incomingComments.data[p.id]}
@@ -101,7 +102,7 @@ export default function Matches() {
             {pending.map((p) => (
               <div key={p.id} className="scene-panel overflow-hidden p-1 text-center">
                 <Link href={`/kullanici/${p.id}`} data-testid={`link-pending-${p.id}`}><PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-square w-full rounded-xl" textClassName="text-4xl" /></Link>
-                <div className="mt-1 text-sm font-bold">{p.name}{p.age !== null ? `, ${p.age}` : ""}<span className="block text-xs text-muted-foreground">{p.city}</span></div>
+                <div className="mt-1 text-sm font-bold">{p.name}{p.age !== null ? `, ${p.age}` : ""}{p.verified_photo && <VerifiedBadge />}<span className="block text-xs text-muted-foreground">{p.city}</span></div>
                 <button onClick={() => { void store.unlike(p.id).then((ok) => ok && toast({ title: "Beğeni geri alındı" })); }} data-testid={`button-unlike-${p.id}`} className="text-[11px] text-muted-foreground underline-offset-2 hover:text-brand-ink hover:underline">Geri al</button>
               </div>
             ))}
