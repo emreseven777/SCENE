@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Flag, Ban } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useAuth } from "@/lib/auth";
@@ -138,9 +139,9 @@ export function ProfileSafety({ person }: { person: Person }) {
   const { toast } = useToast();
   const [action, setAction] = useState<"block" | "report" | null>(null);
   const [busy, setBusy] = useState(false);
-  return <div className="flex flex-wrap gap-2">
-    <Button variant="ghost" onClick={() => setAction("report")}>Şikâyet et</Button>
-    <Button variant="ghost" onClick={() => setAction("block")}>Engelle</Button>
+  return <div className="grid grid-cols-2 gap-3">
+    <Button variant="outline" className="h-12 min-w-0 rounded-xl border-[#b75b7b] bg-[#492333] font-semibold text-[#ff91b5] hover:bg-[#603047] hover:text-white" onClick={() => setAction("report")}><Flag size={18} aria-hidden="true" /> Şikâyet Et</Button>
+    <Button variant="outline" className="h-12 min-w-0 rounded-xl border-[#b75b7b] bg-[#492333] font-semibold text-[#ff91b5] hover:bg-[#603047] hover:text-white" onClick={() => setAction("block")}><Ban size={18} aria-hidden="true" /> Engelle</Button>
     {action === "report" && <ReportProfile person={person.id} onClose={() => setAction(null)} />}
     {action === "block" && <Dialog open onOpenChange={(open) => { if (!open && !busy) setAction(null); }}><DialogContent>
       <DialogTitle>{person.name} engellensin mi?</DialogTitle>
