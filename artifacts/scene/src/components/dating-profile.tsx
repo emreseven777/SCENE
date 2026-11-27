@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ProfileChoiceFields } from "./profile-choice-fields";
-import { CHOICES, TMDB_FIELDS, UNDISCLOSED, UNDISCLOSED_LABEL, profileLabel, type ProfileValue } from "@/lib/profile-choices";
+import { CHOICES, TMDB_FIELDS, UNDISCLOSED_LABEL, profileLabel, type ProfileValue } from "@/lib/profile-choices";
 import { ReportProfile } from "./report-profile";
 
 const structuredFields = new Set(["height","occupation","sign","interests","genres",...Object.keys(CHOICES),...Object.keys(TMDB_FIELDS)]);
@@ -81,17 +81,6 @@ export function DatingFields({ person, requiredOnly = false }: { person: Person;
       {preferences.isSuccess && <div className="mt-3 grid gap-3">
         <ProfileChoiceFields details={options.details} onChange={setDetail}
           zodiac={typeof own.data?.details.sign === "string" ? own.data.details.sign : undefined} />
-        {Object.entries(detailLabels).filter(([key]) => !structuredFields.has(key)).map(([key, label]) => {
-          const value = options.details[key];
-          return <div key={key} className="min-w-0">
-            <label className="block text-sm">{label}
-              <Input className="mt-1" value={typeof value === "string" && value !== UNDISCLOSED ? value : ""} maxLength={100}
-                onChange={(event) => setDetail(key, event.target.value)} />
-            </label>
-            <Button type="button" size="sm" variant={value === UNDISCLOSED ? "default" : "ghost"}
-              aria-pressed={value === UNDISCLOSED} onClick={() => setDetail(key, value === UNDISCLOSED ? "" : UNDISCLOSED)}>{UNDISCLOSED_LABEL}</Button>
-          </div>;
-        })}
         <div>
           <label className="block text-sm">Instagram kullanıcı adı
             <Input className="mt-1" value={options.instagram ?? ""} maxLength={31} onChange={(event) => setOptions({ instagram: event.target.value })} />
@@ -123,7 +112,7 @@ export function ProfileDetails({ person, publicPreview = false }: { person: Pers
     ["Cinsiyet", GENDERS[person.gender as keyof typeof GENDERS]],
     ["Tanışmak istediği", LOOKING_FOR[person.looking_for as keyof typeof LOOKING_FOR]],
     ["Tanışma amacı", GOALS[person.dating_goal as keyof typeof GOALS]],
-    ...Object.entries(detailLabels).map(([key, label]) => [
+    ...Object.entries(detailLabels).filter(([key]) => structuredFields.has(key)).map(([key, label]) => [
       label,
       (!publicPreview || (preferences.data?.public_details && (key !== "sign" || preferences.data?.details.sign === "automatic")))
         ? profileLabel(key, details.data?.details[key]) : undefined,
