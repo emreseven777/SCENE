@@ -183,17 +183,16 @@ export default function Discover() {
   };
 
   return (
-    <div className="scene-page min-w-0 space-y-3 pt-3 sm:space-y-4">
+    <div className="scene-page min-w-0 space-y-2 pt-1 sm:space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="scene-title text-[clamp(2rem,7vw,3rem)]">{movieMatch ? "Sinema eşleşmesi" : "Keşfet"}</h1>
         <div className="flex min-w-0 flex-wrap gap-1.5">
-          <Button asChild variant="secondary" size="sm"><Link href={movieMatch ? "/" : "/?mod=movie-match"}><Sparkles />{movieMatch ? "Keşfet’e dön" : "Sinema eşleşmesi"}</Link></Button>
           <Button asChild variant="ghost" size="icon"><Link href="/arama" aria-label="Favori yapımlarını ekle"><Film /></Link></Button>
         </div>
       </header>
 
-      <details className="scene-panel group min-w-0 px-3 py-2 sm:px-4">
-        <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 font-semibold [&::-webkit-details-marker]:hidden">
+      <details className="scene-panel group min-w-0 px-3 py-1 sm:px-4">
+        <summary className="flex min-h-8 cursor-pointer list-none items-center gap-2 font-semibold [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal size={16} /> Keşfet filtreleri
           {activeFilters > 0 && <span className="rounded-full bg-secondary px-2 text-xs text-brand-ink">{activeFilters}</span>}
           <ChevronDown size={17} className="ml-auto transition-transform group-open:rotate-180" />
