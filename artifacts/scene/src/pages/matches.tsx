@@ -5,7 +5,7 @@ import { cinemaFit, profileCinemaSignals } from "@/lib/dating";
 import { SceneHeading } from "@/components/scene-brand";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { MessageCircle, X, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { PersonPhoto } from "@/components/person-photo";
@@ -50,13 +50,13 @@ export default function Matches() {
             const signals = profileCinemaSignals(p.favorites, p.discovery_details, (id) => store.titleById(id, p.id));
             const { score } = cinemaFit(own, signals);
             return (
-              <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 4) * 0.04 }} className="scene-panel group relative flex flex-col overflow-hidden" data-testid={`card-match-${p.id}`}>
-                <Link href={`/kullanici/${p.id}`} className="relative block w-full overflow-hidden"><PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-square w-full" textClassName="text-5xl" /><span className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-pink-600 text-white"><Heart size={18} fill="currentColor"/></span><span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/65 to-transparent px-2 pb-2 pt-10 pr-12 text-sm font-bold text-white">{p.name}{p.age !== null ? `, ${p.age}` : ""}<span className="block truncate text-xs font-normal">{p.city}</span></span>{score!==null && <span className="absolute bottom-2 right-2 grid size-10 place-items-center rounded-full border-[3px] border-pink-400 bg-black/60 text-xs font-bold text-white">%{score}</span>}</Link>
-                <div className="absolute left-2 top-2 flex gap-1">
-                    <Link href={`/mesajlar/${p.id}`} aria-label="Sohbet" data-testid={`link-chat-${p.id}`} className="grid size-8 place-items-center rounded-full bg-black/65 text-white"><MessageCircle size={16}/></Link>
+              <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 4) * 0.04 }} className="scene-panel group relative flex flex-col overflow-hidden !rounded-2xl !border-2 !border-[#a75b80] shadow-lg" data-testid={`card-match-${p.id}`}>
+                <Link href={`/kullanici/${p.id}`} className="relative block w-full overflow-hidden"><PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-[5/6] w-full" textClassName="text-5xl" /><span className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-pink-600 text-white"><Heart size={18} fill="currentColor"/></span><span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/65 to-transparent px-2 pb-2 pt-10 pr-12 text-sm font-bold text-white">{p.name}{p.age !== null ? `, ${p.age}` : ""}<span className="block truncate text-xs font-normal">{p.city}</span></span>{score!==null && <span className="absolute bottom-2 right-2 grid size-10 place-items-center rounded-full border-[3px] border-pink-400 bg-black/60 text-xs font-bold text-white">%{score}</span>}</Link>
+                <div className="flex justify-end gap-2 px-2 py-1">
+                    <Link href={`/mesajlar/${p.id}`} aria-label="Sohbet" data-testid={`link-chat-${p.id}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground">Sohbet</Link>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <button data-testid={`button-unmatch-${p.id}`} aria-label="Eşleşmeyi kaldır" className="grid size-8 place-items-center rounded-full bg-black/65 text-white"><X size={16} /></button>
+                        <button data-testid={`button-unmatch-${p.id}`} aria-label="Eşleşmeyi kaldır" className="text-xs text-muted-foreground">Kaldır</button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="border-border bg-card">
                         <AlertDialogHeader>
