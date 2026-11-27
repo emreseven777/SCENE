@@ -1,6 +1,6 @@
 import appStoreLogo from "@/assets/appstore.svg";
 import googlePlayLogo from "@/assets/googleplay.svg";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, MailCheck, Clapperboard, Tv, Users, Heart, UserPlus, LogIn, Play } from "lucide-react";
@@ -49,7 +49,18 @@ export function ComingSoonStores() {
   );
 }
 
+const welcomeSlides = [
+  { title: "Aynı hikâyeleri seven insanlarla", accent: "eşleş.", description: "Favori film ve dizilerin üzerinden arkadaşlık, sohbet ve belki daha fazlası..." },
+  { title: "Ortak favorilerle yeni insanları", accent: "keşfet.", description: "Film ve dizi zevkine uyan insanlarla tanış, sohbeti başlat." },
+  { title: "Kendi aşk hikâyeni", accent: "başlat.", description: "Belki de bir sonraki sinema randevun MOVIA’da seni bekliyor." },
+];
+
 export function WelcomePage() {
+  const [slide, setSlide] = useState(0);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSlide((current) => (current + 1) % welcomeSlides.length), 4000);
+    return () => window.clearTimeout(timer);
+  }, [slide]);
   const features = [{label:"FİLMLER",Icon:Clapperboard},{label:"DİZİLER",Icon:Tv},{label:"ARKADAŞLIK",Icon:Users},{label:"FLÖRT",Icon:Heart}];
   return <main className="fixed inset-0 mx-auto flex h-[100dvh] w-full max-w-lg flex-col overflow-hidden text-center text-white" style={{background:"radial-gradient(ellipse at 0% 72%, #650d29 0%, transparent 45%), radial-gradient(ellipse at 100% 80%, #510b24 0%, transparent 45%), #180e15"}}>
     <div className="relative min-h-0 flex-1">
@@ -65,9 +76,13 @@ export function WelcomePage() {
       <div className="grid grid-cols-4 divide-x divide-[#f35b86]/40">
         {features.map(({label,Icon})=><div key={label} className="flex flex-col items-center gap-1.5"><Icon className="size-7 text-[#ff739c]" strokeWidth={1.7}/><span className="text-[10px] font-bold tracking-wide">{label}</span></div>)}
       </div>
-      <h1 className="mt-[clamp(8px,1.8dvh,20px)] text-[clamp(22px,6.5vw,36px)] font-extrabold leading-[1.12] tracking-tight">Aynı hikâyeleri seven insanlarla <span className="text-[#ff4279]">eşleş.</span></h1>
-      <p className="mx-auto mt-2 max-w-sm text-[clamp(12px,1.8dvh,14px)] leading-relaxed text-white/80">Favori film ve dizilerin üzerinden arkadaşlık, sohbet ve belki daha fazlası...</p>
-      <div aria-hidden="true" className="my-[clamp(6px,1.4dvh,16px)] flex justify-center gap-2"><span className="size-2 rounded-full bg-[#ff4279]"/><span className="size-2 rounded-full bg-white/20"/><span className="size-2 rounded-full bg-white/20"/></div>
+      <div className="relative mt-[clamp(8px,1.8dvh,20px)] grid">
+        {welcomeSlides.map((item,index)=><div key={item.title} aria-hidden={index!==slide} className={`col-start-1 row-start-1 transition-opacity duration-500 motion-reduce:transition-none ${index===slide?"opacity-100":"pointer-events-none opacity-0"}`}>
+          <h1 className="text-[clamp(22px,6.5vw,36px)] font-extrabold leading-[1.12] tracking-tight">{item.title} <span className="text-[#ff4279]">{item.accent}</span></h1>
+          <p className="mx-auto mt-2 max-w-sm text-[clamp(12px,1.8dvh,14px)] leading-relaxed text-white/80">{item.description}</p>
+        </div>)}
+      </div>
+      <div className="my-[clamp(2px,0.8dvh,8px)] flex justify-center gap-1" aria-label="Tanıtım slaytları">{welcomeSlides.map((item,index)=><button key={item.title} type="button" aria-label={`Tanıtım ${index+1}`} aria-current={index===slide?"true":undefined} onClick={()=>setSlide(index)} className="grid size-6 place-items-center rounded-full"><span className={`size-2 rounded-full transition-colors ${index===slide?"bg-[#ff4279]":"bg-white/20"}`}/></button>)}</div>
       <div className="grid gap-2">
         <Link href="/kayit" className="relative flex min-h-[clamp(42px,6.5dvh,56px)] items-center justify-center gap-3 rounded-full border border-[#ff759c] bg-gradient-to-br from-[#ff3975] to-[#a91e4b] px-8 text-lg font-bold text-white shadow-lg"><UserPlus className="size-6"/>Hemen Kayıt Ol<ArrowRight className="absolute right-5 size-5"/></Link>
         <Link href="/giris" className="flex min-h-[clamp(38px,5.8dvh,48px)] items-center justify-center gap-3 rounded-full border border-white/90 bg-black/10 text-base font-bold text-white"><LogIn className="size-5"/>Giriş Yap</Link>
