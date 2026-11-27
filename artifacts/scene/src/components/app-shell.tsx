@@ -71,8 +71,8 @@ export function AppShell({ children, warmNavigation }: { children: ReactNode; wa
         </nav>
         <div className="mt-auto flex items-center gap-2"><ThemeToggle withLabel /><Link href="/bildirimler" aria-label="Bildirimler" className="grid size-11 place-items-center rounded-full border"><Bell size={17} /></Link></div>
       </aside>
-      <div className="min-w-0">
-        <header className="scene-toolbar sticky top-0 z-40 flex items-center justify-between gap-2 border-b pl-[max(.625rem,env(safe-area-inset-left))] pr-[max(.625rem,env(safe-area-inset-right))] pb-1 pt-[calc(.375rem+env(safe-area-inset-top))] lg:hidden">
+      <div className={cn("min-w-0", loc.startsWith("/mesajlar/") && "max-lg:flex max-lg:h-[100dvh] max-lg:flex-col max-lg:pb-[calc(3.75rem+env(safe-area-inset-bottom))]")}>
+        <header className="scene-toolbar shrink-0 sticky top-0 z-40 flex items-center justify-between gap-2 border-b pl-[max(.625rem,env(safe-area-inset-left))] pr-[max(.625rem,env(safe-area-inset-right))] pb-1 pt-[calc(.375rem+env(safe-area-inset-top))] lg:hidden">
           <SceneBrand className="min-w-0 shrink gap-1.5 [&>span:last-child]:text-base min-[375px]:[&>span:last-child]:text-xl" />
           <div className="flex shrink-0 items-center gap-1.5">
             <Link href="/arama" aria-label="Ara" data-testid="link-search-mobile" aria-current={loc === "/arama" ? "page" : undefined} className={cn("grid size-11 place-items-center rounded-full border bg-card hover:bg-secondary", loc === "/arama" && "bg-secondary text-brand-ink")}><Search size={18} /></Link>
@@ -80,7 +80,7 @@ export function AppShell({ children, warmNavigation }: { children: ReactNode; wa
             <ThemeToggle />
           </div>
         </header>
-        <motion.main key={loc.split("/")[1]} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.16 }} className={loc.startsWith("/mesajlar/") ? "pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0" : "pb-safe"}>
+        <motion.main key={loc.split("/")[1]} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.16 }} className={loc.startsWith("/mesajlar/") ? "min-h-0 flex-1 lg:pb-0" : "pb-safe"}>
           {children}
         </motion.main>
       </div>
