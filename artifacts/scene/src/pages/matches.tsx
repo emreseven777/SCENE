@@ -100,7 +100,7 @@ export default function Matches() {
           {store.people.filter((p) => store.incoming[p.id] && !store.matches[p.id]).map((p) => <li key={p.id} className="scene-panel overflow-hidden p-1">
             <Link className="relative block overflow-hidden rounded-xl" href={`/kullanici/${p.id}`}>
               <PersonPhoto id={p.id} name={p.name} avatarPath={p.avatar_path} className="aspect-[3/4] w-full" />
-              <Heart className="absolute right-2 top-2 fill-pink-500 text-pink-500" size={20}/><span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-2 pt-8 font-bold text-white">{p.name}{p.age !== null ? `, ${p.age}` : ""}<span className="block text-xs">{p.city}</span>{store.incoming[p.id] === "super" && <span className="block text-xs text-brand-ink">Süper beğeni</span>}</span>
+              <Heart className="absolute right-2 top-2 fill-pink-500 text-pink-500" size={20}/>{(() => { const {score}=cinemaFit(own,profileCinemaSignals(p.favorites,p.discovery_details,id=>store.titleById(id,p.id))); return score===null?null:<span className="absolute bottom-2 right-2 z-10 grid size-10 place-items-center rounded-full border-2 border-pink-400 bg-[#25132f] text-xs font-bold text-white">%{score}</span>; })()}<span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-2 pr-12 pt-8 font-bold text-white">{p.name}{p.age !== null ? `, ${p.age}` : ""}<span className="block text-xs">{p.city}</span>{store.incoming[p.id] === "super" && <span className="block text-xs text-brand-ink">Süper beğeni</span>}</span>
             </Link>
             {incomingComments.data?.[p.id] && <blockquote className="mt-2 break-words border-l-2 border-primary pl-3 text-sm">
               {incomingComments.data[p.id]}
