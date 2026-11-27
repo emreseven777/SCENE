@@ -72,7 +72,7 @@ export function AppShell({ children, warmNavigation }: { children: ReactNode; wa
         <div className="mt-auto flex items-center gap-2"><ThemeToggle withLabel /><Link href="/bildirimler" aria-label="Bildirimler" className="grid size-11 place-items-center rounded-full border"><Bell size={17} /></Link></div>
       </aside>
       <div className="min-w-0">
-        <header className="scene-toolbar sticky top-0 z-40 flex items-center justify-between gap-2 border-b pl-[max(.625rem,env(safe-area-inset-left))] pr-[max(.625rem,env(safe-area-inset-right))] pb-2.5 pt-[calc(.625rem+env(safe-area-inset-top))] lg:hidden">
+        <header className="scene-toolbar sticky top-0 z-40 flex items-center justify-between gap-2 border-b pl-[max(.625rem,env(safe-area-inset-left))] pr-[max(.625rem,env(safe-area-inset-right))] pb-1 pt-[calc(.375rem+env(safe-area-inset-top))] lg:hidden">
           <SceneBrand className="min-w-0 shrink gap-1.5 [&>span:last-child]:text-base min-[375px]:[&>span:last-child]:text-xl" />
           <div className="flex shrink-0 items-center gap-1.5">
             <Link href="/arama" aria-label="Ara" data-testid="link-search-mobile" aria-current={loc === "/arama" ? "page" : undefined} className={cn("grid size-11 place-items-center rounded-full border bg-card hover:bg-secondary", loc === "/arama" && "bg-secondary text-brand-ink")}><Search size={18} /></Link>
@@ -84,15 +84,15 @@ export function AppShell({ children, warmNavigation }: { children: ReactNode; wa
           {children}
         </motion.main>
       </div>
-      <nav aria-label="Ana menü" className="scene-toolbar fixed inset-x-0 bottom-0 z-50 border-t pl-[max(.25rem,env(safe-area-inset-left))] pr-[max(.25rem,env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <nav aria-label="Ana menü" className="fixed bg-gradient-to-r from-[#321027] to-[#25132f] text-white inset-x-0 bottom-0 z-50 border-t pl-[max(.25rem,env(safe-area-inset-left))] pr-[max(.25rem,env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] lg:hidden">
         <div className="mx-auto grid w-full max-w-lg grid-cols-5">
           {NAV.map(({ href, label, icon: Icon }) => {
             const on = isActive(loc, href);
             return (
-              <Link key={href} href={href} onFocus={() => warmNavigation(href)} onPointerEnter={(event) => { if (event.pointerType === "mouse") warmNavigation(href); }} onPointerDown={() => warmNavigation(href)} aria-current={on ? "page" : undefined} data-testid={`nav-${label}`} className={cn("relative flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-1.5 text-center text-[10px] font-semibold", on ? "text-brand-ink" : "text-muted-foreground")}>
+              <Link key={href} href={href} onFocus={() => warmNavigation(href)} onPointerEnter={(event) => { if (event.pointerType === "mouse") warmNavigation(href); }} onPointerDown={() => warmNavigation(href)} aria-current={on ? "page" : undefined} data-testid={`nav-${label}`} className={cn("relative flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-1.5 text-center text-[11px] font-extrabold", on ? "text-white" : "text-white/85")}>
                 <span className="relative grid h-8 w-full max-w-12 place-items-center">
-                  {on && <motion.span layoutId="tab" className="absolute inset-0 rounded-full bg-secondary" />}
-                  <Icon size={19} className="relative" />
+                  {on && <motion.span layoutId="tab" className="absolute inset-0 rounded-xl bg-gradient-to-r from-pink-600 to-violet-600" />}
+                  <Icon size={23} strokeWidth={2.5} className="relative" />
                   {badgeCount(href) > 0 && <span aria-label={`${badgeCount(href)} yeni bildirim`} className="absolute right-0 -top-1 grid min-w-[18px] h-[18px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground ring-2 ring-card">{badgeCount(href) > 99 ? "99+" : badgeCount(href)}</span>}
                 </span>
                 <span className="max-w-full truncate">{label}</span>
